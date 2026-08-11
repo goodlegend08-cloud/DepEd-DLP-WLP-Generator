@@ -1,0 +1,24 @@
+[
+  {
+    "id": "tpl_placeholder_filled",
+    "name": "SCIENCE-ILAW template (with placeholders)",
+    "filename": "SCIENCE-ILAW_template_filled.docx",
+    "description": "Template with {{PLACEHOLDER}} tags for docxtemplater filling. Contains all 28 DLP placeholders.",
+    "createdAt": "2026-07-24T17:50:00.000Z",
+    "isDefault": true
+  },
+  {
+    "id": "tpl_1784888787971",
+    "name": "SCIENCE-ILAW template",
+    "filename": "1784888787960_SCIENCE-ILAW_template.docx",
+    "description": "",
+    "createdAt": "2026-07-24T10:26:27.971Z"
+  },
+  {
+    "id": "tpl_1784890141104",
+    "name": "new",
+    "filename": "1784890141044_new.docx",
+    "description": "",
+    "createdAt": "2026-07-24T10:49:01.104Z"
+  }
+]
