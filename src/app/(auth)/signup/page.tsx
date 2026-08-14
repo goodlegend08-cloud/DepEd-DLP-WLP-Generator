@@ -6,9 +6,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n";
+import { getSiteUrl } from "@/lib/site-url";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
@@ -46,7 +48,7 @@ export default function SignupPage() {
         data: {
           full_name: fullName,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        emailRedirectTo: `${getSiteUrl()}/auth/callback?next=/dashboard`,
       },
     });
 
@@ -138,9 +140,8 @@ export default function SignupPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">{t("password")}</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -149,9 +150,8 @@ export default function SignupPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

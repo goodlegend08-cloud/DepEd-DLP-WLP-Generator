@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,14 +9,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n";
+import { getSiteUrl } from "@/lib/site-url";
 
 export default function ForgotPasswordPage() {
+  return (
+    <Suspense>
+      <ForgotPasswordForm />
+    </Suspense>
+  );
+}
+
+function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const { t } = useI18n();
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam === "recovery_link_expired") {
+      queueMicrotask(() => {
+        setError("This reset link is invalid or has expired. Please request a new one.");
+      });
+    }
+  }, [searchParams]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +43,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?type=recovery&next=/reset-password`,
+      redirectTo: `${getSiteUrl()}/reset-password`,
     });
 
     if (authError) {

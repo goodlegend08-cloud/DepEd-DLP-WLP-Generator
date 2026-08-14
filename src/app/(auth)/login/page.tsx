@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n";
@@ -13,6 +14,7 @@ import { useI18n } from "@/lib/i18n";
 const ERROR_MESSAGES: Record<string, string> = {
   auth_callback_error: "Email confirmation failed. The link may have expired or already been used. Please try signing up again.",
   email_not_confirmed: "Please confirm your email before logging in. Check your inbox (and spam folder) for the confirmation link.",
+  recovery_link_expired: "This reset link is invalid or has expired. Please request a new one.",
 };
 
 export default function LoginPage() {
@@ -101,9 +103,8 @@ function LoginForm() {
                 {t("forgotPassword")}
               </Link>
             </div>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

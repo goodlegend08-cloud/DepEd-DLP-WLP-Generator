@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { AuthErrorRedirect } from "@/components/AuthErrorRedirect";
 import { BookOpen, FileText, Zap, Shield } from "lucide-react";
 
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
+      <AuthErrorRedirect />
       <header className="container mx-auto flex items-center justify-between px-4 py-4">
         <div className="flex items-center gap-2 font-bold text-lg">
           <BookOpen className="h-6 w-6" />

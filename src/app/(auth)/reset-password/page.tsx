@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n";
@@ -34,14 +34,26 @@ function ResetPasswordForm() {
   useEffect(() => {
     const handleAuth = async () => {
       const code = searchParams.get("code");
+      const tokenHash = searchParams.get("token_hash");
       const token = searchParams.get("token");
       const type = searchParams.get("type");
+      const errorParam = searchParams.get("error");
+
+      if (errorParam) {
+        setError(
+          errorParam === "recovery_link_expired"
+            ? "This reset link is invalid or has expired. Please request a new one."
+            : "An error occurred. Please try again."
+        );
+        setValidating(false);
+        return;
+      }
 
       // Handle PKCE code flow
       if (code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          console.error("Code exchange error:", error);
+        const { error: authError } = await supabase.auth.exchangeCodeForSession(code);
+        if (authError) {
+          console.error("Code exchange error:", authError);
           setError("Invalid or expired reset link. Please request a new one.");
           setValidating(false);
           return;
@@ -51,14 +63,32 @@ function ResetPasswordForm() {
         return;
       }
 
-      // Handle older token flow (recovery type)
-      if (token && type === "recovery") {
-        const { error } = await supabase.auth.verifyOtp({
-          token,
+      // Handle token_hash flow (recovery links from email templates)
+      if (tokenHash && type === "recovery") {
+        const { error: authError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
           type: "recovery",
-        } as Parameters<typeof supabase.auth.verifyOtp>[0]);
-        if (error) {
-          console.error("Token verification error:", error);
+        });
+        if (authError) {
+          console.error("Token hash verification error:", authError);
+          setError("Invalid or expired reset link. Please request a new one.");
+          setValidating(false);
+          return;
+        }
+        setHasSession(true);
+        setValidating(false);
+        return;
+      }
+
+      // Handle older token flow (recovery type). Recovery links carry a
+      // hashed token that verifyOtp accepts as token_hash.
+      if (token && type === "recovery") {
+        const { error: authError } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: "recovery",
+        });
+        if (authError) {
+          console.error("Token verification error:", authError);
           setError("Invalid or expired reset link. Please request a new one.");
           setValidating(false);
           return;
@@ -186,9 +216,8 @@ function ResetPasswordForm() {
           )}
           <div className="space-y-2">
             <Label htmlFor="password">{t("newPassword")}</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -197,9 +226,8 @@ function ResetPasswordForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
