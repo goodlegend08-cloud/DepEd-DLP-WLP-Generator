@@ -1,22 +1,21 @@
 import OpenAI from "openai";
 
-const groq = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY!,
-  baseURL: "https://api.groq.com/openai/v1",
-});
+function makeClient(apiKey: string | undefined, baseURL: string): OpenAI {
+  return new OpenAI({ apiKey, baseURL });
+}
+
+// Primary Groq client. Created lazily so the module can be imported at build
+// time before any API keys are available.
+const getGroq = () => makeClient(process.env.GROQ_API_KEY, "https://api.groq.com/openai/v1");
 
 // Secondary Groq client used when the primary Groq API is at its limit.
-const groqBackup = new OpenAI({
-  apiKey: process.env.GROQ_BACKUP_API_KEY || "",
-  baseURL: "https://api.groq.com/openai/v1",
-});
+const getGroqBackup = () =>
+  makeClient(process.env.GROQ_BACKUP_API_KEY, "https://api.groq.com/openai/v1");
 
 // Backup provider (xAI / Grok). Used when the primary API is at its limit
 // (HTTP 429 / rate_limit) so generation still succeeds.
-const grokBackup = new OpenAI({
-  apiKey: process.env.GROK_API_KEY || "",
-  baseURL: "https://api.x.ai/v1",
-});
+const getGrokBackup = () =>
+  makeClient(process.env.GROK_API_KEY, "https://api.x.ai/v1");
 
 const MODEL_NAME = "llama-3.3-70b-versatile";
 
@@ -84,15 +83,15 @@ export async function generateFromPayload(
 
   const providers: { name: string; client: OpenAI; model?: string }[] = [];
   if (process.env.GROQ_API_KEY) {
-    providers.push({ name: "groq", client: groq });
+    providers.push({ name: "groq", client: getGroq() });
   }
   if (process.env.GROQ_BACKUP_API_KEY) {
-    providers.push({ name: "groq-backup", client: groqBackup });
+    providers.push({ name: "groq-backup", client: getGroqBackup() });
   }
   if (process.env.GROK_API_KEY) {
     providers.push({
       name: "grok-backup",
-      client: grokBackup,
+      client: getGrokBackup(),
       model: process.env.GROK_MODEL || "grok-beta",
     });
   }
