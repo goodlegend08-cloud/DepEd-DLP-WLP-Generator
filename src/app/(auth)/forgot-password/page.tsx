@@ -43,7 +43,7 @@ function ForgotPasswordForm() {
     setLoading(true);
 
     const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${getSiteUrl()}/reset-password`,
+      redirectTo: `${getSiteUrl()}/auth/callback?type=recovery&next=/reset-password`,
     });
 
     if (authError) {
