@@ -44,6 +44,11 @@ CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
 
+-- Ensures an existing-but-profile-less user can be inserted on first save
+CREATE POLICY "Users can insert own profile"
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
 -- 5. RLS Policies for lesson_plans
 CREATE POLICY "Users can view own plans"
   ON lesson_plans FOR SELECT
@@ -62,10 +67,13 @@ CREATE POLICY "Users can delete own plans"
   USING (auth.uid() = user_id);
 
 -- 6. Auto-create profile on signup
+-- Defensive: never blocks signup (ON CONFLICT + EXCEPTION guard) so a failing
+-- profile insert can never cause a 500 on the /auth/v1/signup endpoint.
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   INSERT INTO profiles (id, email, full_name)
@@ -73,8 +81,12 @@ BEGIN
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', '')
-  );
+  )
+  ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN NEW;
 END;
 $$;
 

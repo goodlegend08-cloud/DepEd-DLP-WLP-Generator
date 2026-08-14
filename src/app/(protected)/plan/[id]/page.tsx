@@ -76,6 +76,7 @@ export default function PlanDetailPage() {
       body: JSON.stringify({
         plan: plan.generated_content,
         input,
+        planType: plan.plan_type,
       }),
     });
 

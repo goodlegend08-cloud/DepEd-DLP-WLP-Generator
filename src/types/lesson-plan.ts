@@ -4,6 +4,24 @@ export type TeachingMethod = "5Es" | "DEAL" | "custom";
 
 export type PlanType = "dlp" | "wlp";
 
+/** Structured DBOW row sent from the client to the generate API. */
+export interface DBOWEntryPayload {
+  term: string;
+  contentArea: string;
+  weekRange: string;
+  weekNumber: string;
+  competency: string;
+  day: string;
+  dayNumber: string;
+  objective: string;
+  daysTaught: string;
+  contentStandard: string;
+  performanceStandard: string;
+  suggestedActivity: string;
+  date: string;
+  specificDate?: string;
+}
+
 export interface LessonPlanInput {
   gradeLevel: string;
   learningArea: string;
@@ -20,6 +38,21 @@ export interface LessonPlanInput {
   schoolName?: string;
   dayNumber?: string;
   calendarDate?: string;
+  startDate?: string;
+  templateId?: string;
+  dbowEntry?: DBOWEntryPayload | null;
+  dbowEntries?: DBOWEntryPayload[];
+  dbowRawText?: string;
+  weekDates?: WeekDates;
+}
+
+/** Per-day calendar dates for a weekly lesson plan (Monday–Friday). */
+export interface WeekDates {
+  monday: string;
+  tuesday: string;
+  wednesday: string;
+  thursday: string;
+  friday: string;
 }
 
 export interface DayPlan {

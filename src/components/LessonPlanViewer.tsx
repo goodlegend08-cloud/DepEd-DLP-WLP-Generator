@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { GeneratedLessonPlan, GeneratedDLPPlan, LessonPlanInput, DLPFlowPhases, DLPFormativeAssessment, DLPExtendedLearning } from "@/types/lesson-plan";
@@ -7,6 +8,8 @@ import type { GeneratedLessonPlan, GeneratedDLPPlan, LessonPlanInput, DLPFlowPha
 interface LessonPlanViewerProps {
   plan: GeneratedLessonPlan | GeneratedDLPPlan;
   input?: LessonPlanInput;
+  /** When provided, text fields become editable via double-click. */
+  onEdit?: (key: string, value: string) => void;
 }
 
 function isILAWFormat(plan: GeneratedLessonPlan | GeneratedDLPPlan): plan is GeneratedDLPPlan {
@@ -55,32 +58,102 @@ function resolveExtendedLearning(el?: DLPExtendedLearning, flat?: {
   };
 }
 
-export function LessonPlanViewer({ plan, input }: LessonPlanViewerProps) {
+export function LessonPlanViewer({ plan, input, onEdit }: LessonPlanViewerProps) {
   if (isILAWFormat(plan)) {
-    return <ILAWViewer plan={plan} input={input} />;
+    return <ILAWViewer plan={plan} input={input} onEdit={onEdit} />;
   }
   return <LegacyViewer plan={plan} input={input} />;
 }
 
-function MetaRow({ label, value }: { label: string; value: string }) {
+function MetaRow({ label, value, onEdit }: { label: string; value: string; onEdit?: (value: string) => void }) {
   return (
     <tr className="border-b">
       <td className="p-2 font-semibold bg-muted/50 w-1/3 text-xs whitespace-pre-wrap">{label}</td>
-      <td className="p-2 text-xs whitespace-pre-wrap">{value}</td>
+      <td className="p-2 text-xs whitespace-pre-wrap">
+        <EditableText value={value} onEdit={onEdit} />
+      </td>
     </tr>
   );
 }
 
-function ProcedureStep({ label, content }: { label: string; content: string }) {
+/** Text that becomes an editable textarea on double-click. */
+function EditableText({
+  value,
+  onEdit,
+  className,
+}: {
+  value: string;
+  onEdit?: (value: string) => void;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (editing && ref.current) {
+      ref.current.focus();
+      ref.current.setSelectionRange(ref.current.value.length, ref.current.value.length);
+    }
+  }, [editing]);
+
+  if (!onEdit) {
+    return <span className={className}>{value}</span>;
+  }
+
+  if (editing) {
+    const commit = () => {
+      setEditing(false);
+      if (draft !== value) onEdit(draft);
+    };
+    return (
+      <textarea
+        ref={ref}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setDraft(value);
+            setEditing(false);
+          }
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+            commit();
+          }
+        }}
+        rows={Math.max(2, Math.ceil(draft.length / 60))}
+        className="w-full text-xs p-2 border border-primary rounded bg-background focus:outline-none"
+      />
+    );
+  }
+
+  return (
+    <span
+      className={`${className || ""} cursor-text hover:bg-muted/50 rounded px-1`}
+      title="Double-click to edit"
+      onDoubleClick={() => setEditing(true)}
+    >
+      {value}
+    </span>
+  );
+}
+
+function ProcedureStep({ label, content, onEdit }: { label: string; content: string; onEdit?: (value: string) => void }) {
   return (
     <div>
-      <h4 className="text-sm font-semibold mb-2 text-primary">{label}</h4>
-      <div className="text-sm whitespace-pre-wrap text-muted-foreground">{content}</div>
+      <h4 className="text-sm font-bold italic mb-2 text-slate-900">{label}</h4>
+      <div className="text-sm whitespace-pre-wrap text-muted-foreground">
+        <EditableText value={content} onEdit={onEdit} className="whitespace-pre-wrap" />
+      </div>
     </div>
   );
 }
 
-function ILAWViewer({ plan }: { plan: GeneratedDLPPlan; input?: LessonPlanInput }) {
+function ILAWViewer({ plan, input, onEdit }: { plan: GeneratedDLPPlan; input?: LessonPlanInput; onEdit?: (key: string, value: string) => void }) {
   const { header, lesson_plan_meta, intentions, learning_experience, assessment, ways_forward, signatories } = plan;
   const flow = resolveFlow(learning_experience.flow, {
     engage: learning_experience.engage,
@@ -114,7 +187,7 @@ function ILAWViewer({ plan }: { plan: GeneratedDLPPlan; input?: LessonPlanInput 
       {/* Lesson Plan Title */}
       <div className="text-center py-2">
         <h3 className="text-base font-bold uppercase">
-          Lesson Plan in {lesson_plan_meta.learning_area} — Grade {lesson_plan_meta.grade_level}
+          LESSON PLAN IN {lesson_plan_meta.learning_area} {lesson_plan_meta.grade_level}
         </h3>
       </div>
 
@@ -123,18 +196,23 @@ function ILAWViewer({ plan }: { plan: GeneratedDLPPlan; input?: LessonPlanInput 
         <CardContent className="p-0">
           <table className="w-full text-sm border-collapse">
             <tbody>
-              <MetaRow label="Name of Lesson" value={lesson_plan_meta.lesson_title} />
-              <MetaRow
-                label="Date, Week, Day"
-                value={`${lesson_plan_meta.calendar_date}, ${lesson_plan_meta.week_number}, ${lesson_plan_meta.day_number}`}
-              />
-              <MetaRow label="Designed by teacher/s" value={lesson_plan_meta.teacher_name} />
-              <MetaRow label="Designed for which Grade Level and Section" value={lesson_plan_meta.grade_and_section} />
-              <MetaRow label="No. of Sessions" value={lesson_plan_meta.sessions} />
-              <MetaRow label="References" value={lesson_plan_meta.references} />
+              <MetaRow label="Name of Lesson" value={lesson_plan_meta.lesson_title} onEdit={(v) => onEdit?.("lesson_plan_meta.lesson_title", v)} />
+              <tr className="border-b">
+                <td className="p-2 font-semibold bg-muted/50 w-1/3 text-xs whitespace-pre-wrap">Date, Week, Day</td>
+                <td className="p-2 text-xs whitespace-pre-wrap">
+                  <EditableText value={lesson_plan_meta.calendar_date} onEdit={(v) => onEdit?.("lesson_plan_meta.calendar_date", v)} /> |{" "}
+                  <EditableText value={lesson_plan_meta.week_number} onEdit={(v) => onEdit?.("lesson_plan_meta.week_number", v)} /> |{" "}
+                  <EditableText value={lesson_plan_meta.day_number} onEdit={(v) => onEdit?.("lesson_plan_meta.day_number", v)} />
+                </td>
+              </tr>
+              <MetaRow label="Designed by teacher/s" value={lesson_plan_meta.teacher_name} onEdit={(v) => onEdit?.("lesson_plan_meta.teacher_name", v)} />
+              <MetaRow label="Designed for which Grade Level and Section" value={lesson_plan_meta.grade_and_section} onEdit={(v) => onEdit?.("lesson_plan_meta.grade_and_section", v)} />
+              <MetaRow label="No. of Sessions" value={lesson_plan_meta.sessions} onEdit={(v) => onEdit?.("lesson_plan_meta.sessions", v)} />
+              <MetaRow label="References" value={lesson_plan_meta.references} onEdit={(v) => onEdit?.("lesson_plan_meta.references", v)} />
               <MetaRow
                 label="Declaration of AI Use (See DO 3 s.2026 Annex A)"
                 value={lesson_plan_meta.ai_declaration}
+                onEdit={(v) => onEdit?.("lesson_plan_meta.ai_declaration", v)}
               />
             </tbody>
           </table>
@@ -144,29 +222,35 @@ function ILAWViewer({ plan }: { plan: GeneratedDLPPlan; input?: LessonPlanInput 
       {/* Intentions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
+          <CardTitle className="text-base bg-slate-300 text-slate-900 py-2 px-4 rounded">
             INTENTIONS
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {intentions.framework_guidance_note && (
             <div>
-              <h4 className="text-sm italic mb-1 bg-blue-50 py-1 px-2 rounded text-muted-foreground">
+              <h4 className="text-sm italic mb-1 bg-slate-100 py-1 px-2 rounded text-muted-foreground">
                 {intentions.framework_guidance_note}
               </h4>
             </div>
           )}
           <div>
-            <h4 className="text-sm font-semibold mb-1 bg-blue-50 py-1 px-2 rounded">Learning Competency</h4>
-            <p className="text-sm whitespace-pre-wrap">{intentions.learning_competency}</p>
+            <h4 className="text-sm font-bold italic mb-1 bg-slate-100 py-1 px-2 rounded">Learning Competency</h4>
+            <p className="text-sm whitespace-pre-wrap">
+              <EditableText value={intentions.learning_competency} onEdit={(v) => onEdit?.("intentions.learning_competency", v)} />
+            </p>
           </div>
           <div>
-            <h4 className="text-sm font-semibold mb-1 bg-blue-50 py-1 px-2 rounded">Learning Objectives</h4>
-            <p className="text-sm whitespace-pre-wrap">{intentions.learning_objectives}</p>
+            <h4 className="text-sm font-bold italic mb-1 bg-slate-100 py-1 px-2 rounded">Learning Objectives</h4>
+            <p className="text-sm whitespace-pre-wrap">
+              <EditableText value={intentions.learning_objectives} onEdit={(v) => onEdit?.("intentions.learning_objectives", v)} />
+            </p>
           </div>
           <div>
-            <h4 className="text-sm font-semibold mb-1 bg-blue-50 py-1 px-2 rounded">Learners&apos; Context</h4>
-            <p className="text-sm whitespace-pre-wrap">{intentions.learners_context}</p>
+            <h4 className="text-sm font-bold italic mb-1 bg-slate-100 py-1 px-2 rounded">Learners&apos; Context</h4>
+            <p className="text-sm whitespace-pre-wrap">
+              <EditableText value={intentions.learners_context} onEdit={(v) => onEdit?.("intentions.learners_context", v)} />
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -174,48 +258,48 @@ function ILAWViewer({ plan }: { plan: GeneratedDLPPlan; input?: LessonPlanInput 
       {/* Learning Experience */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
+          <CardTitle className="text-base bg-slate-300 text-slate-900 py-2 px-4 rounded">
             LEARNING EXPERIENCE
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {learning_experience.framework_guidance_note && (
             <div>
-              <h4 className="text-sm italic mb-1 bg-blue-50 py-1 px-2 rounded text-muted-foreground">
+              <h4 className="text-sm italic mb-1 bg-slate-100 py-1 px-2 rounded text-muted-foreground">
                 {learning_experience.framework_guidance_note}
               </h4>
             </div>
           )}
-          <ProcedureStep label="Pre-Lesson" content={learning_experience.pre_lesson} />
+          <ProcedureStep label="Pre-Lesson" content={learning_experience.pre_lesson} onEdit={(v) => onEdit?.("learning_experience.pre_lesson", v)} />
           <Separator />
 
           {/* Flow Section */}
           <div>
-            <h4 className="text-sm font-semibold mb-2 text-primary">Flow</h4>
+            <h4 className="text-sm font-bold italic mb-2 text-slate-900">Flow</h4>
             <div className="space-y-3 ml-2 border-l-2 border-primary/20 pl-4">
-              <ProcedureStep label="ENGAGE (5 mins) — Hook & Well-being" content={flow.engage} />
+              <ProcedureStep label="ENGAGE (5 mins) — Hook & Well-being" content={flow.engage} onEdit={(v) => onEdit?.("learning_experience.flow.engage", v)} />
               <Separator />
-              <ProcedureStep label="EXPLORE & EXPLAIN / MODELING (I Do — 15 mins)" content={flow.explore_explain_modeling} />
+              <ProcedureStep label="EXPLORE & EXPLAIN / MODELING (I Do — 15 mins)" content={flow.explore_explain_modeling} onEdit={(v) => onEdit?.("learning_experience.flow.explore_explain_modeling", v)} />
               <Separator />
-              <ProcedureStep label="ELABORATE / GUIDED & COLLABORATIVE PRACTICE (We Do — 10 mins)" content={flow.elaborate_guided_practice} />
+              <ProcedureStep label="ELABORATE / GUIDED & COLLABORATIVE PRACTICE (We Do — 10 mins)" content={flow.elaborate_guided_practice} onEdit={(v) => onEdit?.("learning_experience.flow.elaborate_guided_practice", v)} />
               <Separator />
-              <ProcedureStep label="EVALUATE / INDEPENDENT PRACTICE (You Do — 10 mins)" content={flow.evaluate_independent_practice} />
+              <ProcedureStep label="EVALUATE / INDEPENDENT PRACTICE (You Do — 10 mins)" content={flow.evaluate_independent_practice} onEdit={(v) => onEdit?.("learning_experience.flow.evaluate_independent_practice", v)} />
               <Separator />
-              <ProcedureStep label="REFLECTION & CLOSURE (5 mins)" content={flow.reflection_closure} />
+              <ProcedureStep label="REFLECTION & CLOSURE (5 mins)" content={flow.reflection_closure} onEdit={(v) => onEdit?.("learning_experience.flow.reflection_closure", v)} />
             </div>
           </div>
 
           <Separator />
-          <ProcedureStep label="Learning Resources" content={learning_experience.learning_resources} />
+          <ProcedureStep label="Learning Resources" content={learning_experience.learning_resources} onEdit={(v) => onEdit?.("learning_experience.learning_resources", v)} />
           <Separator />
-          <ProcedureStep label="Opportunities for Integration" content={learning_experience.opportunities_for_integration} />
+          <ProcedureStep label="Opportunities for Integration" content={learning_experience.opportunities_for_integration} onEdit={(v) => onEdit?.("learning_experience.opportunities_for_integration", v)} />
         </CardContent>
       </Card>
 
       {/* Assessment */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
+          <CardTitle className="text-base bg-slate-300 text-slate-900 py-2 px-4 rounded">
             ASSESSMENT
           </CardTitle>
         </CardHeader>
@@ -223,27 +307,30 @@ function ILAWViewer({ plan }: { plan: GeneratedDLPPlan; input?: LessonPlanInput 
           <div className="space-y-3">
             {assessment.framework_guidance_note && (
               <div>
-                <h4 className="text-sm italic mb-1 bg-blue-50 py-1 px-2 rounded text-muted-foreground">
+                <h4 className="text-sm italic mb-1 bg-slate-100 py-1 px-2 rounded text-muted-foreground">
                   {assessment.framework_guidance_note}
                 </h4>
               </div>
             )}
             <div>
-              <h4 className="text-sm font-semibold mb-2 text-primary">Formative Assessment — Targeted Assessment Tasks</h4>
+              <h4 className="text-sm font-bold italic mb-2 text-slate-900">Formative Assessment — Targeted Assessment Tasks</h4>
               <div className="space-y-3 ml-2">
                 <ProcedureStep
                   label="1. Frustration Level (25%)"
                   content={formative.frustration}
+                  onEdit={(v) => onEdit?.("assessment.formative_assessment.frustration", v)}
                 />
                 <Separator />
                 <ProcedureStep
                   label="2. Instructional Level (50%)"
                   content={formative.instructional}
+                  onEdit={(v) => onEdit?.("assessment.formative_assessment.instructional", v)}
                 />
                 <Separator />
                 <ProcedureStep
                   label="3. Independent Level / HOTS (25%)"
                   content={formative.independent}
+                  onEdit={(v) => onEdit?.("assessment.formative_assessment.independent", v)}
                 />
               </div>
             </div>
@@ -254,35 +341,35 @@ function ILAWViewer({ plan }: { plan: GeneratedDLPPlan; input?: LessonPlanInput 
       {/* Ways Forward */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
+          <CardTitle className="text-base bg-slate-300 text-slate-900 py-2 px-4 rounded">
             WAYS FORWARD
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {ways_forward.framework_guidance_note && (
             <div>
-              <h4 className="text-sm italic mb-1 bg-blue-50 py-1 px-2 rounded text-muted-foreground">
+              <h4 className="text-sm italic mb-1 bg-slate-100 py-1 px-2 rounded text-muted-foreground">
                 {ways_forward.framework_guidance_note}
               </h4>
             </div>
           )}
           <div>
-            <h4 className="text-sm font-semibold mb-2 text-primary">Extended Learning Opportunities</h4>
+            <h4 className="text-sm font-bold italic mb-2 text-slate-900">Extended Learning Opportunities</h4>
             <div className="space-y-3 ml-2">
-              <ProcedureStep label="Advanced Readers (Independent Level — 25%)" content={extended.advanced} />
+              <ProcedureStep label="Advanced Readers (Independent Level — 25%)" content={extended.advanced} onEdit={(v) => onEdit?.("ways_forward.extended_learning.advanced", v)} />
               <Separator />
-              <ProcedureStep label="Struggling Readers (Frustration Level — 25%)" content={extended.struggling} />
+              <ProcedureStep label="Struggling Readers (Frustration Level — 25%)" content={extended.struggling} onEdit={(v) => onEdit?.("ways_forward.extended_learning.struggling", v)} />
             </div>
           </div>
           <Separator />
-          <ProcedureStep label="Reflections (Teacher Reflective Prompts & Instructional Coach Items)" content={ways_forward.reflections} />
+          <ProcedureStep label="Reflections (Teacher Reflective Prompts & Instructional Coach Items)" content={ways_forward.reflections} onEdit={(v) => onEdit?.("ways_forward.reflections", v)} />
         </CardContent>
       </Card>
 
       {/* Signatories */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
+          <CardTitle className="text-base bg-slate-300 text-slate-900 py-2 px-4 rounded">
             SIGNATORIES
           </CardTitle>
         </CardHeader>

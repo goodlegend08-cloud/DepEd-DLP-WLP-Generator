@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -16,6 +16,14 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +36,9 @@ export default function LoginPage() {
   useEffect(() => {
     const errorParam = searchParams.get("error");
     if (errorParam) {
-      setError(ERROR_MESSAGES[errorParam] || "An error occurred. Please try again.");
+      queueMicrotask(() => {
+        setError(ERROR_MESSAGES[errorParam] || "An error occurred. Please try again.");
+      });
     }
   }, [searchParams]);
 

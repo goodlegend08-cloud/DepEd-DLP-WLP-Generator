@@ -1,19 +1,25 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export interface DBOWEntry {
   term: string;
   contentArea: string;
   weekRange: string;
+  weekNumber: string;
   competency: string;
   day: string;
+  dayNumber: string;
   objective: string;
   daysTaught: string;
+  contentStandard: string;
+  performanceStandard: string;
+  suggestedActivity: string;
   date: string;
   specificDate?: string;
 }
@@ -32,12 +38,60 @@ export interface DBOWMetadata {
   learningArea: string;
 }
 
-interface DBOWUploadProps {
-  onSelection: (entry: DBOWEntry, rawText: string, metadata: DBOWMetadata) => void;
-  selectedEntry: DBOWEntry | null;
+const STORAGE_KEY_PREFIX = "dbow-cached-data";
+
+function storageKeyForUser(userId: string | null): string {
+  return userId ? `${STORAGE_KEY_PREFIX}:${userId}` : `${STORAGE_KEY_PREFIX}:anon`;
 }
 
-export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
+function loadCachedData(userId: string | null): DBOWData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(storageKeyForUser(userId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && Array.isArray(parsed.entries) && typeof parsed.rawText === "string") {
+      return parsed as DBOWData;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedData(userId: string | null, data: DBOWData | null) {
+  if (typeof window === "undefined") return;
+  try {
+    const key = storageKeyForUser(userId);
+    if (data) {
+      window.localStorage.setItem(key, JSON.stringify(data));
+    } else {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    // localStorage may be unavailable; persistence is a nice-to-have
+  }
+}
+
+interface DBOWUploadProps {
+  onSelection: (entry: DBOWEntry, rawText: string, metadata: DBOWMetadata) => void;
+  onWeekSelection?: (entries: DBOWEntry[], rawText: string, metadata: DBOWMetadata) => void;
+  selectedEntry: DBOWEntry | null;
+  selectedWeekEntries?: DBOWEntry[];
+  onParsed?: (data: DBOWData) => void;
+  selectionMode?: "day" | "week";
+}
+
+function sameEntryKey(a: DBOWEntry, b: DBOWEntry): boolean {
+  return (
+    (a.term || "") === (b.term || "") &&
+    (a.contentArea || "") === (b.contentArea || "") &&
+    (a.weekNumber || "") === (b.weekNumber || "") &&
+    (a.day || "") === (b.day || "")
+  );
+}
+
+export function DBOWUpload({ onSelection, onWeekSelection, selectedEntry, selectedWeekEntries, onParsed, selectionMode = "day" }: DBOWUploadProps) {
   const [dbowData, setDbowData] = useState<DBOWData | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,10 +99,41 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
   const [filterContent, setFilterContent] = useState<string>("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Resolve the signed-in user so the DBOW cache is scoped per account,
+  // preventing one teacher's DBOW leaking to another account on the browser.
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => {
+        if (!cancelled) setUserId(data?.user?.id ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setUserId(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Restore previously uploaded DBOW after hydration to avoid SSR mismatch.
+  // Delayed via microtask so the effect doesn't synchronously set state.
+  useEffect(() => {
+    const cached = loadCachedData(userId);
+    if (cached) {
+      queueMicrotask(() => {
+        setDbowData(cached);
+        if (cached.terms.length > 0) {
+          setExpandedTerm(cached.terms[0]);
+        }
+      });
+    }
+  }, [userId]);
+
   const handleUpload = useCallback(async (file: File) => {
     setUploading(true);
     setError(null);
-
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -65,6 +150,8 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
 
       const data: DBOWData = await response.json();
       setDbowData(data);
+      saveCachedData(userId, data);
+      onParsed?.(data);
 
       // Auto-expand first term
       if (data.terms.length > 0) {
@@ -75,7 +162,7 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
     } finally {
       setUploading(false);
     }
-  }, []);
+  }, [onParsed]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,6 +170,7 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
       if (file) {
         handleUpload(file);
       }
+      e.target.value = "";
     },
     [handleUpload]
   );
@@ -91,7 +179,13 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
     (e: React.DragEvent) => {
       e.preventDefault();
       const file = e.dataTransfer.files[0];
-      if (file && file.type === "application/pdf") {
+      if (
+        file &&
+        (file.type === "application/pdf" ||
+          file.type ===
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+          file.name.toLowerCase().endsWith(".docx"))
+      ) {
         handleUpload(file);
       }
     },
@@ -133,6 +227,15 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Hidden file input (kept mounted so Replace/Clear can re-trigger it) */}
+<input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.docx"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
         {/* Upload Area */}
         {!dbowData && (
           <div
@@ -141,21 +244,14 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
             onClick={() => fileInputRef.current?.click()}
             className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
           >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handleFileChange}
-              className="hidden"
-            />
             <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
               {uploading
-                ? "Parsing PDF..."
-                : "Drop your DBOW PDF here or click to browse"}
+                ? "Parsing file..."
+                : "Drop your DBOW PDF or Word document here or click to browse"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Accepts .pdf files (DepEd DBOW)
+              Accepts .pdf or .docx files (DepEd DBOW)
             </p>
           </div>
         )}
@@ -177,6 +273,10 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
                 <Badge variant="outline">
                   {dbowData.terms.length} term(s)
                 </Badge>
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                  <Check className="h-3 w-3 mr-1" />
+                  Saved on this device
+                </Badge>
               </div>
               <div className="flex gap-2">
                 <select
@@ -197,9 +297,17 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
                   onClick={() => {
                     setDbowData(null);
                     setFilterContent("all");
+                    saveCachedData(userId, null);
                   }}
                 >
                   Clear
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Replace
                 </Button>
               </div>
             </div>
@@ -240,20 +348,64 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
                     {isExpanded && (
                       <div className="border-t p-2 space-y-1">
                         {group.entries.map((entry, idx) => {
-                          const isSelected =
-                            selectedEntry?.day === entry.day &&
-                            selectedEntry?.objective === entry.objective;
+                          const isSelected = selectionMode === "week"
+                            ? !!selectedWeekEntries?.some((se) => sameEntryKey(se, entry))
+                            : !!selectedEntry && sameEntryKey(selectedEntry, entry);
+
+                          const handleSelect = () => {
+                            const metadata = {
+                              gradeLevel: dbowData.gradeLevel,
+                              learningArea: dbowData.learningArea,
+                            };
+
+                            if (selectionMode === "week" && onWeekSelection) {
+                              const isSelectedEntry = !!selectedWeekEntries?.some((se) =>
+                                sameEntryKey(se, entry)
+                              );
+
+                              if (isSelectedEntry) {
+                                // Unclicking: remove just this topic, keep the rest.
+                                onWeekSelection(
+                                  (selectedWeekEntries || []).filter(
+                                    (se) => !sameEntryKey(se, entry)
+                                  ),
+                                  dbowData.rawText,
+                                  metadata
+                                );
+                              } else {
+                                // Anchor + auto-select the next 4 consecutive topics,
+                                // ordered by day number across the WHOLE term (not limited
+                                // to the current content-area dropdown group).
+                                const dayNum = (e: DBOWEntry) =>
+                                  parseInt(
+                                    (e.dayNumber || e.day || "").replace(/\D/g, "") || "0",
+                                    10
+                                  ) || 0;
+
+                                const termList = dbowData.entries
+                                  .filter((e) => e.term === entry.term)
+                                  .slice()
+                                  .sort((a, b) => dayNum(a) - dayNum(b));
+                                const anchorIndex = termList.findIndex((e) =>
+                                  sameEntryKey(e, entry)
+                                );
+                                const suggested =
+                                  anchorIndex >= 0
+                                    ? termList.slice(anchorIndex, anchorIndex + 5)
+                                    : [entry];
+                                onWeekSelection(suggested, dbowData.rawText, metadata);
+                              }
+                              return;
+                            }
+
+                            onSelection(entry, dbowData.rawText, metadata);
+                          };
 
                           return (
                             <button
                               key={idx}
                               type="button"
-                              onClick={() =>
-                                onSelection(entry, dbowData.rawText, {
-                                  gradeLevel: dbowData.gradeLevel,
-                                  learningArea: dbowData.learningArea,
-                                })
-                              }
+                              onClick={handleSelect}
                               className={`w-full text-left p-2 rounded text-sm flex items-start gap-2 transition-colors ${
                                 isSelected
                                   ? "bg-primary/10 border border-primary"
@@ -271,6 +423,11 @@ export function DBOWUpload({ onSelection, selectedEntry }: DBOWUploadProps) {
                                   >
                                     {entry.day}
                                   </Badge>
+                                  {entry.dayNumber && (
+                                    <span className="text-xs text-muted-foreground">
+                                      DBOW Day {entry.dayNumber}
+                                    </span>
+                                  )}
                                   {entry.date && (
                                     <span className="text-xs text-muted-foreground">
                                       {entry.date}

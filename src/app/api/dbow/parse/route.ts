@@ -1,14 +1,26 @@
 import { NextResponse } from "next/server";
 import PDFParser from "pdf2json";
+import PizZip from "pizzip";
 
+/**
+ * Structured DBOW row, per the CALENDAR & DBOW MAPPING spec:
+ * [Term, Week_Number, Day_Number, Content_Standard, Performance_Standard,
+ *  Learning_Competency, Daily_Objective, Suggested_Activity]
+ * plus context fields used by the Date Engine / prompt injection.
+ */
 export interface DBOWEntry {
   term: string;
   contentArea: string;
   weekRange: string;
+  weekNumber: string;
   competency: string;
   day: string;
+  dayNumber: string;
   objective: string;
   daysTaught: string;
+  contentStandard: string;
+  performanceStandard: string;
+  suggestedActivity: string;
   date: string;
   specificDate?: string;
 }
@@ -20,6 +32,48 @@ export interface DBOWData {
   contentAreas: string[];
   gradeLevel: string;
   learningArea: string;
+}
+
+/** Extract plain text from a .docx buffer (word/document.xml). */
+function extractTextFromDocx(buffer: Buffer): string {
+  const zip = new PizZip(buffer);
+  const docXml = zip.files["word/document.xml"]?.asText();
+  if (!docXml) return "";
+
+  const parts: string[] = [];
+
+  // Table rows: join cell texts so DBOW columns remain readable.
+  const rowRegex = /<w:tr\b[^>]*>[\s\S]*?<\/w:tr>/gi;
+  const rows = docXml.match(rowRegex);
+  if (rows) {
+    for (const row of rows) {
+      const rowCells = [...row.matchAll(/<w:tc\b[^>]*>[\s\S]*?<\/w:tc>/gi)]
+        .map((c) =>
+          (c[0].match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [])
+            .map((m) => m.replace(/<[^>]+>/g, ""))
+            .join(" ")
+            .trim()
+        )
+        .filter(Boolean);
+      if (rowCells.length > 0) {
+        parts.push(rowCells.join("   "));
+      }
+    }
+  }
+
+  // Paragraph text (non-table content)
+  const paraRegex = /<w:p\b[^>]*>[\s\S]*?<\/w:p>/gi;
+  let paraMatch: RegExpExecArray | null;
+  const paraTexts: string[] = [];
+  while ((paraMatch = paraRegex.exec(docXml)) !== null) {
+    const text = (paraMatch[0].match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [])
+      .map((m) => m.replace(/<[^>]+>/g, ""))
+      .join(" ")
+      .trim();
+    if (text) paraTexts.push(text);
+  }
+
+  return [...parts, ...paraTexts].join("\n");
 }
 
 function extractTextFromPDF(pdfData: any): string {
@@ -86,6 +140,13 @@ function computeSpecificDate(dateRange: string, dayNumber: string): string {
   const dayInWeek = parseInt(dayNumber.replace(/\D/g, ""), 10);
   if (isNaN(dayInWeek) || dayInWeek < 1 || dayInWeek > 5) return "";
 
+  const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  const fmt = (d: Date) =>
+    `${MONTHS[d.getMonth()]} ${String(d.getDate()).padStart(2, "0")}, ${d.getFullYear()}`;
+
   // Try range format first: "July 23-27, 2026"
   const rangeMatch = dateRange.match(
     new RegExp(`(${monthNames})\\s+(\\d{1,2})\\s*[-–]\\s*(\\d{1,2}),?\\s*(\\d{4})`, "i")
@@ -107,11 +168,7 @@ function computeSpecificDate(dateRange: string, dayNumber: string): string {
     const specificDate = new Date(monday);
     specificDate.setDate(monday.getDate() + dayInWeek - 1);
 
-    const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December",
-    ];
-    return `${months[specificDate.getMonth()]} ${specificDate.getDate()}, ${specificDate.getFullYear()}`;
+    return fmt(specificDate);
   }
 
   // Try single date format: "July 24, 2026"
@@ -135,11 +192,7 @@ function computeSpecificDate(dateRange: string, dayNumber: string): string {
     const specificDate = new Date(monday);
     specificDate.setDate(monday.getDate() + dayInWeek - 1);
 
-    const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December",
-    ];
-    return `${months[specificDate.getMonth()]} ${specificDate.getDate()}, ${specificDate.getFullYear()}`;
+    return fmt(specificDate);
   }
 
   return "";
@@ -170,171 +223,203 @@ function formatDate(date: Date): string {
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
   ];
-  return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  return `${months[date.getMonth()]} ${String(date.getDate()).padStart(2, "0")}, ${date.getFullYear()}`;
 }
 
+/** Split normalized text into term sections with their boundaries. */
+function splitTerms(text: string): { name: string; start: number; end: number }[] {
+  const terms: { name: string; start: number; end: number }[] = [];
+  for (const tname of ["FIRST TERM", "SECOND TERM", "THIRD TERM"]) {
+    const idx = text.toUpperCase().indexOf(tname);
+    if (idx >= 0) terms.push({ name: tname, start: idx, end: text.length });
+  }
+  terms.sort((a, b) => a.start - b.start);
+  for (let i = 0; i < terms.length; i++) {
+    terms[i].end = i + 1 < terms.length ? terms[i + 1].start : text.length;
+  }
+  return terms;
+}
+
+/** Extract term-level sections: CONTENT STANDARD / PERFORMANCE STANDARD / SUGGESTED ACTIVITIES. */
+function extractTermSections(
+  termText: string
+): { contentStandard: string; performanceStandard: string; suggestedActivity: string } {
+  const up = termText.toUpperCase();
+  const cs = up.indexOf("CONTENT STANDARD");
+  const ps = up.indexOf("PERFORMANCE STANDARD");
+  const sa = up.indexOf("SUGGESTED ACTIVITIES");
+  const spt = up.indexOf("SUGGESTED PERFORMANCE TASK");
+
+  const clean = (s: string) => s.replace(/\s+/g, " ").trim();
+
+  const contentStandard = cs >= 0 && ps > cs ? clean(termText.substring(cs + 16, ps)) : "";
+  const performanceStandard = ps >= 0 && sa > ps ? clean(termText.substring(ps + 20, sa)) : "";
+  const suggestedActivity =
+    sa >= 0 && spt > sa ? clean(termText.substring(sa + 20, spt)) : "";
+
+  return { contentStandard, performanceStandard, suggestedActivity };
+}
+
+/** Verbs that commonly start a DBOW learning competency sentence. */
+const COMPETENCY_START_VERBS =
+  "Identify|Describe|Explain|Compare|Demonstrate|Investigate|Observe|Differentiate|Draw|Participate|Gather|Analyze|Construct|Predict|Arrange|Distinguish|Recognize|Determine|Summarize|Trace|Cite|Collaborate|Read|Use|Apply|Interpret|Classify|Solve|Compute|Develop|Create|Design|Evaluate|Present|Connect|Relate|Translate|Convert|Perform|Measure|Record|Tabulate|Graph|Infer|Formulate|Propose|Illustrate|Model|Simulate|Carry|State|List|Define|Outline|Show|Justify|Explain|Discuss";
+
+/** Content area patterns to detect topic headers in DBOW text. */
+const contentAreaPatterns = [
+  /Newton's\s+Laws,\s*Force\s*,?\s*and\s+Energy/i,
+  /Electric\s+Current,\s*Electrical\s+Circuits[^,.]*?(?:and\s+Electromagneti\s*c\s*Waves)/i,
+  /Electric\s+Current[^,.]*/i,
+  /Plate\s+Boundaries/i,
+  /DNA\s+Replication/i,
+  /Biodiversity/i,
+  /Types\s+of\s+Ecosystems/i,
+  /Chemical\s+Bonding[^,.]*/i,
+  /Valid\s+and\s+Reliable[^,.]*/i,
+  /Origin\s+of\s+the\s+Solar\s+System/i,
+  /Space\s+Technologies/i,
+  /Electromagnetic\s+Spectrum/i,
+  /Scale,\s*Proportion,\s*and\s*Quantity/i,
+  /Structure\s+of\s+the\s+Earth/i,
+  /Geologic\s+Time/i,
+];
+
+/**
+ * Parse DBOW text into structured day entries.
+ * For each term it extracts Content Standard, Performance Standard, and
+ * Suggested Activities, then walks the "Day N:" rows tracking the current
+ * Learning Competency, Week_Number, and Day_Number.
+ */
 function parseDBOWEntries(text: string): DBOWEntry[] {
   const entries: DBOWEntry[] = [];
 
   // Normalize text: collapse multiple spaces, trim
   const normalized = text.replace(/[ \t]+/g, " ").trim();
 
-  // Track current context
+  const terms = splitTerms(normalized);
+
+  // Track current context (persisted across terms so fallbacks are stable)
   let currentContentArea = "";
   let currentWeekRange = "";
   let currentDateRange = "";
+  let currentCompetency = "";
 
-  // Detect term positions in the text
-  const termMatches = [
-    ...normalized.matchAll(/FIRST\s+TERM/gi),
-    ...normalized.matchAll(/SECOND\s+TERM/gi),
-    ...normalized.matchAll(/THIRD\s+TERM/gi),
-  ].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+  for (const term of terms) {
+    const termText = normalized.substring(term.start, term.end);
+    const { contentStandard, performanceStandard, suggestedActivity } =
+      extractTermSections(termText);
 
-  const termPositions: { index: number; term: string }[] = termMatches.map((m) => ({
-    index: m.index ?? 0,
-    term: m[0].toLowerCase().includes("first")
-      ? "First Term"
-      : m[0].toLowerCase().includes("second")
-        ? "Second Term"
-        : "Third Term",
-  }));
+    // Reset competency at each term boundary (competencies restart per term)
+    currentCompetency = "";
 
-  // Content area patterns to detect topic headers
-  const contentAreaPatterns = [
-    /Newton's\s+Laws,\s*Force\s*,?\s*and\s+Energy/i,
-    /Electric\s+Current,\s*Electrical\s+Circuits[^,.]*?(?:and\s+Electromagneti\s*c\s*Waves)/i,
-    /Electric\s+Current[^,.]*/i,
-    /Plate\s+Boundaries/i,
-    /DNA\s+Replication/i,
-    /Biodiversity/i,
-    /Types\s+of\s+Ecosystems/i,
-    /Chemical\s+Bonding[^,.]*/i,
-    /Valid\s+and\s+Reliable[^,.]*/i,
-    /Origin\s+of\s+the\s+Solar\s+System/i,
-    /Space\s+Technologies/i,
-    /Electromagnetic\s+Spectrum/i,
-  ];
+    // The table starts at the "LEARNING COMPETENCIES AND SPECIFIC OBJECTIVES" header
+    const tableHeaderIdx = termText.toUpperCase().indexOf("LEARNING COMPETENCIES");
+    const tableText = tableHeaderIdx >= 0 ? termText.substring(tableHeaderIdx) : termText;
 
-  // Split on Day entries - use a simpler approach
-  // Find all "Day N:" positions and extract text between them
-  const dayPositions: { index: number; dayNum: string }[] = [];
-  const dayHeaderRegex = /Day\s+(\d+(?:\s*[-–]\s*\d+)?)\s*:/gi;
-  let match;
-  while ((match = dayHeaderRegex.exec(normalized)) !== null) {
-    dayPositions.push({ index: match.index, dayNum: match[1].replace(/\s/g, "") });
-  }
+    // Find all "Day N:" positions within this term
+    const dayPositions: { index: number; dayNum: string }[] = [];
+    const dayHeaderRegex = /Day\s+(\d+(?:\s*[-–]\s*\d+)?)\s*:/gi;
+    let match: RegExpExecArray | null;
+    while ((match = dayHeaderRegex.exec(tableText)) !== null) {
+      dayPositions.push({ index: match.index, dayNum: match[1].replace(/\s/g, "") });
+    }
 
-  for (let i = 0; i < dayPositions.length; i++) {
-    const pos = dayPositions[i];
-    const nextPos = dayPositions[i + 1];
+    for (let i = 0; i < dayPositions.length; i++) {
+      const pos = dayPositions[i];
+      const nextPos = dayPositions[i + 1];
 
-    // Get text from after "Day N:" to before next "Day M:" or end
-    const startIdx = pos.index + pos.dayNum.length + 5; // skip "Day N:"
-    const endIdx = nextPos ? nextPos.index : normalized.length;
-    let chunk = normalized.substring(startIdx, endIdx).trim();
+      // Get text from after "Day N:" to before next "Day M:" or end
+      const startIdx = pos.index + pos.dayNum.length + 5; // skip "Day N:"
+      const endIdx = nextPos ? nextPos.index : tableText.length;
+      let chunk = tableText.substring(startIdx, endIdx).trim();
 
-    // Remove page header artifacts
-    chunk = chunk.replace(/Republic\s+of\s+the\s+Philippines\s*Department\s+of\s+Education/gi, "").trim();
+      // Remove page header artifacts
+      chunk = chunk.replace(/Republic\s+of\s+the\s+Philippines\s*Department\s+of\s+Education/gi, "").trim();
 
-    // The objective is the first sentence(s) up to the next competency or week marker
-    // Stop at competency-like text, week headers, content area headers, or day count numbers
-    // Competency text usually starts with verbs like "Identify", "Describe", etc. and is longer
-    // Day objectives are typically shorter sentences
-
-    // Split on patterns that indicate the end of the objective:
-    // - A number followed by "Day" (next entry)
-    // - Week markers
-    // - Content area headers
-    // - Competency-level text (longer sentences with teaching verbs before next day)
-
-    // Simple approach: take text up to the first period followed by a space and uppercase letter,
-    // or up to known markers
-    let objective = chunk;
-
-    // Try to cut at a natural sentence boundary before competency/week/content markers
-    const cutPatterns = [
-      /\.\s+(?:Identify|Describe|Explain|Compare|Demonstrate|Investigate|Observe|Differentiate|Draw|Participate|Gather|Analyze|Construct|Predict|Arrange|Distinguish|Recognize|Determine|Summarize|Trace|Cite|Collaborate|Read|Use|Apply|Interpret|Classify|Solve|Compute|Develop|Create|Design|Evaluate|Present|Connect|Relate|Translate|Convert|Perform|Measure|Record|Tabulate|Graph|Infer|Formulate|Propose|Illustrate|Model|Simulate)\b/i,
-      /\.\s+Week\s/i,
-      /\.\s+(?:Newton|Electric|Plate|DNA|Biodiversity|Types|Chemical|Valid|Origin|Space|Electromagnetic)/i,
-      /\s+\d+\s+Day\s/i, // "2 Day 3:" pattern
-    ];
-
-    // Find the earliest cut point
-    let earliestCut = objective.length;
-    for (const pattern of cutPatterns) {
-      const m = objective.match(pattern);
-      if (m && m.index !== undefined && m.index < earliestCut) {
-        // Include the period in the objective
-        earliestCut = m.index + 1;
+      // Determine the objective (first sentence up to next competency/week marker)
+      let objective = chunk;
+      const cutPatterns = [
+        new RegExp(`\\.\\s+(?:${COMPETENCY_START_VERBS})\\b`, "i"),
+        /\.\s+Week\s/i,
+        /\s+\d+\s+Day\s/i,
+      ];
+      let earliestCut = objective.length;
+      for (const pattern of cutPatterns) {
+        const m = objective.match(pattern);
+        if (m && m.index !== undefined && m.index < earliestCut) {
+          earliestCut = m.index + 1;
+        }
       }
-    }
+      objective = objective.substring(0, earliestCut).trim();
 
-    objective = objective.substring(0, earliestCut).trim();
-
-    // If the objective is very short, it might be just a number or empty
-    if (objective.length < 5) {
-      continue;
-    }
-
-    // Get context before this day entry for term/week/content detection
-    // Use a larger context window to capture date ranges that may appear earlier
-    const contextStart = Math.max(0, pos.index - 5000);
-    const context = normalized.substring(contextStart, pos.index);
-
-    // Extract date from context
-    const date = extractDateFromContext(context);
-
-    // Detect term
-    let term = "";
-    for (let j = termPositions.length - 1; j >= 0; j--) {
-      if (pos.index > termPositions[j].index) {
-        term = termPositions[j].term;
-        break;
+      if (objective.length < 5) {
+        continue;
       }
-    }
 
-    // Detect content area from context — use the LAST match closest to the day entry
-    let contentAreaFound = false;
-    for (const pattern of contentAreaPatterns) {
-      const matches = [...context.matchAll(new RegExp(pattern.source, "gi"))];
-      if (matches.length > 0) {
-        const lastMatch = matches[matches.length - 1];
-        currentContentArea = lastMatch[0].trim();
-        contentAreaFound = true;
-        break;
+      // The remainder after the objective is the NEXT learning competency
+      const remainder = chunk.substring(earliestCut).trim();
+      const remainderClean = remainder.replace(/\s*\d{1,3}\s*$/, "").trim();
+      if (remainderClean.length > 5) {
+        currentCompetency = remainderClean;
       }
+
+      // Context window before this day entry for term/week/content detection
+      const contextStart = Math.max(0, pos.index - 5000);
+      const context = tableText.substring(contextStart, pos.index);
+
+      // Extract date from context
+      const date = extractDateFromContext(context);
+
+      // Detect week range from context — use the LAST match closest to the day entry
+      const weekMatches = [...context.matchAll(/Week\s+(\d+(?:\s*[-–]\s*\d+)?)/gi)];
+      if (weekMatches.length > 0) {
+        const lastWeekMatch = weekMatches[weekMatches.length - 1];
+        currentWeekRange = `Week ${lastWeekMatch[1].replace(/\s/g, "")}`;
+      }
+
+      // Detect content area from context — use the LAST match closest to the day entry
+      for (const pattern of contentAreaPatterns) {
+        const matches = [...context.matchAll(new RegExp(pattern.source, "gi"))];
+        if (matches.length > 0) {
+          const lastMatch = matches[matches.length - 1];
+          currentContentArea = lastMatch[0].trim();
+          break;
+        }
+      }
+
+      // Detect date range from context
+      const dateFromContext = extractDateFromContext(context);
+      if (dateFromContext) {
+        currentDateRange = dateFromContext;
+      }
+
+      // Compute specific date from date range
+      const computedDate = currentDateRange ? computeSpecificDate(currentDateRange, pos.dayNum) : "";
+      const finalDate = computedDate || date;
+
+      const weekNum = parseInt(currentWeekRange.replace(/\D/g, ""), 10) || 0;
+      const dayNum = parseInt(pos.dayNum.replace(/\D/g, ""), 10) || 0;
+
+      // Days taught = number that precedes the day marker within this row (e.g., " 2 Day 1:")
+      const beforeDay = context.substring(Math.max(0, context.length - 40));
+      const daysTaughtMatch = beforeDay.match(/(\d{1,2})\s*$/);
+
+      entries.push({
+        term: term.name.replace("TERM", "Term").trim(),
+        contentArea: currentContentArea,
+        weekRange: currentWeekRange,
+        weekNumber: weekNum ? String(weekNum) : "",
+        competency: currentCompetency,
+        day: `Day ${pos.dayNum}`,
+        dayNumber: dayNum ? String(dayNum) : "",
+        objective,
+        daysTaught: daysTaughtMatch ? daysTaughtMatch[1] : "",
+        contentStandard,
+        performanceStandard,
+        suggestedActivity,
+        date: finalDate,
+        specificDate: finalDate,
+      });
     }
-
-    // Detect week range from context — use the LAST match closest to the day entry
-    const weekMatches = [...context.matchAll(/Week\s+(\d+(?:\s*[-–]\s*\d+)?)/gi)];
-    if (weekMatches.length > 0) {
-      const lastWeekMatch = weekMatches[weekMatches.length - 1];
-      currentWeekRange = `Week ${lastWeekMatch[1].replace(/\s/g, "")}`;
-    }
-
-    // Detect date range from context (e.g., "July 23-27, 2026" or "July 24, 2026")
-    const dateFromContext = extractDateFromContext(context);
-    if (dateFromContext) {
-      currentDateRange = dateFromContext;
-    }
-
-    // Compute specific date from date range
-    const computedDate = currentDateRange ? computeSpecificDate(currentDateRange, pos.dayNum) : "";
-    // Fall back to the extracted date if computation fails
-    const finalDate = computedDate || date;
-
-    entries.push({
-      term,
-      contentArea: currentContentArea,
-      weekRange: currentWeekRange,
-      competency: "",
-      day: `Day ${pos.dayNum}`,
-      objective,
-      daysTaught: "",
-      date: finalDate,
-      specificDate: finalDate,
-    });
   }
 
   return entries;
@@ -449,9 +534,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    if (file.type !== "application/pdf") {
+    const isPDF = file.type === "application/pdf";
+    const isDocx =
+      file.type ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      file.name.toLowerCase().endsWith(".docx");
+
+    if (!isPDF && !isDocx) {
       return NextResponse.json(
-        { error: "Only PDF files are accepted" },
+        { error: "Only PDF or Word (.docx) files are accepted" },
         { status: 400 }
       );
     }
@@ -459,16 +550,29 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Parse PDF using pdf2json
-    const pdfParser = new PDFParser();
+    let text: string;
 
-    const pdfData = await new Promise<any>((resolve, reject) => {
-      pdfParser.on("pdfParser_dataReady", resolve);
-      pdfParser.on("pdfParser_dataError", (error: any) => reject(error));
-      pdfParser.parseBuffer(buffer);
-    });
+    if (isDocx) {
+      text = extractTextFromDocx(buffer);
+      if (!text.trim()) {
+        return NextResponse.json(
+          { error: "Could not extract text from the Word document" },
+          { status: 422 }
+        );
+      }
+    } else {
+      // Parse PDF using pdf2json
+      const pdfParser = new PDFParser();
 
-    const text = extractTextFromPDF(pdfData);
+      const pdfData = await new Promise<any>((resolve, reject) => {
+        pdfParser.on("pdfParser_dataReady", resolve);
+        pdfParser.on("pdfParser_dataError", (error: any) => reject(error));
+        pdfParser.parseBuffer(buffer);
+      });
+
+      text = extractTextFromPDF(pdfData);
+    }
+
     const entries = parseDBOWEntries(text);
     const contentAreas = extractContentAreas(text);
     const { gradeLevel, learningArea } = extractGradeAndSubject(text);
@@ -489,7 +593,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("DBOW parse error:", error);
     return NextResponse.json(
-      { error: "Failed to parse PDF" },
+      { error: "Failed to parse the DBOW file" },
       { status: 500 }
     );
   }

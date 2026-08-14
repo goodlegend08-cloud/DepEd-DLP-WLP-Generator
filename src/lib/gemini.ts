@@ -5,6 +5,19 @@ const groq = new OpenAI({
   baseURL: "https://api.groq.com/openai/v1",
 });
 
+// Secondary Groq client used when the primary Groq API is at its limit.
+const groqBackup = new OpenAI({
+  apiKey: process.env.GROQ_BACKUP_API_KEY || "",
+  baseURL: "https://api.groq.com/openai/v1",
+});
+
+// Backup provider (xAI / Grok). Used when the primary API is at its limit
+// (HTTP 429 / rate_limit) so generation still succeeds.
+const grokBackup = new OpenAI({
+  apiKey: process.env.GROK_API_KEY || "",
+  baseURL: "https://api.x.ai/v1",
+});
+
 const MODEL_NAME = "llama-3.3-70b-versatile";
 
 // Rate limiting: max 3 requests per minute per user
@@ -43,48 +56,106 @@ setInterval(() => {
   }
 }, 300_000);
 
-export async function generateLessonPlan(
-  systemPrompt: string,
-  userPrompt: string,
+export interface ChatMessage {
+  role: "system" | "user";
+  content: string;
+}
+
+export async function generateFromPayload(
+  payload: {
+    model: string;
+    temperature?: number;
+    messages: ChatMessage[];
+  },
   userId?: string
 ): Promise<string> {
   if (userId) {
     checkRateLimit(userId);
   }
 
-  const maxRetries = 2;
+  const isRateLimitError = (error: unknown): boolean => {
+    const message = error instanceof Error ? error.message : String(error);
+    return (
+      message.includes("429") ||
+      message.includes("rate_limit") ||
+      message.includes("RESOURCE_EXHAUSTED")
+    );
+  };
+
+  const providers: { name: string; client: OpenAI; model?: string }[] = [];
+  if (process.env.GROQ_API_KEY) {
+    providers.push({ name: "groq", client: groq });
+  }
+  if (process.env.GROQ_BACKUP_API_KEY) {
+    providers.push({ name: "groq-backup", client: groqBackup });
+  }
+  if (process.env.GROK_API_KEY) {
+    providers.push({
+      name: "grok-backup",
+      client: grokBackup,
+      model: process.env.GROK_MODEL || "grok-beta",
+    });
+  }
+  if (providers.length === 0) {
+    throw new Error(
+      "No AI API key configured. Set GROQ_API_KEY (primary), GROQ_BACKUP_API_KEY, or GROK_API_KEY."
+    );
+  }
+
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const result = await groq.chat.completions.create({
-        model: MODEL_NAME,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.7,
-        top_p: 0.9,
-        max_tokens: 4096,
-      });
+  for (const provider of providers) {
+    const maxRetries = 2;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const result = await provider.client.chat.completions.create({
+          model: provider.model || payload.model,
+          messages: payload.messages,
+          temperature: payload.temperature ?? 0.7,
+          top_p: 0.9,
+          max_tokens: 4096,
+        });
 
-      return result.choices[0].message.content ?? "";
-    } catch (error) {
-      lastError = error as Error;
-      const isRateLimit =
-        lastError.message.includes("429") ||
-        lastError.message.includes("rate_limit") ||
-        lastError.message.includes("RESOURCE_EXHAUSTED");
+        return result.choices[0].message.content ?? "";
+      } catch (error) {
+        lastError = error as Error;
 
-      if (isRateLimit && attempt < maxRetries - 1) {
-        const delay = Math.pow(2, attempt + 1) * 5000;
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
+        if (isRateLimitError(error) && attempt < maxRetries - 1) {
+          const delay = Math.pow(2, attempt + 1) * 5000;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+
+        // Non-retryable failure on this provider. Fall through to the next
+        // provider if this was a rate-limit (the primary may be at its cap).
+        if (isRateLimitError(error)) {
+          break;
+        }
+        throw lastError;
       }
-
-      throw lastError;
     }
   }
 
-  throw lastError || new Error("Failed to generate lesson plan after retries");
+  throw (
+    lastError ||
+    new Error("Failed to generate lesson plan after retries on all providers")
+  );
+}
+
+export async function generateLessonPlan(
+  systemPrompt: string,
+  userPrompt: string,
+  userId?: string
+): Promise<string> {
+  return generateFromPayload(
+    {
+      model: MODEL_NAME,
+      temperature: 0.7,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    },
+    userId
+  );
 }

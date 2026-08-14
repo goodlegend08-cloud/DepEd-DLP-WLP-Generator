@@ -384,6 +384,39 @@ export async function buildWLPDocx(
     friday: "FRIDAY",
   };
 
+  /** Flatten a structured activities object into a readable string. */
+  const flattenActivities = (value: unknown): string => {
+    if (value == null) return "";
+    if (typeof value === "string") return value.trim();
+    if (Array.isArray(value)) return value.map((v) => flattenActivities(v)).filter(Boolean).join("\n");
+    if (typeof value === "object") {
+      const lines: string[] = [];
+      const collect = (obj: Record<string, unknown>, depth: number) => {
+        for (const [key, val] of Object.entries(obj)) {
+          if (val == null) continue;
+          if (typeof val === "string") lines.push(`• ${key}: ${val.trim()}`);
+          else if (typeof val === "object") { if (depth < 2) collect(val as Record<string, unknown>, depth + 1); }
+          else lines.push(`• ${key}: ${String(val)}`);
+        }
+      };
+      collect(value as Record<string, unknown>, 0);
+      return lines.join("\n");
+    }
+    return String(value ?? "");
+  };
+
+  /** Normalize a day entry into a string-activities DayPlan. */
+  const normalizeDay = (day: string, rawDay: unknown): { day: string; date: string; activities: string } => {
+    if (!rawDay || typeof rawDay !== "object") return { day, date: "", activities: "" };
+    const obj = rawDay as Record<string, unknown>;
+    const activitiesValue = typeof obj.activities === "string" || obj.activities == null ? obj.activities : obj.activities ?? obj;
+    return {
+      day: typeof obj.day === "string" ? obj.day : day,
+      date: typeof obj.date === "string" ? obj.date : "",
+      activities: flattenActivities(activitiesValue),
+    };
+  };
+
   const doc = new Document({
     creator: "DepEd WLP Generator",
     title: `WLP - ${lessonTitle}`,
@@ -432,9 +465,9 @@ export async function buildWLPDocx(
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               sectionRow("WEEKLY OBJECTIVES & COMPETENCIES"),
-              kvRow("Weekly Competencies", plan.weeklyCompetencies),
-              kvRow("Weekly Objectives", plan.weeklyObjectives),
-              kvRow("Weekly Content Overview", plan.weeklyContent),
+              kvRow("Weekly Competencies", flattenActivities(plan.weeklyCompetencies)),
+              kvRow("Weekly Objectives", flattenActivities(plan.weeklyObjectives)),
+              kvRow("Weekly Content Overview", flattenActivities(plan.weeklyContent)),
             ],
           }),
 
@@ -442,7 +475,7 @@ export async function buildWLPDocx(
 
           // ========== DAILY PLANS ==========
           ...DAYS.flatMap((day) => {
-            const dayPlan = plan[day];
+            const dayPlan = normalizeDay(day, plan[day]);
             return [
               new Table({
                 width: { size: 100, type: WidthType.PERCENTAGE },
@@ -460,7 +493,7 @@ export async function buildWLPDocx(
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               sectionRow("LEARNING RESOURCES"),
-              fullRow(plan.learningResources),
+              fullRow(flattenActivities(plan.learningResources)),
             ],
           }),
 
@@ -471,7 +504,7 @@ export async function buildWLPDocx(
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               sectionRow("REMARKS & INTEGRATION"),
-              fullRow(plan.remarks),
+              fullRow(flattenActivities(plan.remarks)),
             ],
           }),
 
@@ -482,7 +515,7 @@ export async function buildWLPDocx(
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               sectionRow("TEACHER REFLECTION"),
-              fullRow(plan.reflection),
+              fullRow(flattenActivities(plan.reflection)),
             ],
           }),
 

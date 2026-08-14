@@ -258,6 +258,80 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
+// ============================================================
+// TEMPLATE STRUCTURE EXTRACTION (for feeding layout to the LLM)
+// ============================================================
+
+/**
+ * Extract a plain-text description of a template's layout so it can be
+ * fed to Grok as {{EXTRACTED_TEMPLATE_TEXT_OR_STRUCTURE}}.
+ * Includes table rows (label -> placeholder/value), placeholder tags,
+ * and any standalone headings found in the document.
+ */
+export async function extractTemplateStructure(docxBuffer: Buffer): Promise<string> {
+  const zip = new PizZip(docxBuffer);
+  const docXml = zip.files["word/document.xml"]?.asText();
+  if (!docXml) return "";
+
+  const lines: string[] = [];
+  const placeholders = new Set<string>();
+
+  // Collect all {{...}} placeholder tags
+  const tagRegex = /\{\{([^}]+)\}\}/g;
+  let tagMatch: RegExpExecArray | null;
+  while ((tagMatch = tagRegex.exec(docXml)) !== null) {
+    placeholders.add(tagMatch[1].trim());
+  }
+
+  // Table rows: first cell = label, subsequent cells = value/placeholder
+  const tableRowRegex = /<w:tr\b[^>]*>[\s\S]*?<\/w:tr>/gi;
+  let rowMatch: RegExpExecArray | null;
+  while ((rowMatch = tableRowRegex.exec(docXml)) !== null) {
+    const row = rowMatch[0];
+    const cellRegex = /<w:tc\b[^>]*>[\s\S]*?<\/w:tc>/gi;
+    const cells: string[] = [];
+    let cellMatch: RegExpExecArray | null;
+    while ((cellMatch = cellRegex.exec(row)) !== null) {
+      cells.push(extractCellText(cellMatch[0]));
+    }
+    if (cells.length >= 1) {
+      const first = cells[0].trim();
+      if (first) {
+        const rest = cells.slice(1).map((c) => c.trim()).filter(Boolean);
+        lines.push(
+          `- ${first}${rest.length ? ` : ${rest.join(" | ")}` : ""}`
+        );
+      }
+    }
+  }
+
+  // Standalone heading paragraphs (styles Heading1-6, or bold large text)
+  const paraRegex = /<w:p\b[^>]*>[\s\S]*?<\/w:p>/gi;
+  let paraMatch: RegExpExecArray | null;
+  const seenParas = new Set<string>();
+  while ((paraMatch = paraRegex.exec(docXml)) !== null) {
+    const para = paraMatch[0];
+    const isHeading = /Heading\s*[1-6]|pStyle[^>]*>[^<]*Heading/i.test(para);
+    const text = extractCellText(para).trim();
+    if (isHeading && text && !seenParas.has(text) && !text.includes("{{")) {
+      seenParas.add(text);
+      lines.push(`# ${text}`);
+    }
+  }
+
+  const sections = [
+    "TEMPLATE STRUCTURE:",
+    ...lines,
+  ];
+
+  if (placeholders.size > 0) {
+    sections.push("", `PLACEHOLDER TAGS (fill these with the corresponding content):`);
+    sections.push(Array.from(placeholders).sort().join(", "));
+  }
+
+  return sections.join("\n");
+}
+
 /** Find the label mapping for a given cell text, or null if no match */
 function findLabelMapping(cellText: string): LabelMapping | null {
   for (const mapping of LABEL_MAPPINGS) {

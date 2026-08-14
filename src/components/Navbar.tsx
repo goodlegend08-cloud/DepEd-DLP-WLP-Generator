@@ -81,6 +81,11 @@ export function Navbar() {
                 {t("generate")}
               </Button>
             </Link>
+            <Link href="/scheduler">
+              <Button variant={pathname === "/scheduler" ? "secondary" : "ghost"} size="sm">
+                DBOW Dates
+              </Button>
+            </Link>
           </nav>
         )}
 

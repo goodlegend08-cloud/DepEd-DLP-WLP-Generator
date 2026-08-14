@@ -39,7 +39,7 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -50,8 +50,18 @@ export default function SignupPage() {
     });
 
     if (authError) {
-      setError(authError.message);
+      setError(
+        authError.message ||
+          "Sign up failed. Please check your email and try again, or contact your administrator."
+      );
       setLoading(false);
+      return;
+    }
+
+    // If email confirmation is disabled, the session is created immediately.
+    if (data.session) {
+      router.replace("/");
+      router.refresh();
       return;
     }
 

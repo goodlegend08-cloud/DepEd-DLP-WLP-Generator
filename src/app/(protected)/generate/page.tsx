@@ -20,6 +20,7 @@ export default function GeneratePage() {
   const [downloading, setDownloading] = useState(false);
   const [templateDownloading, setTemplateDownloading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { t } = useI18n();
 
   const handleGenerated = (plan: GeneratedLessonPlan | GeneratedDLPPlan | WeeklyLessonPlan, input: LessonPlanInput) => {
@@ -27,6 +28,27 @@ export default function GeneratePage() {
     setCurrentInput(input);
     setCurrentPlanType(input.planType || "dlp");
     setSaved(false);
+  };
+
+  /** Update a nested field of the generated plan via a dot-path key. */
+  const handleEditPlan = (key: string, value: string) => {
+    setGeneratedPlan((prev) => {
+      if (!prev) return prev;
+      const clone = structuredClone(prev as unknown) as Record<string, unknown>;
+      const parts = key.split(".");
+      let target: Record<string, unknown> = clone;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const segment = parts[i];
+        const next = target[segment];
+        if (!next || typeof next !== "object" || Array.isArray(next)) {
+          target[segment] = {};
+        }
+        target = target[segment] as Record<string, unknown>;
+      }
+      target[parts[parts.length - 1]] = value;
+      setSaved(false);
+      return clone as unknown as GeneratedLessonPlan | GeneratedDLPPlan | WeeklyLessonPlan;
+    });
   };
 
   const handleTemplateSelect = (template: TemplateMeta | null) => {
@@ -81,6 +103,8 @@ export default function GeneratePage() {
   const handleSave = async () => {
     if (!generatedPlan || !currentInput) return;
     setSaving(true);
+    setSaveError(null);
+    setSaved(false);
 
     try {
       const response = await fetch("/api/plan/save", {
@@ -102,11 +126,14 @@ export default function GeneratePage() {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to save");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || "Failed to save");
+      }
 
       setSaved(true);
-    } catch {
-      alert("Failed to save. Please try again.");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -190,9 +217,15 @@ export default function GeneratePage() {
         </div>
 
         {currentPlanType === "wlp" ? (
-          <WLPViewer plan={generatedPlan as WeeklyLessonPlan} input={currentInput || undefined} />
+          <WLPViewer plan={generatedPlan as WeeklyLessonPlan} input={currentInput || undefined} onEdit={handleEditPlan} />
         ) : (
-          <LessonPlanViewer plan={generatedPlan as GeneratedLessonPlan | GeneratedDLPPlan} input={currentInput || undefined} />
+          <LessonPlanViewer plan={generatedPlan as GeneratedLessonPlan | GeneratedDLPPlan} input={currentInput || undefined} onEdit={handleEditPlan} />
+        )}
+
+        {saveError && (
+          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            Save failed: {saveError}
+          </div>
         )}
 
         <div className="flex justify-center gap-2 pt-4">

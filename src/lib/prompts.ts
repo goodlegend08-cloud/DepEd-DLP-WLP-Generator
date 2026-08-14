@@ -1,4 +1,79 @@
 import type { CurriculumType, TeachingMethod } from "@/types/lesson-plan";
+import { formatLongDate, parseDateInput } from "@/lib/date-engine";
+
+/**
+ * Strict JSON output contract appended to the dynamic (template-agnostic)
+ * Grok prompt so downstream viewers/exporters receive the ILAW structure.
+ */
+export const ILAW_JSON_OUTPUT_CONTRACT = `
+IMPORTANT OUTPUT FORMAT:
+Respond with VALID JSON only. No markdown, no code fences, no extra text. The JSON MUST follow this exact schema:
+
+{
+  "header": {
+    "republic": "...",
+    "department": "...",
+    "region": "...",
+    "division": "...",
+    "school": "...",
+    "address": "..."
+  },
+  "lesson_plan_meta": {
+    "learning_area": "...",
+    "grade_level": "...",
+    "lesson_title": "Name of Lesson — [Topic / Title of Lesson]",
+    "calendar_date": "Use the exact Target Date provided above",
+    "week_number": "Use the exact Target Week provided above",
+    "day_number": "Use the exact Target Day Number provided above",
+    "teacher_name": "Use the exact Teacher Name provided",
+    "grade_and_section": "...",
+    "sessions": "1 Session",
+    "references": "MATATAG K-10 Curriculum Guide, [Learning Area] Learning Materials Grade [X], DepEd MATATAG Curriculum Resources",
+    "ai_declaration": "Formulated using [AI Model]. See DO 3 s.2026 Annex A. AI was used to structurally align the objectives, format the delivery model, and build contextualized assessment items."
+  },
+  "intentions": {
+    "framework_guidance_note": "Meaningful learning experiences are anchored on how we frame them. Start by deciding what you want your learners to master by the end of the lesson – keep it clear and simple. Remember: Understanding your learner's evolving context and designing around it helps ensure that your lessons connect with and are relevant to them.",
+    "learning_competency": "Write the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions. Use the exact Learning Competency provided.",
+    "learning_objectives": "Write the smaller knowledge, skills or tasks from the competency that the learners will work on and be able to show by the end of the sessions. Use the exact Specific Objective for the Day provided.",
+    "learners_context": "Write your observations of your learners, and how they have been performing or responding to learning experiences recently, including strengths, interests, and possible barriers to learning."
+  },
+  "learning_experience": {
+    "framework_guidance_note": "...",
+    "pre_lesson": "...",
+    "flow": {
+      "engage": "...",
+      "explore_explain_modeling": "...",
+      "elaborate_guided_practice": "...",
+      "evaluate_independent_practice": "...",
+      "reflection_closure": "..."
+    },
+    "learning_resources": "...",
+    "opportunities_for_integration": "..."
+  },
+  "assessment": {
+    "framework_guidance_note": "...",
+    "formative_assessment": {
+      "frustration": "...",
+      "instructional": "...",
+      "independent": "..."
+    }
+  },
+  "ways_forward": {
+    "framework_guidance_note": "...",
+    "extended_learning": {
+      "advanced": "...",
+      "struggling": "..."
+    },
+    "reflections": "Think about what you need to change for the next session based on what happened today. Is there something the learners are interested in exploring? Are there some things you would like to share with your co-teachers, parents or school leaders about your classroom experience? What would you like your instructional coach to help you with?"
+  },
+  "signatories": {
+    "prepared_by": { "name": "...", "title": "Teacher III" },
+    "checked_by": [{ "name": "...", "title": "Master Teacher" }],
+    "noted_by": [{ "name": "...", "title": "School Principal" }]
+  }
+}
+
+Match every value to the Template Structure sections provided. Populate each section with substantial, actionable, DepEd-compliant content using the curriculum data. Keep all content in English.`;
 
 const DEPED_SYSTEM_PROMPT_BASE = `You are an expert DepEd Philippines Master Teacher and Instructional Designer. Your task is to populate the blank fields in the DepEd ILAW Daily Lesson Plan (DLP) template based on the provided DBOW metadata and target date.
 
@@ -61,8 +136,8 @@ OUTPUT SCHEMA (strict JSON):
       "evaluate_independent_practice": "00:30-00:40 (10 mins) - Evaluate / Independent Practice (You Do):\n- Students individually solve concept check prompts differentiated by reading level.\n- Frustration Level: Term matching with visual/text scaffolds, simple recall, fill-in-the-blank with word bank.\n- Instructional Level: 2-3 sentence explanation of core mechanism.\n- Independent Level (HOTS): Evaluate a real-world scenario or construct a short argument analyzing phenomena using higher-order thinking skills.",
       "reflection_closure": "00:40-00:45 (5 mins) - Reflection & Closure:\n- Well-being & Value Reflection: Prompt students on the real-world value of the concept to daily Philippine life or emergency communications during natural disasters.\n- Summarize key takeaways.\n- Preview the next lesson to build anticipation."
     },
-    "learning_resources": "List ALL learning resources that will help reach the objectives. Include: Primary equipment for mandated activity. DepEd [Subject] Grade [X] Learner's Material. Backup Plan (Emergency/Tech Outage): Printed visual diagram charts and physical demonstrations if multimedia displays are unavailable.",
-    "opportunities_for_integration": "Cross-Curricular Link: Integration with other learning areas relevant to the topic. Include specific connections (e.g., Earth Science, Telecommunications Technology, Mathematics, Health Education). Write NA if none."
+    "learning_resources": "List down the learning resources that will help you reach your objectives. Ensure that they are available and inclusive, including options and alternatives in case of emergencies. Include: Primary equipment for mandated activity, DepEd [Subject] Grade [X] Learner's Material, and a Backup Plan (Printed visual diagram charts and physical demonstrations if multimedia displays are unavailable).",
+    "opportunities_for_integration": "Write down any possibilities to meaningfully integrate another learning area, special topic, or technology. Include specific connections (e.g., Earth Science, Telecommunications Technology, Mathematics, Health Education). Write NA if none."
   },
   "assessment": {
     "framework_guidance_note": "Assessments reveal what learners have gained and what they still need help with. These are helpful in providing you with information to guide your future instruction throughout the entire session.",
@@ -78,7 +153,7 @@ OUTPUT SCHEMA (strict JSON):
       "advanced": "Advanced Readers (Independent Level — 25%): Research high-level real-world applications in NCR and prepare a 1-page summary. Connect to specific local infrastructure and technology.",
       "struggling": "Struggling Readers (Frustration Level — 25%): Home observation activity: Identify 3 home appliances in Las Piñas that apply today's concept and list their physical interactions. Include visual guides and parent support instructions."
     },
-    "reflections": "Teacher Reflective Prompts:\n1. Did direct modeling effectively clarify the target concept within the tight time frame?\n2. Were students at the Frustration Level able to grasp core ideas through visual scaffolding?\n3. Which part of the lesson showed the highest learner engagement, and what instructional strategy contributed to this?\n\nInstructional Coach Discussion Item:\n1. How can I further optimize direct modeling strategies for abstract concepts within a single 45-minute session?\n2. What evidence from learner responses supports the effectiveness of the differentiated group activities?"
+    "reflections": "Write a complete, teacher-authored reflection in narrative/paragraph form that ANSWERS each guide question below (do not repeat the questions themselves):\n1. What needs to change for the next session based on what happened today?\n2. What are the learners interested in exploring further?\n3. What would you like to share with co-teachers, parents, or school leaders about today's classroom experience?\n4. What would you like your instructional coach to help you with?\nWrite 3-5 substantial sentences, in first person, tailored to this lesson and its learners."
   },
   "signatories": {
     "prepared_by": {
@@ -275,28 +350,28 @@ OUTPUT SCHEMA (strict JSON):
   "weeklyContent": "Summary of content/subject matter to be covered across the week, showing the progression from Day 1 to Day 5.",
   "monday": {
     "day": "Monday",
-    "date": "[Date placeholder]",
-    "activities": "Detailed activities for Monday. Include: Opening/Hook (5 mins), Activity 1 (15 mins), Activity 2 (15 mins), Activity 3 (10 mins), Closing/Reflection (5 mins). Include differentiated tasks for 3 learner levels."
+    "date": "Use the exact date for Day 1 / Monday from the provided DBOW context",
+    "activities": "Detailed activities for Monday aligned to the Day 1 competency and objective only. Include: Opening/Hook (5 mins), Activity 1 (15 mins), Activity 2 (15 mins), Activity 3 (10 mins), Closing/Reflection (5 mins). Include differentiated tasks for 3 learner levels."
   },
   "tuesday": {
     "day": "Tuesday",
-    "date": "[Date placeholder]",
-    "activities": "Detailed activities for Tuesday. Continue building on Monday's lesson. Include: Review of Monday (5 mins), New concept introduction (15 mins), Guided practice (15 mins), Independent practice (10 mins), Closing (5 mins). Differentiated for 3 levels."
+    "date": "Use the exact date for Day 2 / Tuesday from the provided DBOW context",
+    "activities": "Detailed activities for Tuesday aligned to the Day 2 competency and objective only. Include: Review of Monday (5 mins), New concept introduction (15 mins), Guided practice (15 mins), Independent practice (10 mins), Closing (5 mins). Differentiated for 3 levels."
   },
   "wednesday": {
     "day": "Wednesday",
-    "date": "[Date placeholder]",
-    "activities": "Detailed activities for Wednesday. Deepen understanding. Include: Warm-up (5 mins), Concept deepening activity (15 mins), Collaborative task (15 mins), Individual check (10 mins), Closing (5 mins). Differentiated for 3 levels."
+    "date": "Use the exact date for Day 3 / Wednesday from the provided DBOW context",
+    "activities": "Detailed activities for Wednesday aligned to the Day 3 competency and objective only. Include: Warm-up (5 mins), Concept deepening activity (15 mins), Collaborative task (15 mins), Individual check (10 mins), Closing (5 mins). Differentiated for 3 levels."
   },
   "thursday": {
     "day": "Thursday",
-    "date": "[Date placeholder]",
-    "activities": "Detailed activities for Thursday. Application and transfer. Include: Quick review (5 mins), Real-world application task (15 mins), Group project work (15 mins), Peer assessment (10 mins), Closing (5 mins). Differentiated for 3 levels."
+    "date": "Use the exact date for Day 4 / Thursday from the provided DBOW context",
+    "activities": "Detailed activities for Thursday aligned to the Day 4 competency and objective only. Include: Quick review (5 mins), Real-world application task (15 mins), Group project work (15 mins), Peer assessment (10 mins), Closing (5 mins). Differentiated for 3 levels."
   },
   "friday": {
     "day": "Friday",
-    "date": "[Date placeholder]",
-    "activities": "Detailed activities for Friday. Assessment and reflection. Include: Week review (5 mins), Formative assessment (15 mins), Reflection activity (15 mins), Celebration of learning (10 mins), Preview of next week (5 mins). Differentiated for 3 levels."
+    "date": "Use the exact date for Day 5 / Friday from the provided DBOW context",
+    "activities": "Detailed activities for Friday aligned to the Day 5 competency and objective only. Include: Week review (5 mins), Formative assessment (15 mins), Reflection activity (15 mins), Celebration of learning (10 mins), Preview of next week (5 mins). Differentiated for 3 levels."
   },
   "learningResources": "Complete list of physical and digital resources needed for the entire week. Include materials for each day.",
   "remarks": "Cross-curricular connections and integration opportunities for the week.",
@@ -335,6 +410,7 @@ export function buildWLPUserPrompt(params: {
   subjectDescription: string;
   competencies?: string;
   coiTags?: string;
+  weekDates?: { monday: string; tuesday: string; wednesday: string; thursday: string; friday: string };
 }): string {
   let prompt = `Generate a DepEd-compliant Weekly Lesson Plan (WLP) with the following details:
 
@@ -347,6 +423,29 @@ Learning Competencies: ${params.competencies || "Auto-generate based on the subj
 
   if (params.coiTags) {
     prompt += `\nClassroom Observable Indicators (COI/RPMS): ${params.coiTags}`;
+  }
+
+  if (params.weekDates) {
+    const dayEntries = ["monday", "tuesday", "wednesday", "thursday", "friday"] as const;
+    const dayLabels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
+    const readable = (iso: string | undefined): string => {
+      if (!iso) return "[Date]";
+      const d = parseDateInput(iso);
+      return d ? formatLongDate(d) : iso;
+    };
+    prompt += `\n\nOFFICIAL WEEK DATES (use these EXACT dates for each day's "date" field):
+${dayEntries
+  .map((key, i) => `- ${dayLabels[i]} (Day ${i + 1}): ${readable(params.weekDates?.[key])}`)
+  .join("\n")}`;
+  }
+
+  if (params.competencies) {
+    prompt += `\n\nThe Learning Competencies above are listed per DBOW day (e.g., "Day 1 (...): <competency>", "Day 2 (...): <competency>"). Use this per-day mapping as the authoritative curriculum scope for the week:
+- Each day's plan (Monday through Friday) MUST target its corresponding day's competency and specific objective.
+- Monday maps to Day 1, Tuesday to Day 2, Wednesday to Day 3, Thursday to Day 4, Friday to Day 5.
+- Use the exact competency wording and objective given for that day — do not reuse one day's competency for the whole week.
+- Where dates are provided per day, use them for each day's "date" field.
+- The weeklyObjectives, weeklyCompetencies, and weeklyContent sections should summarize all 5 days' competencies together.`;
   }
 
   prompt += `\n\nGenerate a complete weekly lesson plan covering Monday through Friday. Each day should have detailed, differentiated activities. The week should show logical progression from introduction to assessment. Include Philippine/local context examples.`;

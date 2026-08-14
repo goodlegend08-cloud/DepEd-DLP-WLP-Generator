@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -11,6 +11,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useI18n } from "@/lib/i18n";
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +56,7 @@ export default function ResetPasswordPage() {
         const { error } = await supabase.auth.verifyOtp({
           token,
           type: "recovery",
-        });
+        } as Parameters<typeof supabase.auth.verifyOtp>[0]);
         if (error) {
           console.error("Token verification error:", error);
           setError("Invalid or expired reset link. Please request a new one.");
