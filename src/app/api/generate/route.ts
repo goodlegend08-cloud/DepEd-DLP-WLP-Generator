@@ -302,6 +302,15 @@ async function handleGeneralized(input: LessonPlanInput, userId: string) {
 
   const dlpPlan: GeneratedDLPPlan = parsed;
 
+  // Force the EXACT DBOW unit competency and day objective into the output so
+  // the AI cannot paraphrase, expand, or invent its own objectives.
+  if (resolvedRow?.competency) {
+    dlpPlan.intentions.learning_competency = resolvedRow.competency;
+  }
+  if (resolvedRow?.objective) {
+    dlpPlan.intentions.learning_objectives = resolvedRow.objective;
+  }
+
   // Override AI-computed dates with the Date Engine's deterministic values
   if (derivedDate) {
     dlpPlan.lesson_plan_meta.calendar_date = derivedDate.formattedDate;
@@ -487,6 +496,15 @@ export async function POST(request: Request) {
             { error: "Invalid DLP response structure from AI" },
             { status: 500 }
           );
+        }
+
+        // Force the EXACT DBOW unit competency and day objective into the
+        // output so the AI cannot paraphrase or invent its own objectives.
+        if (resolvedRow?.competency) {
+          dlpPlan.intentions.learning_competency = resolvedRow.competency;
+        }
+        if (resolvedRow?.objective) {
+          dlpPlan.intentions.learning_objectives = resolvedRow.objective;
         }
 
         // Normalize: ensure nested flow object exists
