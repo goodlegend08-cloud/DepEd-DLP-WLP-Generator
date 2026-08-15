@@ -8,7 +8,7 @@ import type { DateEngineResult } from "@/lib/date-engine";
 import { loadTemplatesMeta, extractTemplateStructure, TEMPLATES_DIR } from "@/lib/template-processor";
 import path from "path";
 import fs from "fs/promises";
-import type { LessonPlanInput, GeneratedLessonPlan, GeneratedDLPPlan, WeeklyLessonPlan, PlanType, DBOWEntryPayload } from "@/types/lesson-plan";
+import type { LessonPlanInput, GeneratedLessonPlan, GeneratedDLPPlan, WeeklyLessonPlan, PlanType, DBOWEntryPayload, DLPLessonPlanMeta } from "@/types/lesson-plan";
 
 function parseWeekNumber(weekRange?: string): number | null {
   if (!weekRange) return null;
@@ -184,7 +184,8 @@ function resolveDBOWDate(input: LessonPlanInput): {
 } {
   const { dbowEntry, dbowEntries, startDate } = input;
 
-  let targetDate = dbowEntry?.specificDate || dbowEntry?.date || input.calendarDate || "";
+  let targetDate =
+    input.calendarDate || dbowEntry?.specificDate || dbowEntry?.date || "";
   let targetWeek = input.week || "";
 
   const start = resolveTermReferenceDate(dbowEntry, startDate);
@@ -239,6 +240,31 @@ function resolveDBOWDate(input: LessonPlanInput): {
   }
 
   return { targetDate, targetWeek, dayLabel, derivedDate, resolvedRow };
+}
+
+/**
+ * Apply the lesson-plan metadata dates, RESPECTING manual edits from Step 3.
+ * User-provided calendarDate / week / dayNumber win over the Date Engine so
+ * that "what you see in the form is what gets generated"; otherwise the
+ * deterministic Date Engine values are used.
+ */
+function applyDeterministicMeta(
+  meta: DLPLessonPlanMeta,
+  input: LessonPlanInput,
+  fallback: { date: string; week: string; day: string }
+): void {
+  const has = (v: string | undefined): boolean => !!v && v.trim() !== "";
+  const normalizeDay = (v: string): string => {
+    if (/day\s*\d+/i.test(v)) return v.trim();
+    const m = v.match(/\d+/);
+    return m ? `Day ${m[1]}` : v.trim();
+  };
+  if (has(input.calendarDate)) meta.calendar_date = input.calendarDate!.trim();
+  else meta.calendar_date = fallback.date;
+  if (has(input.week)) meta.week_number = input.week!.trim();
+  else meta.week_number = fallback.week;
+  if (has(input.dayNumber)) meta.day_number = normalizeDay(input.dayNumber!);
+  else meta.day_number = fallback.day;
 }
 
 /**
@@ -311,12 +337,13 @@ async function handleGeneralized(input: LessonPlanInput, userId: string) {
     dlpPlan.intentions.learning_objectives = resolvedRow.objective;
   }
 
-  // Override AI-computed dates with the Date Engine's deterministic values
-  if (derivedDate) {
-    dlpPlan.lesson_plan_meta.calendar_date = derivedDate.formattedDate;
-    dlpPlan.lesson_plan_meta.week_number = `Week ${derivedDate.weekNumber}`;
-    dlpPlan.lesson_plan_meta.day_number = resolvedRow?.day || `Day ${derivedDate.dayNumber}`;
-  }
+  // Override AI-computed dates with the Date Engine's deterministic values,
+  // unless the teacher edited date/week/day in Step 3 (their edits win).
+  applyDeterministicMeta(dlpPlan.lesson_plan_meta, input, {
+    date: derivedDate?.formattedDate || targetDate,
+    week: derivedDate ? `Week ${derivedDate.weekNumber}` : targetWeek,
+    day: resolvedRow?.day || (derivedDate ? `Day ${derivedDate.dayNumber}` : dayLabel),
+  });
 
   if (!dlpPlan.learning_experience.flow) {
     dlpPlan.learning_experience.flow = {
@@ -475,13 +502,14 @@ export async function POST(request: Request) {
         const dlpPlan: GeneratedDLPPlan = parsed;
 
         // Deterministic date override: always apply the Date Engine so the AI's
-        // date is corrected even on the fallback path (no uploaded template).
-        const { derivedDate, resolvedRow } = resolveDBOWDate(input);
-        if (derivedDate) {
-          dlpPlan.lesson_plan_meta.calendar_date = derivedDate.formattedDate;
-          dlpPlan.lesson_plan_meta.week_number = `Week ${derivedDate.weekNumber}`;
-          dlpPlan.lesson_plan_meta.day_number = resolvedRow?.day || `Day ${derivedDate.dayNumber}`;
-        }
+        // date is corrected even on the fallback path (no uploaded template),
+        // unless the teacher edited date/week/day in Step 3 (their edits win).
+        const { derivedDate, resolvedRow, targetDate, targetWeek, dayLabel } = resolveDBOWDate(input);
+        applyDeterministicMeta(dlpPlan.lesson_plan_meta, input, {
+          date: derivedDate?.formattedDate || targetDate,
+          week: derivedDate ? `Week ${derivedDate.weekNumber}` : targetWeek,
+          day: resolvedRow?.day || (derivedDate ? `Day ${derivedDate.dayNumber}` : dayLabel),
+        });
 
         if (
           !dlpPlan.header ||
