@@ -81,6 +81,22 @@ function saveCachedData(userId: string | null, data: DBOWData | null) {
   }
 }
 
+function clearAllCachedData() {
+  if (typeof window === "undefined") return;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && key.startsWith(`${STORAGE_KEY_PREFIX}:`)) {
+        keys.push(key);
+      }
+    }
+    keys.forEach((key) => window.localStorage.removeItem(key));
+  } catch {
+    // localStorage may be unavailable; persistence is a nice-to-have
+  }
+}
+
 interface DBOWUploadProps {
   onSelection: (entry: DBOWEntry, rawText: string, metadata: DBOWMetadata) => void;
   onWeekSelection?: (entries: DBOWEntry[], rawText: string, metadata: DBOWMetadata) => void;
@@ -107,6 +123,7 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
   const [expandedTerm, setExpandedTerm] = useState<string | null>(null);
   const [filterContent, setFilterContent] = useState<string>("all");
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
+  const removedRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Resolve the signed-in user so the DBOW cache is scoped per account,
@@ -133,6 +150,7 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
     const cached = loadCachedData(userId);
     if (cached) {
       queueMicrotask(() => {
+        if (removedRef.current) return;
         setDbowData(cached);
         if (cached.terms.length > 0) {
           setExpandedTerm(cached.terms[0]);
@@ -142,6 +160,7 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
   }, [userId]);
 
   const handleUpload = useCallback(async (file: File) => {
+    removedRef.current = false;
     setUploading(true);
     setError(null);
     try {
@@ -207,12 +226,13 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
   }, []);
 
   const handleRemove = useCallback(() => {
+    removedRef.current = true;
     setDbowData(null);
     setFilterContent("all");
-    saveCachedData(userId, null);
+    clearAllCachedData();
     setConfirmRemoveOpen(false);
     onClear?.();
-  }, [userId, onClear]);
+  }, [onClear]);
 
   // Group entries by term and content area
   const groupedEntries = dbowData?.entries.reduce(
