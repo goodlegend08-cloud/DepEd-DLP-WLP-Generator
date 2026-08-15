@@ -121,3 +121,71 @@ CREATE INDEX idx_lesson_plans_curriculum ON lesson_plans(curriculum_type);
 CREATE INDEX idx_lesson_plans_plan_type ON lesson_plans(plan_type);
 CREATE INDEX idx_lesson_plans_grade_level ON lesson_plans(grade_level);
 CREATE INDEX idx_lesson_plans_learning_area ON lesson_plans(learning_area);
+
+-- ============================================
+-- Security Questions (self-contained password reset)
+-- ============================================
+
+-- 10. Create security_questions table
+CREATE TABLE security_questions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  question TEXT NOT NULL,
+  answer_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (user_id, question)
+);
+
+-- 11. Enable Row Level Security
+ALTER TABLE security_questions ENABLE ROW LEVEL SECURITY;
+
+-- 12. RLS Policies for security_questions
+CREATE POLICY "Users can view own security questions"
+  ON security_questions FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own security questions"
+  ON security_questions FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own security questions"
+  ON security_questions FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own security questions"
+  ON security_questions FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- 13. Auto-update updated_at timestamp for security_questions
+DROP TRIGGER IF EXISTS update_security_questions_updated_at ON security_questions;
+CREATE TRIGGER update_security_questions_updated_at
+  BEFORE UPDATE ON security_questions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- 14. Security-definer function: looks up a user id by email (case-insensitive)
+-- Used by the forgot-password flow, which runs without an auth session.
+CREATE OR REPLACE FUNCTION get_user_id_by_email(p_email TEXT)
+RETURNS UUID
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT id FROM auth.users WHERE lower(email) = lower(p_email) LIMIT 1;
+$$;
+
+-- 15. Security-definer function: returns the question texts for a user by email.
+-- Only returns question prompts (never answer hashes), so the forgot-password
+-- page can render them for the user to answer.
+CREATE OR REPLACE FUNCTION get_security_questions_by_email(p_email TEXT)
+RETURNS TABLE(question TEXT)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT sq.question
+  FROM security_questions sq
+  WHERE sq.user_id = get_user_id_by_email(p_email)
+  ORDER BY sq.created_at ASC;
+$$;

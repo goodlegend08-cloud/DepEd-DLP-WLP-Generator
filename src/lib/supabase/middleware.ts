@@ -33,25 +33,56 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect dashboard, generate, and plan routes
-  const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard") ||
-    request.nextUrl.pathname.startsWith("/generate") ||
-    request.nextUrl.pathname.startsWith("/plan");
+  const pathname = request.nextUrl.pathname;
 
-  if (!user && isProtectedRoute) {
+  // Protect dashboard, generate, plan, and scheduler routes
+  const isProtectedRoute = pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/generate") ||
+    pathname.startsWith("/plan") ||
+    pathname.startsWith("/scheduler") ||
+    pathname.startsWith("/account");
+
+  const isSecuritySetupRoute = pathname === "/security-setup" || pathname.startsWith("/security-setup/");
+
+  if (!user && (isProtectedRoute || isSecuritySetupRoute)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
   // Redirect logged-in users away from auth pages
-  const isAuthRoute = request.nextUrl.pathname === "/login" ||
-    request.nextUrl.pathname === "/signup";
+  const isAuthRoute = pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/forgot-password";
 
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
+  }
+
+  // Security-question guard: authenticated users who haven't completed security
+  // question setup are blocked from the main app and forced to /security-setup.
+  if (user) {
+    const { data: hasQuestions } = await supabase
+      .from("security_questions")
+      .select("id")
+      .eq("user_id", user.id)
+      .limit(1);
+
+    const questionsExist = Array.isArray(hasQuestions) && hasQuestions.length > 0;
+
+    if (isSecuritySetupRoute && questionsExist) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    if (isProtectedRoute && !questionsExist) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/security-setup";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

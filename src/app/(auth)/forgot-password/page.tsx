@@ -3,13 +3,12 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n";
-import { getSiteUrl } from "@/lib/site-url";
 
 export default function ForgotPasswordPage() {
   return (
@@ -21,11 +20,14 @@ export default function ForgotPasswordPage() {
 
 function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
-  const supabase = createClient();
   const { t } = useI18n();
 
   useEffect(() => {
@@ -37,22 +39,72 @@ function ForgotPasswordForm() {
     }
   }, [searchParams]);
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${getSiteUrl()}/auth/callback?type=recovery&next=/reset-password`,
-    });
+    try {
+      const res = await fetch("/api/security/forgot/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Something went wrong. Please try again.");
+        setLoading(false);
+        return;
+      }
+      if (!json.questions || json.questions.length === 0) {
+        setError("No security questions found for this email. Please check the email you entered.");
+        setLoading(false);
+        return;
+      }
+      setQuestions(json.questions);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    }
+    setLoading(false);
+  };
 
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (newPassword.length < 6) {
+      setError("New password must be at least 6 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match");
       return;
     }
 
-    setSuccess(true);
+    const providedAnswers = questions.map((q) => ({ question: q, answer: answers[q] ?? "" }));
+    if (providedAnswers.some((a) => !a.answer.trim())) {
+      setError("Please answer every security question.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/security/forgot/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, answers: providedAnswers, newPassword }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Unable to verify security answers. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setSuccess(true);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    }
     setLoading(false);
   };
 
@@ -61,24 +113,91 @@ function ForgotPasswordForm() {
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">
-            {t("checkEmail")}
+            {t("passwordReset")}
           </CardTitle>
           <CardDescription>
-            {t("resetEmailSent")} <strong>{email}</strong>.
+            {t("passwordResetSuccess")}
           </CardDescription>
         </CardHeader>
-        <CardContent className="text-center">
-          <p className="text-sm text-muted-foreground">
-            {t("resetEmailInstructions")}
-          </p>
-        </CardContent>
         <CardFooter>
           <Link href="/login" className="w-full">
-            <Button className="w-full" variant="outline">
-              {t("backToLogin")}
-            </Button>
+            <Button className="w-full">{t("login")}</Button>
           </Link>
         </CardFooter>
+      </Card>
+    );
+  }
+
+  if (questions.length > 0) {
+    return (
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">
+            {t("forgotPassword")}
+          </CardTitle>
+          <CardDescription>
+            Answer your security questions to reset your password.
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleReset}>
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+            {questions.map((q, index) => (
+              <div key={q} className="space-y-2">
+                <Label htmlFor={`answer-${index}`}>{q}</Label>
+                <Input
+                  id={`answer-${index}`}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Your answer"
+                  value={answers[q] ?? ""}
+                  onChange={(e) => setAnswers((prev) => ({ ...prev, [q]: e.target.value }))}
+                  required
+                />
+              </div>
+            ))}
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">{t("newPassword")}</Label>
+              <PasswordInput
+                id="newPassword"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
+              <PasswordInput
+                id="confirmPassword"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? t("loading") : t("resetPassword")}
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setQuestions([]);
+                setAnswers({});
+                setError(null);
+              }}
+              className="text-sm text-muted-foreground underline"
+            >
+              Back
+            </button>
+          </CardFooter>
+        </form>
       </Card>
     );
   }
@@ -93,7 +212,7 @@ function ForgotPasswordForm() {
           {t("forgotPasswordDesc")}
         </CardDescription>
       </CardHeader>
-      <form onSubmit={handleResetPassword}>
+      <form onSubmit={handleLookup}>
         <CardContent className="space-y-4">
           {error && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
@@ -111,6 +230,10 @@ function ForgotPasswordForm() {
               required
             />
           </div>
+          <p className="text-sm text-muted-foreground">
+            Enter your email. We&apos;ll show your security questions so you can reset your password
+            without a reset email.
+          </p>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Button type="submit" className="w-full" disabled={loading}>

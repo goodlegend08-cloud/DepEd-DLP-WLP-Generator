@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BookOpen, LogOut, User } from "lucide-react";
+import { BookOpen, LogOut, User, Settings } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export function Navbar() {
@@ -112,6 +112,12 @@ export function Navbar() {
                   <p className="text-sm font-medium">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
+                <Link href="/account">
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Account
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   {t("logout")}

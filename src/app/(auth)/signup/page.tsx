@@ -11,12 +11,21 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n";
 import { getSiteUrl } from "@/lib/site-url";
+import {
+  SecurityQuestionsField,
+  type SecurityQuestionRow,
+} from "@/components/security/SecurityQuestionsField";
+import { MIN_SECURITY_QUESTIONS } from "@/lib/security-questions";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [securityRows, setSecurityRows] = useState<SecurityQuestionRow[]>([
+    { question: "", answer: "" },
+    { question: "", answer: "" },
+  ]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,6 +45,13 @@ export default function SignupPage() {
 
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
+      return;
+    }
+
+    // Validate security questions before creating the account.
+    const answered = securityRows.filter((r) => r.question && r.answer.trim());
+    if (answered.length < MIN_SECURITY_QUESTIONS) {
+      setError(`Please select and answer at least ${MIN_SECURITY_QUESTIONS} security questions.`);
       return;
     }
 
@@ -61,13 +77,34 @@ export default function SignupPage() {
       return;
     }
 
-    // If email confirmation is disabled, the session is created immediately.
+    // If email confirmation is disabled, the session is created immediately and
+    // we can persist the security questions right away.
     if (data.session) {
+      const saveRes = await fetch("/api/security/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questions: answered.map(({ question, answer }) => ({ question, answer })),
+        }),
+      });
+
+      if (saveRes.ok) {
+        router.replace("/dashboard");
+        router.refresh();
+        return;
+      }
+
+      // Question save failed (e.g. missing SECURITY_QUESTION_SECRET). The
+      // middleware guard will redirect to /security-setup on next navigation,
+      // so landing on the dashboard here is acceptable.
+      console.error("Failed to save security questions:", await saveRes.text());
       router.replace("/");
       router.refresh();
       return;
     }
 
+    // Email confirmation enabled: no session yet. The middleware guard will
+    // force security question setup on the first login.
     setSuccess(true);
     setLoading(false);
   };
@@ -85,7 +122,7 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-sm text-muted-foreground">
-            Didn&apos;t receive the email? Check your <strong>spam/junk folder</strong>, or try signing up again.
+            After confirming your email, you&apos;ll be asked to set up your security questions before accessing the app.
           </p>
         </CardContent>
         <CardFooter>
@@ -157,6 +194,14 @@ export default function SignupPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Security Questions</Label>
+            <p className="text-sm text-muted-foreground">
+              Choose at least {MIN_SECURITY_QUESTIONS} questions you can remember. You&apos;ll need
+              them to reset your password without email.
+            </p>
+            <SecurityQuestionsField value={securityRows} onChange={setSecurityRows} />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
