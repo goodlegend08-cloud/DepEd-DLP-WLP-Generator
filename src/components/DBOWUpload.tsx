@@ -12,7 +12,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Upload, FileText, Check, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  Check,
+  ChevronDown,
+  Trash2,
+  GraduationCap,
+  BookOpen,
+  CalendarDays,
+  Layers,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export interface DBOWEntry {
@@ -114,6 +124,13 @@ function sameEntryKey(a: DBOWEntry, b: DBOWEntry): boolean {
     (a.weekNumber || "") === (b.weekNumber || "") &&
     (a.day || "") === (b.day || "")
   );
+}
+
+function termAccent(term: string): { text: string; bg: string } {
+  if (/first/i.test(term)) return { text: "text-sky-600", bg: "bg-sky-100" };
+  if (/second/i.test(term)) return { text: "text-emerald-600", bg: "bg-emerald-100" };
+  if (/third/i.test(term)) return { text: "text-violet-600", bg: "bg-violet-100" };
+  return { text: "text-primary", bg: "bg-primary/10" };
 }
 
 export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntry, selectedWeekEntries, onParsed, selectionMode = "day" }: DBOWUploadProps) {
@@ -304,7 +321,8 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">
+                <Badge variant="secondary" className="gap-1">
+                  <Layers className="h-3 w-3" />
                   {dbowData.entries.length} entries found
                 </Badge>
                 <Badge variant="outline">
@@ -319,7 +337,7 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
                 <select
                   value={filterContent}
                   onChange={(e) => setFilterContent(e.target.value)}
-                  className="text-sm border rounded px-2 py-1"
+                  className="h-7 rounded-md border bg-background px-2 text-xs text-foreground outline-none transition-colors hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
                 >
                   <option value="all">All Content Areas</option>
                   {dbowData.contentAreas.map((area) => (
@@ -347,9 +365,10 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
             </div>
 
             {/* Term Groups */}
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            <div className="space-y-3 rounded-xl border bg-muted/20 p-2 max-h-[460px] overflow-y-auto">
               {termGroups.map((termGroup) => {
                 const termOpen = expandedTerm === termGroup.term;
+                const accent = termAccent(termGroup.term);
                 const filteredTopics = termGroup.topics.filter(
                   (topic) =>
                     filterContent === "all" || topic.contentArea === filterContent
@@ -360,36 +379,53 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
                 );
 
                 return (
-                  <div key={termGroup.term} className="border rounded-lg">
+                  <div
+                    key={termGroup.term}
+                    className={`overflow-hidden rounded-lg border bg-background transition-colors ${
+                      termOpen ? "border-primary/30 shadow-sm" : "border-border"
+                    }`}
+                  >
                     <button
                       type="button"
                       onClick={() =>
                         setExpandedTerm(termOpen ? null : termGroup.term)
                       }
-                      className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/50"
+                      className={`w-full flex items-center justify-between gap-3 p-3 text-left transition-colors ${
+                        termOpen
+                          ? `bg-gradient-to-r ${accent.bg}`
+                          : "hover:bg-muted/40"
+                      }`}
                     >
-                      <div>
-                        <span className="font-medium text-sm">
-                          {termGroup.term}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${accent.bg} ${accent.text}`}
+                        >
+                          <GraduationCap className="h-5 w-5" />
                         </span>
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          {termGroup.topics.length} units
-                        </Badge>
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          {totalDays} days
-                        </Badge>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">
+                            {termGroup.term}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {termGroup.topics.length}{" "}
+                            {termGroup.topics.length === 1 ? "unit" : "units"} ·{" "}
+                            {totalDays} days
+                          </p>
+                        </div>
                       </div>
-                      {termOpen ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
+                      <span
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-background/60 transition-transform duration-200 ${
+                          termOpen ? "rotate-180" : ""
+                        }`}
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </span>
                     </button>
 
                     {termOpen && (
-                      <div className="border-t p-2 space-y-2">
+                      <div className="space-y-2 p-2">
                         {filteredTopics.length === 0 && (
-                          <p className="text-sm text-muted-foreground p-2">
+                          <p className="px-2 py-3 text-center text-sm text-muted-foreground">
                             No topics match the selected filter.
                           </p>
                         )}
@@ -398,7 +434,10 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
                           const topicOpen = expandedTopic === topicKey;
 
                           return (
-                            <div key={topicKey} className="border rounded-lg">
+                            <div
+                              key={topicKey}
+                              className="overflow-hidden rounded-lg border border-border/70 bg-muted/20"
+                            >
                               <button
                                 type="button"
                                 onClick={() =>
@@ -406,28 +445,41 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
                                     topicOpen ? null : topicKey
                                   )
                                 }
-                                className="w-full flex items-center justify-between p-2 text-left hover:bg-muted/50"
+                                className={`w-full flex items-center justify-between gap-3 px-2.5 py-2 text-left transition-colors ${
+                                  topicOpen
+                                    ? "bg-background"
+                                    : "hover:bg-muted/50"
+                                }`}
                               >
-                                <div>
-                                  <span className="font-medium text-sm">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <BookOpen
+                                    className={`h-4 w-4 shrink-0 ${
+                                      topicOpen
+                                        ? "text-primary"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  />
+                                  <span className="truncate text-sm font-medium">
                                     {topic.contentArea}
                                   </span>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
                                   <Badge
-                                    variant="outline"
-                                    className="ml-2 text-xs"
+                                    variant="secondary"
+                                    className="text-xs"
                                   >
                                     {topic.entries.length} days
                                   </Badge>
+                                  <ChevronDown
+                                    className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                                      topicOpen ? "rotate-180" : ""
+                                    }`}
+                                  />
                                 </div>
-                                {topicOpen ? (
-                                  <ChevronUp className="h-4 w-4" />
-                                ) : (
-                                  <ChevronDown className="h-4 w-4" />
-                                )}
                               </button>
 
                               {topicOpen && (
-                                <div className="border-t p-2 space-y-1">
+                                <div className="space-y-1.5 border-t p-2">
                                   {topic.entries.map((entry, idx) => {
                                     const isSelected =
                                       selectionMode === "week"
@@ -491,46 +543,53 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
                                         key={idx}
                                         type="button"
                                         onClick={handleSelect}
-                                        className={`w-full text-left p-2 rounded text-sm flex items-start gap-2 transition-colors ${
+                                        className={`w-full rounded-lg border px-2.5 py-2 text-left text-sm transition-all ${
                                           isSelected
-                                            ? "bg-primary/10 border border-primary"
-                                            : "hover:bg-muted/50"
+                                            ? "border-primary/40 bg-primary/10 shadow-sm"
+                                            : "border-transparent hover:border-border hover:bg-background"
                                         }`}
                                       >
-                                        {isSelected && (
-                                          <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                                        )}
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2">
-                                            <Badge
-                                              variant="secondary"
-                                              className="text-xs"
-                                            >
-                                              {entry.day}
-                                            </Badge>
-                                            {entry.dayNumber && (
-                                              <span className="text-xs text-muted-foreground">
-                                                DBOW Day {entry.dayNumber}
-                                              </span>
-                                            )}
-                                            {entry.date && (
-                                              <span className="text-xs text-muted-foreground">
-                                                {entry.date}
-                                              </span>
-                                            )}
+                                        <div className="flex items-center gap-2">
+                                          {isSelected && (
+                                            <Check className="h-4 w-4 shrink-0 text-primary" />
+                                          )}
+                                          <Badge
+                                            variant={isSelected ? "secondary" : "outline"}
+                                            className="shrink-0 text-xs"
+                                          >
+                                            {entry.day}
+                                          </Badge>
+                                          {entry.dayNumber && (
                                             <span className="text-xs text-muted-foreground">
+                                              DBOW Day {entry.dayNumber}
+                                            </span>
+                                          )}
+                                          {entry.date && (
+                                            <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
+                                              <CalendarDays className="h-3 w-3" />
+                                              {entry.date}
+                                            </span>
+                                          )}
+                                          {entry.weekRange && (
+                                            <span className="ml-auto shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                                               {entry.weekRange}
                                             </span>
-                                          </div>
-                                          <p className="mt-1 text-muted-foreground line-clamp-2">
-                                            {entry.objective}
-                                          </p>
-                                          {entry.competency && (
-                                            <p className="mt-1 text-xs text-primary line-clamp-1">
-                                              Competency: {entry.competency}
-                                            </p>
                                           )}
                                         </div>
+                                        <p
+                                          className={`mt-1.5 line-clamp-2 ${
+                                            isSelected
+                                              ? "text-foreground"
+                                              : "text-muted-foreground"
+                                          }`}
+                                        >
+                                          {entry.objective}
+                                        </p>
+                                        {entry.competency && (
+                                          <p className="mt-1 line-clamp-1 text-xs text-primary">
+                                            Competency: {entry.competency}
+                                          </p>
+                                        )}
                                       </button>
                                     );
                                   })}
