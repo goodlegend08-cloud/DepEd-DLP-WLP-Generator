@@ -170,9 +170,6 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
       queueMicrotask(() => {
         if (removedRef.current) return;
         setDbowData(cached);
-        if (cached.terms.length > 0) {
-          setExpandedTerm(cached.terms[0]);
-        }
       });
     }
   }, [userId]);
@@ -199,11 +196,6 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
       setDbowData(data);
       saveCachedData(userId, data);
       onParsed?.(data);
-
-      // Auto-expand first term
-      if (data.terms.length > 0) {
-        setExpandedTerm(data.terms[0]);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to parse PDF");
     } finally {
