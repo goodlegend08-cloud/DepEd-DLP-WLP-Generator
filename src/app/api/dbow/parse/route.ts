@@ -250,12 +250,12 @@ function extractTermSections(
 
 /** Verbs that commonly start a DBOW learning competency sentence. */
 const COMPETENCY_START_VERBS =
-  "Identify|Describe|Explain|Compare|Demonstrate|Investigate|Observe|Differentiate|Draw|Participate|Gather|Analyze|Construct|Predict|Arrange|Distinguish|Recognize|Determine|Summarize|Trace|Cite|Collaborate|Read|Use|Apply|Interpret|Classify|Solve|Compute|Develop|Create|Design|Evaluate|Present|Connect|Relate|Translate|Convert|Perform|Measure|Record|Tabulate|Graph|Infer|Formulate|Propose|Illustrate|Model|Simulate|Carry|State|List|Define|Outline|Show|Justify|Explain|Discuss";
+  "Identify|Describe|Explain|Compare|Demonstrate|Investigate|Observe|Differentiate|Draw|Participate|Gather|Analyze|Construct|Predict|Arrange|Distinguish|Recognize|Determine|Summarize|Trace|Cite|Collaborate|Read|Use|Apply|Interpret|Classify|Solve|Compute|Develop|Create|Design|Evaluate|Present|Connect|Relate|Translate|Convert|Perform|Measure|Record|Tabulate|Graph|Infer|Formulate|Propose|Illustrate|Model|Simulate|Carry|State|List|Define|Outline|Show|Justify|Plan|Write|Discuss";
 
 /** Content area patterns to detect topic headers in DBOW text. */
 const contentAreaPatterns = [
   /Newton's\s+Laws,\s*Force\s*,?\s*and\s+Energy/i,
-  /Electric\s+Current,\s*Electrical\s+Circuits[^,.]*?(?:and\s+Electromagneti\s*c\s*Waves)/i,
+  /Electric\s+Current,\s*Electrical\s+Circuits[^.]*?(?:and\s+Electromagneti\s*c\s*Waves)/i,
   /Electric\s+Current[^,.]*/i,
   /Plate\s+Boundaries/i,
   /DNA\s+Replication/i,
@@ -302,11 +302,19 @@ function parseDBOWEntries(text: string): DBOWEntry[] {
     const tableText = tableHeaderIdx >= 0 ? termText.substring(tableHeaderIdx) : termText;
 
     // Find all "Day N:" positions within this term
-    const dayPositions: { index: number; dayNum: string }[] = [];
-    const dayHeaderRegex = /Day\s+(\d+(?:\s*[-–]\s*\d+)?)\s*:/gi;
+    const dayPositions: { index: number; dayNum: string; end: number }[] = [];
+    const dayHeaderRegex =
+      /Day\s*(\d(?:\s*\d)*)\s+and\s+Day\s*(\d(?:\s*\d)*)\s*(?:\([^)]*\))?\s*:|Day\s*(\d(?:\s*\d)*)(?:\s*[-–]\s*(\d(?:\s*\d)*))?\s*(?:\([^)]*\))?\s*:/gi;
     let match: RegExpExecArray | null;
     while ((match = dayHeaderRegex.exec(tableText)) !== null) {
-      dayPositions.push({ index: match.index, dayNum: match[1].replace(/\s/g, "") });
+      const end = match.index + match[0].length;
+      if (match[1] !== undefined) {
+        // Combined marker, e.g. "Day 49 and Day 50:" — one shared objective.
+        dayPositions.push({ index: match.index, dayNum: match[1].replace(/\s/g, ""), end });
+        dayPositions.push({ index: match.index, dayNum: match[2].replace(/\s/g, ""), end });
+      } else {
+        dayPositions.push({ index: match.index, dayNum: match[3].replace(/\s/g, ""), end });
+      }
     }
 
     // A unit Learning Competency ends with ". <days> Day <firstDay>:" —
@@ -317,12 +325,13 @@ function parseDBOWEntries(text: string): DBOWEntry[] {
       competencyStart: number;
       competency: string;
     }[] = [];
-    const boundaryRegex = /\.\s+(\d{1,2})\s+Day\s+(\d+)\s*:/g;
+    const boundaryRegex = /\.?\s*(\d{1,2})\s+Day\s*(\d(?:\s*\d)*)(?:\s*[-–]\s*\d(?:\s*\d)*)?\s*(?:\([^)]*\))?\s*:/g;
     let boundaryMatch: RegExpExecArray | null;
     while ((boundaryMatch = boundaryRegex.exec(tableText)) !== null) {
+      const hasDot = tableText.charAt(boundaryMatch.index) === ".";
       blocks.push({
-        periodIdx: boundaryMatch.index,
-        firstDay: parseInt(boundaryMatch[2], 10),
+        periodIdx: boundaryMatch.index + (hasDot ? 1 : -1),
+        firstDay: parseInt(boundaryMatch[2].replace(/\s/g, ""), 10),
         competencyStart: 0,
         competency: "",
       });
@@ -359,7 +368,7 @@ function parseDBOWEntries(text: string): DBOWEntry[] {
 
     for (let i = 0; i < dayPositions.length; i++) {
       const pos = dayPositions[i];
-      const nextPos = dayPositions[i + 1];
+      const nextPos = dayPositions.slice(i + 1).find((dp) => dp.index >= pos.end);
 
       const dayNum = parseInt(pos.dayNum.replace(/\D/g, ""), 10) || 0;
       const blk = findBlock(dayNum);
@@ -367,7 +376,7 @@ function parseDBOWEntries(text: string): DBOWEntry[] {
 
       // Objective: text after "Day N:" up to the next day marker or the start
       // of the next unit's competency (whichever comes first).
-      const startIdx = pos.index + pos.dayNum.length + 5; // skip "Day N:"
+      const startIdx = pos.end;
       let endIdx = nextPos ? nextPos.index : tableText.length;
       if (nextBlock) endIdx = Math.min(endIdx, nextBlock.competencyStart);
       let objective = tableText.substring(startIdx, endIdx).trim();
@@ -377,6 +386,29 @@ function parseDBOWEntries(text: string): DBOWEntry[] {
         .replace(/Republic\s+of\s+the\s+Philippines\s*Department\s+of\s+Education/gi, "")
         .replace(/Revi\s*ewed\s+and\s+checked\s+by:[\s\S]*$/gi, "")
         .trim();
+
+      // Strip trailing content-area headers that leak into day objectives
+      // (e.g., "Chemical Bonding: ... Week 7 - 10" after a SUMMATIVE TEST).
+      for (const pattern of contentAreaPatterns) {
+        const trailingHeader = new RegExp(
+          `\\s*${pattern.source}[^,.]*?\\s+Week\\s+\\d+(?:\\s*[-–]\\s*\\d+)?\\s*$`,
+          "i"
+        );
+        const cleanedObjective = objective.replace(trailingHeader, " ").trim();
+        if (cleanedObjective !== objective) {
+          objective = cleanedObjective;
+          break;
+        }
+      }
+
+      // Trim summative-test objectives to just the test name, dropping any
+      // content-area header / repeated competency text that follows it.
+      const summativeMatch = objective.match(
+        /^(?:\(Day\s*[\d\s-]+\):\s*)?SUMMATIVE\s+TEST(?:\s*\d+)?/i
+      );
+      if (summativeMatch) {
+        objective = summativeMatch[0];
+      }
 
       if (objective.length < 5) {
         continue;
