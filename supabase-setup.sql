@@ -3,8 +3,8 @@
 -- Run this SQL in the Supabase SQL Editor
 -- ============================================
 
--- 1. Create profiles table
-CREATE TABLE profiles (
+-- 1. Create profiles table (IF NOT EXISTS so this script can be re-run)
+CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   full_name TEXT,
@@ -12,7 +12,7 @@ CREATE TABLE profiles (
 );
 
 -- 2. Create lesson_plans table
-CREATE TABLE lesson_plans (
+CREATE TABLE IF NOT EXISTS lesson_plans (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   grade_level TEXT NOT NULL,
@@ -35,33 +35,40 @@ CREATE TABLE lesson_plans (
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lesson_plans ENABLE ROW LEVEL SECURITY;
 
--- 4. RLS Policies for profiles
+-- 4. RLS Policies for profiles (DROP first so re-runs don't error)
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 CREATE POLICY "Users can view own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
 
 -- Ensures an existing-but-profile-less user can be inserted on first save
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 CREATE POLICY "Users can insert own profile"
   ON profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
 -- 5. RLS Policies for lesson_plans
+DROP POLICY IF EXISTS "Users can view own plans" ON lesson_plans;
 CREATE POLICY "Users can view own plans"
   ON lesson_plans FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own plans" ON lesson_plans;
 CREATE POLICY "Users can insert own plans"
   ON lesson_plans FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own plans" ON lesson_plans;
 CREATE POLICY "Users can update own plans"
   ON lesson_plans FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own plans" ON lesson_plans;
 CREATE POLICY "Users can delete own plans"
   ON lesson_plans FOR DELETE
   USING (auth.uid() = user_id);
@@ -115,19 +122,19 @@ CREATE TRIGGER update_lesson_plans_updated_at
   EXECUTE FUNCTION update_updated_at_column();
 
 -- 9. Create indexes for performance
-CREATE INDEX idx_lesson_plans_user_id ON lesson_plans(user_id);
-CREATE INDEX idx_lesson_plans_created_at ON lesson_plans(created_at DESC);
-CREATE INDEX idx_lesson_plans_curriculum ON lesson_plans(curriculum_type);
-CREATE INDEX idx_lesson_plans_plan_type ON lesson_plans(plan_type);
-CREATE INDEX idx_lesson_plans_grade_level ON lesson_plans(grade_level);
-CREATE INDEX idx_lesson_plans_learning_area ON lesson_plans(learning_area);
+CREATE INDEX IF NOT EXISTS idx_lesson_plans_user_id ON lesson_plans(user_id);
+CREATE INDEX IF NOT EXISTS idx_lesson_plans_created_at ON lesson_plans(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_lesson_plans_curriculum ON lesson_plans(curriculum_type);
+CREATE INDEX IF NOT EXISTS idx_lesson_plans_plan_type ON lesson_plans(plan_type);
+CREATE INDEX IF NOT EXISTS idx_lesson_plans_grade_level ON lesson_plans(grade_level);
+CREATE INDEX IF NOT EXISTS idx_lesson_plans_learning_area ON lesson_plans(learning_area);
 
 -- ============================================
 -- Security Questions (self-contained password reset)
 -- ============================================
 
 -- 10. Create security_questions table
-CREATE TABLE security_questions (
+CREATE TABLE IF NOT EXISTS security_questions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   question TEXT NOT NULL,
@@ -141,18 +148,22 @@ CREATE TABLE security_questions (
 ALTER TABLE security_questions ENABLE ROW LEVEL SECURITY;
 
 -- 12. RLS Policies for security_questions
+DROP POLICY IF EXISTS "Users can view own security questions" ON security_questions;
 CREATE POLICY "Users can view own security questions"
   ON security_questions FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own security questions" ON security_questions;
 CREATE POLICY "Users can insert own security questions"
   ON security_questions FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own security questions" ON security_questions;
 CREATE POLICY "Users can update own security questions"
   ON security_questions FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own security questions" ON security_questions;
 CREATE POLICY "Users can delete own security questions"
   ON security_questions FOR DELETE
   USING (auth.uid() = user_id);
