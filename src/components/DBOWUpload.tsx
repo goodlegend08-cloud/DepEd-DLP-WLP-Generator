@@ -266,8 +266,8 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
         {/* Parsed Results */}
         {dbowData && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary">
                   {dbowData.entries.length} entries found
                 </Badge>
@@ -279,7 +279,7 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
                   Saved on this device
                 </Badge>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={filterContent}
                   onChange={(e) => setFilterContent(e.target.value)}
