@@ -4,6 +4,14 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Upload, FileText, Check, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -98,6 +106,7 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
   const [error, setError] = useState<string | null>(null);
   const [expandedTerm, setExpandedTerm] = useState<string | null>(null);
   const [filterContent, setFilterContent] = useState<string>("all");
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Resolve the signed-in user so the DBOW cache is scoped per account,
@@ -197,6 +206,14 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
     e.preventDefault();
   }, []);
 
+  const handleRemove = useCallback(() => {
+    setDbowData(null);
+    setFilterContent("all");
+    saveCachedData(userId, null);
+    setConfirmRemoveOpen(false);
+    onClear?.();
+  }, [userId, onClear]);
+
   // Group entries by term and content area
   const groupedEntries = dbowData?.entries.reduce(
     (acc, entry) => {
@@ -295,12 +312,7 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setDbowData(null);
-                    setFilterContent("all");
-                    saveCachedData(userId, null);
-                    onClear?.();
-                  }}
+                  onClick={() => setConfirmRemoveOpen(true)}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Remove
@@ -461,6 +473,27 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
           </div>
         )}
       </CardContent>
+
+      <Dialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove uploaded DBOW?</DialogTitle>
+            <DialogDescription>
+              This will remove the uploaded DBOW and its saved data from this
+              device. You can upload it again anytime.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmRemoveOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRemove}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
