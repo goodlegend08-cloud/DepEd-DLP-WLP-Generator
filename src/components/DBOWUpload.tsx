@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Upload, FileText, Check, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export interface DBOWEntry {
@@ -76,6 +76,7 @@ function saveCachedData(userId: string | null, data: DBOWData | null) {
 interface DBOWUploadProps {
   onSelection: (entry: DBOWEntry, rawText: string, metadata: DBOWMetadata) => void;
   onWeekSelection?: (entries: DBOWEntry[], rawText: string, metadata: DBOWMetadata) => void;
+  onClear?: () => void;
   selectedEntry: DBOWEntry | null;
   selectedWeekEntries?: DBOWEntry[];
   onParsed?: (data: DBOWData) => void;
@@ -91,7 +92,7 @@ function sameEntryKey(a: DBOWEntry, b: DBOWEntry): boolean {
   );
 }
 
-export function DBOWUpload({ onSelection, onWeekSelection, selectedEntry, selectedWeekEntries, onParsed, selectionMode = "day" }: DBOWUploadProps) {
+export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntry, selectedWeekEntries, onParsed, selectionMode = "day" }: DBOWUploadProps) {
   const [dbowData, setDbowData] = useState<DBOWData | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -292,15 +293,17 @@ export function DBOWUpload({ onSelection, onWeekSelection, selectedEntry, select
                   ))}
                 </select>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     setDbowData(null);
                     setFilterContent("all");
                     saveCachedData(userId, null);
+                    onClear?.();
                   }}
                 >
-                  Clear
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Remove
                 </Button>
                 <Button
                   variant="outline"

@@ -285,6 +285,14 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
     [setValue]
   );
 
+  const handleDBOWClear = useCallback(() => {
+    setSelectedDBOW(null);
+    setSelectedWeekEntries([]);
+    setDbowMetadata(null);
+    setDbowRawText("");
+    setDbowEntries([]);
+  }, []);
+
   const handleDBOWWeekSelection = useCallback(
     (entries: DBOWEntry[], rawText: string, metadata: DBOWMetadata) => {
       setSelectedWeekEntries(entries);
@@ -585,6 +593,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
           <DBOWUpload
             onSelection={handleDBOWSelection}
             onWeekSelection={planType === "wlp" ? handleDBOWWeekSelection : undefined}
+            onClear={handleDBOWClear}
             selectedEntry={selectedDBOW}
             selectedWeekEntries={planType === "wlp" ? selectedWeekEntries : undefined}
             onParsed={handleDBOWParsed}
