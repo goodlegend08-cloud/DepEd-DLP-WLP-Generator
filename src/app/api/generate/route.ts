@@ -257,14 +257,14 @@ function applyDeterministicMeta(
   const normalizeDay = (v: string): string => {
     if (/day\s*\d+/i.test(v)) return v.trim();
     const m = v.match(/\d+/);
-    return m ? `Day ${m[1]}` : v.trim();
+    return m ? `Day ${m[0]}` : v.trim();
   };
   if (has(input.calendarDate)) meta.calendar_date = input.calendarDate!.trim();
-  else meta.calendar_date = fallback.date;
+  else if (has(fallback.date)) meta.calendar_date = fallback.date;
   if (has(input.week)) meta.week_number = input.week!.trim();
-  else meta.week_number = fallback.week;
+  else if (has(fallback.week)) meta.week_number = fallback.week;
   if (has(input.dayNumber)) meta.day_number = normalizeDay(input.dayNumber!);
-  else meta.day_number = fallback.day;
+  else if (has(fallback.day)) meta.day_number = fallback.day;
 }
 
 /**
