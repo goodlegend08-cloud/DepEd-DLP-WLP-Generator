@@ -76,7 +76,23 @@ function extractTextFromDocx(buffer: Buffer): string {
   return [...parts, ...paraTexts].join("\n");
 }
 
-function extractTextFromPDF(pdfData: any): string {
+interface PDFTextRun {
+  T?: string;
+}
+
+interface PDFTextItem {
+  R?: PDFTextRun[];
+}
+
+interface PDFPage {
+  Texts?: PDFTextItem[];
+}
+
+interface PDFData {
+  Pages?: PDFPage[];
+}
+
+function extractTextFromPDF(pdfData: PDFData): string {
   const textParts: string[] = [];
 
   if (pdfData.Pages) {
@@ -198,34 +214,6 @@ function computeSpecificDate(dateRange: string, dayNumber: string): string {
   return "";
 }
 
-function computeWeekNumber(date: Date, semesterStart: Date): number {
-  // Compute week number based on school weeks (Mon-Fri)
-  // Each school week = 5 days (Mon-Fri)
-  const diffTime = date.getTime() - semesterStart.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  // Find the Monday of the date's week
-  const dayOfWeek = date.getDay();
-  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const mondayOfDate = new Date(date);
-  mondayOfDate.setDate(date.getDate() + mondayOffset);
-  // Find the Monday of semester start's week
-  const startDayOfWeek = semesterStart.getDay();
-  const startMondayOffset = startDayOfWeek === 0 ? -6 : 1 - startDayOfWeek;
-  const mondayOfStart = new Date(semesterStart);
-  mondayOfStart.setDate(semesterStart.getDate() + startMondayOffset);
-  // Compute week number
-  const weekDiff = Math.floor((mondayOfDate.getTime() - mondayOfStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
-  return weekDiff + 1;
-}
-
-function formatDate(date: Date): string {
-  const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-  ];
-  return `${months[date.getMonth()]} ${String(date.getDate()).padStart(2, "0")}, ${date.getFullYear()}`;
-}
-
 /** Split normalized text into term sections with their boundaries. */
 function splitTerms(text: string): { name: string; start: number; end: number }[] {
   const terms: { name: string; start: number; end: number }[] = [];
@@ -286,8 +274,10 @@ const contentAreaPatterns = [
 /**
  * Parse DBOW text into structured day entries.
  * For each term it extracts Content Standard, Performance Standard, and
- * Suggested Activities, then walks the "Day N:" rows tracking the current
- * Learning Competency, Week_Number, and Day_Number.
+ * Suggested Activities, then walks the "Day N:" rows. Each unit Learning
+ * Competency ends with a ". <days> Day <firstDay>:" boundary, so a term is
+ * split into competency blocks first — the block's unit line becomes the
+ * entry's `competency` and each "Day N:" entry gets its own daily `objective`.
  */
 function parseDBOWEntries(text: string): DBOWEntry[] {
   const entries: DBOWEntry[] = [];
@@ -301,15 +291,11 @@ function parseDBOWEntries(text: string): DBOWEntry[] {
   let currentContentArea = "";
   let currentWeekRange = "";
   let currentDateRange = "";
-  let currentCompetency = "";
 
   for (const term of terms) {
     const termText = normalized.substring(term.start, term.end);
     const { contentStandard, performanceStandard, suggestedActivity } =
       extractTermSections(termText);
-
-    // Reset competency at each term boundary (competencies restart per term)
-    currentCompetency = "";
 
     // The table starts at the "LEARNING COMPETENCIES AND SPECIFIC OBJECTIVES" header
     const tableHeaderIdx = termText.toUpperCase().indexOf("LEARNING COMPETENCIES");
@@ -323,44 +309,80 @@ function parseDBOWEntries(text: string): DBOWEntry[] {
       dayPositions.push({ index: match.index, dayNum: match[1].replace(/\s/g, "") });
     }
 
+    // A unit Learning Competency ends with ". <days> Day <firstDay>:" —
+    // use that boundary to split the term into competency blocks.
+    const blocks: {
+      periodIdx: number;
+      firstDay: number;
+      competencyStart: number;
+      competency: string;
+    }[] = [];
+    const boundaryRegex = /\.\s+(\d{1,2})\s+Day\s+(\d+)\s*:/g;
+    let boundaryMatch: RegExpExecArray | null;
+    while ((boundaryMatch = boundaryRegex.exec(tableText)) !== null) {
+      blocks.push({
+        periodIdx: boundaryMatch.index,
+        firstDay: parseInt(boundaryMatch[2], 10),
+        competencyStart: 0,
+        competency: "",
+      });
+    }
+
+    // For each block, locate the competency text: from the last capitalized
+    // competency verb before the boundary period back to the previous day
+    // marker (or the table start).
+    for (const blk of blocks) {
+      let regionStart = 0;
+      for (const dp of dayPositions) {
+        if (dp.index < blk.periodIdx) regionStart = dp.index;
+        else break;
+      }
+      const sub = tableText.substring(regionStart, blk.periodIdx + 1);
+      const verbRegex = new RegExp(`\\b(${COMPETENCY_START_VERBS})\\b`, "g");
+      let lastStart = -1;
+      let verbMatch: RegExpExecArray | null;
+      while ((verbMatch = verbRegex.exec(sub)) !== null) {
+        if (/^[A-Z]/.test(verbMatch[1])) lastStart = verbMatch.index;
+      }
+      blk.competencyStart = lastStart >= 0 ? regionStart + lastStart : regionStart;
+      blk.competency = tableText
+        .substring(blk.competencyStart, blk.periodIdx + 1)
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    const findBlock = (dayNum: number) => {
+      let blk: (typeof blocks)[number] | undefined;
+      for (const b of blocks) if (b.firstDay <= dayNum) blk = b;
+      return blk;
+    };
+
     for (let i = 0; i < dayPositions.length; i++) {
       const pos = dayPositions[i];
       const nextPos = dayPositions[i + 1];
 
-      // Get text from after "Day N:" to before next "Day M:" or end
+      const dayNum = parseInt(pos.dayNum.replace(/\D/g, ""), 10) || 0;
+      const blk = findBlock(dayNum);
+      const nextBlock = blocks.find((b) => b.firstDay > dayNum);
+
+      // Objective: text after "Day N:" up to the next day marker or the start
+      // of the next unit's competency (whichever comes first).
       const startIdx = pos.index + pos.dayNum.length + 5; // skip "Day N:"
-      const endIdx = nextPos ? nextPos.index : tableText.length;
-      let chunk = tableText.substring(startIdx, endIdx).trim();
+      let endIdx = nextPos ? nextPos.index : tableText.length;
+      if (nextBlock) endIdx = Math.min(endIdx, nextBlock.competencyStart);
+      let objective = tableText.substring(startIdx, endIdx).trim();
 
-      // Remove page header artifacts
-      chunk = chunk.replace(/Republic\s+of\s+the\s+Philippines\s*Department\s+of\s+Education/gi, "").trim();
-
-      // Determine the objective (first sentence up to next competency/week marker)
-      let objective = chunk;
-      const cutPatterns = [
-        new RegExp(`\\.\\s+(?:${COMPETENCY_START_VERBS})\\b`, "i"),
-        /\.\s+Week\s/i,
-        /\s+\d+\s+Day\s/i,
-      ];
-      let earliestCut = objective.length;
-      for (const pattern of cutPatterns) {
-        const m = objective.match(pattern);
-        if (m && m.index !== undefined && m.index < earliestCut) {
-          earliestCut = m.index + 1;
-        }
-      }
-      objective = objective.substring(0, earliestCut).trim();
+      // Remove page header artifacts and signature footer (e.g., "Reviewed and checked by:")
+      objective = objective
+        .replace(/Republic\s+of\s+the\s+Philippines\s*Department\s+of\s+Education/gi, "")
+        .replace(/Revi\s*ewed\s+and\s+checked\s+by:[\s\S]*$/gi, "")
+        .trim();
 
       if (objective.length < 5) {
         continue;
       }
 
-      // The remainder after the objective is the NEXT learning competency
-      const remainder = chunk.substring(earliestCut).trim();
-      const remainderClean = remainder.replace(/\s*\d{1,3}\s*$/, "").trim();
-      if (remainderClean.length > 5) {
-        currentCompetency = remainderClean;
-      }
+      const competency = blk ? blk.competency : "";
 
       // Context window before this day entry for term/week/content detection
       const contextStart = Math.max(0, pos.index - 5000);
@@ -397,7 +419,6 @@ function parseDBOWEntries(text: string): DBOWEntry[] {
       const finalDate = computedDate || date;
 
       const weekNum = parseInt(currentWeekRange.replace(/\D/g, ""), 10) || 0;
-      const dayNum = parseInt(pos.dayNum.replace(/\D/g, ""), 10) || 0;
 
       // Days taught = number that precedes the day marker within this row (e.g., " 2 Day 1:")
       const beforeDay = context.substring(Math.max(0, context.length - 40));
@@ -408,7 +429,7 @@ function parseDBOWEntries(text: string): DBOWEntry[] {
         contentArea: currentContentArea,
         weekRange: currentWeekRange,
         weekNumber: weekNum ? String(weekNum) : "",
-        competency: currentCompetency,
+        competency,
         day: `Day ${pos.dayNum}`,
         dayNumber: dayNum ? String(dayNum) : "",
         objective,
@@ -564,9 +585,11 @@ export async function POST(request: Request) {
       // Parse PDF using pdf2json
       const pdfParser = new PDFParser();
 
-      const pdfData = await new Promise<any>((resolve, reject) => {
-        pdfParser.on("pdfParser_dataReady", resolve);
-        pdfParser.on("pdfParser_dataError", (error: any) => reject(error));
+      const pdfData = await new Promise<PDFData>((resolve, reject) => {
+        pdfParser.on("pdfParser_dataReady", (data: PDFData) => resolve(data));
+        pdfParser.on("pdfParser_dataError", (error: unknown) =>
+          reject(error instanceof Error ? error : new Error(String(error)))
+        );
         pdfParser.parseBuffer(buffer);
       });
 

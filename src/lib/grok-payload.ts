@@ -73,18 +73,18 @@ Every generated lesson plan MUST follow this exact sequence of tables:
 - Declaration of AI Use: "Formulated using [AI Model]. See DO 3 s.2026 Annex A. AI was used to structurally align the objectives, format the delivery model, and build contextualized assessment items."
 
 #### TABLE 2: INTENTIONS
-- **Learning Competency:** Write the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions.
-- **Learning Objectives:** Write the smaller knowledge, skills or tasks from the competency that the learners will work on and be able to show by the end of the sessions.
+- **Learning Competency:** Write the EXACT unit-level competency provided in "Learning Competency" — the bold DBOW line that spans several days. Do not replace it with the day's objective. Include the applicable content or performance standards.
+- **Learning Objectives:** Write the EXACT "Specific Objective for the Day" provided — the DBOW "Day N" entry ONLY. This is a single standalone DLP for one day: list ONLY that day's objective(s), never combine objectives from other days or the whole competency.
 - **Learners' Context:** Write your observations of your learners, and how they have been performing or responding to learning experiences recently, including strengths, interests, and possible barriers to learning.
 
 #### TABLE 3: LEARNING EXPERIENCE
 - **Pre Lesson:** Describe how you will help learners get ready for the lesson.
-- **Flow:** Describe the activities that you can implement in 1 or more sessions to meet the learning objectives. Apply the Learning Design Principles by thinking about how to: make the objectives clear for the learners; guide learners before letting them try the task on their own; check the state of the learners' well-being, understanding, and mastery over the lesson; connect today's new concept with past competencies; encourage collaboration among learners; invite learners to reflect on why these matters to them; ensure inclusion for learners' varied abilities, learning styles, and contexts.
+- **Flow:** Describe the activities for THIS SINGLE SESSION (one day) to meet that day's specific objective. Apply the Learning Design Principles by thinking about how to: make the objectives clear for the learners; guide learners before letting them try the task on their own; check the state of the learners' well-being, understanding, and mastery over the lesson; connect today's new concept with past competencies; encourage collaboration among learners; invite learners to reflect on why these matters to them; ensure inclusion for learners' varied abilities, learning styles, and contexts. Every activity must directly serve the day's objective.
 - **Learning Resources:** List down the learning resources that will help you reach your objectives. Ensure that they are available and inclusive. Include options and alternatives in case of emergencies.
 - **Opportunities for Integration:** Write down any possibilities to meaningfully integrate another learning area, special topic, or technology. Write NA if none.
 
 #### TABLE 4: ASSESSMENT
-- **Formative Assessment:** Create a task, activity or questions to evaluate learning and provide feedback. Provide ways for learners to ask for guidance and support. Remember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports).
+- **Formative Assessment:** Create a 3–5 item task, activity or questions that directly measure the day's specific objective. Provide ways for learners to ask for guidance and support. Remember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports).
 
 #### TABLE 5: WAYS FORWARD
 - **Extended learning opportunities:** Suggest other learning experiences outside the classroom hours that learners may want to access or reinforce what they have learned, to spark their curiosity further, or that may provide them support in areas of difficulty.
@@ -133,7 +133,7 @@ ${data.extractedTemplateStructure}
 ---
 
 ### EXECUTION COMMAND:
-When prompted with a topic, generate the complete lesson plan adhering strictly to the tabular structure, guide questions, grey heading bars, and formatting rules shown above.`;
+When prompted with a topic, generate ONE complete standalone Daily Lesson Plan for the single target day above, adhering strictly to the tabular structure, guide questions, grey heading bars, and formatting rules shown. The "Learning Competency" field must reproduce the exact unit-level competency provided, the "Learning Objectives" field must contain only that day's specific objective, and the Flow and Formative Assessment must be built around that day's objective only.`;
 }
 
 /**
@@ -167,7 +167,7 @@ export function buildGrokPayload(
  * Build the default user instruction for a given day, per the spec.
  */
 export function buildUserInstruction(dayNumber: string): string {
-  return `Generate the lesson plan for ${dayNumber} based on the uploaded template and DBOW context provided.`;
+  return `Generate ONE standalone Daily Lesson Plan (DLP) for ${dayNumber} only, based on the uploaded template and DBOW context provided. Target exactly that single day: the Learning Objectives must contain only ${dayNumber}'s objective, and the Flow and Formative Assessment must be built around it. Do not generate a whole-week or multi-day plan.`;
 }
 
 /**

@@ -33,8 +33,8 @@ Respond with VALID JSON only. No markdown, no code fences, no extra text. The JS
   },
   "intentions": {
     "framework_guidance_note": "Meaningful learning experiences are anchored on how we frame them. Start by deciding what you want your learners to master by the end of the lesson – keep it clear and simple. Remember: Understanding your learner's evolving context and designing around it helps ensure that your lessons connect with and are relevant to them.",
-    "learning_competency": "Write the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions. Use the exact Learning Competency provided.",
-    "learning_objectives": "Write the smaller knowledge, skills or tasks from the competency that the learners will work on and be able to show by the end of the sessions. Use the exact Specific Objective for the Day provided.",
+    "learning_competency": "Use the EXACT Learning Competency provided. This is the unit-level competency from the DBOW (the bold line that spans several days). Do NOT replace it with, or merge it into, the day's objective.",
+    "learning_objectives": "Use the EXACT Specific Objective for the Day provided. This is the DBOW 'Day N' entry ONLY — one standalone DLP for one day. Do NOT combine or list objectives from other days or the whole competency.",
     "learners_context": "Write your observations of your learners, and how they have been performing or responding to learning experiences recently, including strengths, interests, and possible barriers to learning."
   },
   "learning_experience": {
@@ -53,9 +53,9 @@ Respond with VALID JSON only. No markdown, no code fences, no extra text. The JS
   "assessment": {
     "framework_guidance_note": "...",
     "formative_assessment": {
-      "frustration": "...",
-      "instructional": "...",
-      "independent": "..."
+      "frustration": "3-5 specific items aligned ONLY to the day's objective for Frustration Level",
+      "instructional": "3-5 specific items aligned ONLY to the day's objective for Instructional Level",
+      "independent": "3-5 specific items aligned ONLY to the day's objective for Independent Level"
     }
   },
   "ways_forward": {
