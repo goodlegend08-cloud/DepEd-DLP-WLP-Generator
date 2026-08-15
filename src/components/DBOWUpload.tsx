@@ -121,6 +121,7 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedTerm, setExpandedTerm] = useState<string | null>(null);
+  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
   const [filterContent, setFilterContent] = useState<string>("all");
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
   const removedRef = useRef(false);
@@ -234,27 +235,25 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
     onClear?.();
   }, [onClear]);
 
-  // Group entries by term and content area
-  const groupedEntries = dbowData?.entries.reduce(
-    (acc, entry) => {
-      const key = `${entry.term}|||${entry.contentArea}`;
-      if (!acc[key]) {
-        acc[key] = {
-          term: entry.term,
-          contentArea: entry.contentArea,
-          entries: [],
-        };
-      }
-      acc[key].entries.push(entry);
-      return acc;
-    },
-    {} as Record<string, { term: string; contentArea: string; entries: DBOWEntry[] }>
-  );
-
-  const filteredGroups = Object.values(groupedEntries || {}).filter((group) => {
-    if (filterContent === "all") return true;
-    return group.contentArea === filterContent;
-  });
+  // Group entries by Term (top level) then content area (nested topics) so
+  // each grading period appears exactly once.
+  const termGroups = (() => {
+    const byTerm: Record<string, Record<string, DBOWEntry[]>> = {};
+    (dbowData?.entries || []).forEach((entry) => {
+      const term = entry.term || "Unknown Term";
+      if (!byTerm[term]) byTerm[term] = {};
+      const area = entry.contentArea || "General";
+      if (!byTerm[term][area]) byTerm[term][area] = [];
+      byTerm[term][area].push(entry);
+    });
+    return Object.entries(byTerm).map(([term, areas]) => ({
+      term,
+      topics: Object.entries(areas).map(([contentArea, entries]) => ({
+        contentArea,
+        entries,
+      })),
+    }));
+  })();
 
   return (
     <Card className="mb-6">
@@ -349,139 +348,195 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
 
             {/* Term Groups */}
             <div className="space-y-3 max-h-[400px] overflow-y-auto">
-              {filteredGroups.map((group) => {
-                const termKey = `${group.term}|||${group.contentArea}`;
-                const isExpanded = expandedTerm === termKey;
+              {termGroups.map((termGroup) => {
+                const termOpen = expandedTerm === termGroup.term;
+                const filteredTopics = termGroup.topics.filter(
+                  (topic) =>
+                    filterContent === "all" || topic.contentArea === filterContent
+                );
+                const totalDays = termGroup.topics.reduce(
+                  (sum, topic) => sum + topic.entries.length,
+                  0
+                );
 
                 return (
-                  <div key={termKey} className="border rounded-lg">
+                  <div key={termGroup.term} className="border rounded-lg">
                     <button
                       type="button"
                       onClick={() =>
-                        setExpandedTerm(isExpanded ? null : termKey)
+                        setExpandedTerm(termOpen ? null : termGroup.term)
                       }
                       className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/50"
                     >
                       <div>
                         <span className="font-medium text-sm">
-                          {group.term}
-                        </span>
-                        <span className="text-muted-foreground text-sm ml-2">
-                          — {group.contentArea}
+                          {termGroup.term}
                         </span>
                         <Badge variant="outline" className="ml-2 text-xs">
-                          {group.entries.length} days
+                          {termGroup.topics.length} units
+                        </Badge>
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {totalDays} days
                         </Badge>
                       </div>
-                      {isExpanded ? (
+                      {termOpen ? (
                         <ChevronUp className="h-4 w-4" />
                       ) : (
                         <ChevronDown className="h-4 w-4" />
                       )}
                     </button>
 
-                    {isExpanded && (
-                      <div className="border-t p-2 space-y-1">
-                        {group.entries.map((entry, idx) => {
-                          const isSelected = selectionMode === "week"
-                            ? !!selectedWeekEntries?.some((se) => sameEntryKey(se, entry))
-                            : !!selectedEntry && sameEntryKey(selectedEntry, entry);
-
-                          const handleSelect = () => {
-                            const metadata = {
-                              gradeLevel: dbowData.gradeLevel,
-                              learningArea: dbowData.learningArea,
-                            };
-
-                            if (selectionMode === "week" && onWeekSelection) {
-                              const isSelectedEntry = !!selectedWeekEntries?.some((se) =>
-                                sameEntryKey(se, entry)
-                              );
-
-                              if (isSelectedEntry) {
-                                // Unclicking: remove just this topic, keep the rest.
-                                onWeekSelection(
-                                  (selectedWeekEntries || []).filter(
-                                    (se) => !sameEntryKey(se, entry)
-                                  ),
-                                  dbowData.rawText,
-                                  metadata
-                                );
-                              } else {
-                                // Anchor + auto-select the next 4 consecutive topics,
-                                // ordered by day number across the WHOLE term (not limited
-                                // to the current content-area dropdown group).
-                                const dayNum = (e: DBOWEntry) =>
-                                  parseInt(
-                                    (e.dayNumber || e.day || "").replace(/\D/g, "") || "0",
-                                    10
-                                  ) || 0;
-
-                                const termList = dbowData.entries
-                                  .filter((e) => e.term === entry.term)
-                                  .slice()
-                                  .sort((a, b) => dayNum(a) - dayNum(b));
-                                const anchorIndex = termList.findIndex((e) =>
-                                  sameEntryKey(e, entry)
-                                );
-                                const suggested =
-                                  anchorIndex >= 0
-                                    ? termList.slice(anchorIndex, anchorIndex + 5)
-                                    : [entry];
-                                onWeekSelection(suggested, dbowData.rawText, metadata);
-                              }
-                              return;
-                            }
-
-                            onSelection(entry, dbowData.rawText, metadata);
-                          };
+                    {termOpen && (
+                      <div className="border-t p-2 space-y-2">
+                        {filteredTopics.length === 0 && (
+                          <p className="text-sm text-muted-foreground p-2">
+                            No topics match the selected filter.
+                          </p>
+                        )}
+                        {filteredTopics.map((topic) => {
+                          const topicKey = `${termGroup.term}|||${topic.contentArea}`;
+                          const topicOpen = expandedTopic === topicKey;
 
                           return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={handleSelect}
-                              className={`w-full text-left p-2 rounded text-sm flex items-start gap-2 transition-colors ${
-                                isSelected
-                                  ? "bg-primary/10 border border-primary"
-                                  : "hover:bg-muted/50"
-                              }`}
-                            >
-                              {isSelected && (
-                                <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    {entry.day}
-                                  </Badge>
-                                  {entry.dayNumber && (
-                                    <span className="text-xs text-muted-foreground">
-                                      DBOW Day {entry.dayNumber}
-                                    </span>
-                                  )}
-                                  {entry.date && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {entry.date}
-                                    </span>
-                                  )}
-                                  <span className="text-xs text-muted-foreground">
-                                    {entry.weekRange}
+                            <div key={topicKey} className="border rounded-lg">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setExpandedTopic(
+                                    topicOpen ? null : topicKey
+                                  )
+                                }
+                                className="w-full flex items-center justify-between p-2 text-left hover:bg-muted/50"
+                              >
+                                <div>
+                                  <span className="font-medium text-sm">
+                                    {topic.contentArea}
                                   </span>
+                                  <Badge
+                                    variant="outline"
+                                    className="ml-2 text-xs"
+                                  >
+                                    {topic.entries.length} days
+                                  </Badge>
                                 </div>
-                                <p className="mt-1 text-muted-foreground line-clamp-2">
-                                  {entry.objective}
-                                </p>
-                                {entry.competency && (
-                                  <p className="mt-1 text-xs text-primary line-clamp-1">
-                                    Competency: {entry.competency}
-                                  </p>
+                                {topicOpen ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
                                 )}
-                              </div>
-                            </button>
+                              </button>
+
+                              {topicOpen && (
+                                <div className="border-t p-2 space-y-1">
+                                  {topic.entries.map((entry, idx) => {
+                                    const isSelected =
+                                      selectionMode === "week"
+                                        ? !!selectedWeekEntries?.some((se) =>
+                                            sameEntryKey(se, entry)
+                                          )
+                                        : !!selectedEntry &&
+                                          sameEntryKey(selectedEntry, entry);
+
+                                    const handleSelect = () => {
+                                      const metadata = {
+                                        gradeLevel: dbowData.gradeLevel,
+                                        learningArea: dbowData.learningArea,
+                                      };
+
+                                      if (selectionMode === "week" && onWeekSelection) {
+                                        const isSelectedEntry = !!selectedWeekEntries?.some(
+                                          (se) => sameEntryKey(se, entry)
+                                        );
+
+                                        if (isSelectedEntry) {
+                                          // Unclicking: remove just this topic, keep the rest.
+                                          onWeekSelection(
+                                            (selectedWeekEntries || []).filter(
+                                              (se) => !sameEntryKey(se, entry)
+                                            ),
+                                            dbowData.rawText,
+                                            metadata
+                                          );
+                                        } else {
+                                          // Anchor + auto-select the next 4 consecutive topics,
+                                          // ordered by day number across the WHOLE term (not limited
+                                          // to the current content-area dropdown group).
+                                          const dayNum = (e: DBOWEntry) =>
+                                            parseInt(
+                                              (e.dayNumber || e.day || "").replace(/\D/g, "") || "0",
+                                              10
+                                            ) || 0;
+
+                                          const termList = dbowData.entries
+                                            .filter((e) => e.term === entry.term)
+                                            .slice()
+                                            .sort((a, b) => dayNum(a) - dayNum(b));
+                                          const anchorIndex = termList.findIndex((e) =>
+                                            sameEntryKey(e, entry)
+                                          );
+                                          const suggested =
+                                            anchorIndex >= 0
+                                              ? termList.slice(anchorIndex, anchorIndex + 5)
+                                              : [entry];
+                                          onWeekSelection(suggested, dbowData.rawText, metadata);
+                                        }
+                                        return;
+                                      }
+
+                                      onSelection(entry, dbowData.rawText, metadata);
+                                    };
+
+                                    return (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={handleSelect}
+                                        className={`w-full text-left p-2 rounded text-sm flex items-start gap-2 transition-colors ${
+                                          isSelected
+                                            ? "bg-primary/10 border border-primary"
+                                            : "hover:bg-muted/50"
+                                        }`}
+                                      >
+                                        {isSelected && (
+                                          <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2">
+                                            <Badge
+                                              variant="secondary"
+                                              className="text-xs"
+                                            >
+                                              {entry.day}
+                                            </Badge>
+                                            {entry.dayNumber && (
+                                              <span className="text-xs text-muted-foreground">
+                                                DBOW Day {entry.dayNumber}
+                                              </span>
+                                            )}
+                                            {entry.date && (
+                                              <span className="text-xs text-muted-foreground">
+                                                {entry.date}
+                                              </span>
+                                            )}
+                                            <span className="text-xs text-muted-foreground">
+                                              {entry.weekRange}
+                                            </span>
+                                          </div>
+                                          <p className="mt-1 text-muted-foreground line-clamp-2">
+                                            {entry.objective}
+                                          </p>
+                                          {entry.competency && (
+                                            <p className="mt-1 text-xs text-primary line-clamp-1">
+                                              Competency: {entry.competency}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
