@@ -314,7 +314,7 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
     "Meaningful learning can also happen beyond the classroom – for both the learners and the teacher. Pause and reflect on what happened today.";
 
   return (
-    <div className="text-black">
+    <div className="text-black font-serif">
       {/* Official LPCAA DepEd Header Image */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -476,7 +476,7 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
 
 function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: LessonPlanInput }) {
   return (
-    <div className="text-black space-y-4">
+    <div className="text-black font-serif space-y-4">
       {/* Header */}
       <div className="text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}

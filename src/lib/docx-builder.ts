@@ -65,7 +65,7 @@ function bannerCell(text: string, italic: boolean): TableCell {
     children: [
       new Paragraph({
         spacing: { before: 40, after: 40 },
-        children: [new TextRun({ text, bold: !italic, italics: italic, font: "Arial", size: 20 })],
+        children: [new TextRun({ text, bold: !italic, italics: italic, font: "Times New Roman", size: 20 })],
       }),
     ],
   });
@@ -74,9 +74,9 @@ function bannerCell(text: string, italic: boolean): TableCell {
 /** Left column label cell: bold header + italic instruction. */
 function labelCell(label: string): TableCell {
   const { header, instruction } = splitLabel(label);
-  const runs: TextRun[] = [new TextRun({ text: header, bold: true, italics: true, font: "Arial", size: 18 })];
+  const runs: TextRun[] = [new TextRun({ text: header, bold: true, italics: true, font: "Times New Roman", size: 18 })];
   if (instruction) {
-    runs.push(new TextRun({ text: "\n" + instruction, italics: true, font: "Arial", size: 16, color: "333333" }));
+    runs.push(new TextRun({ text: "\n" + instruction, italics: true, font: "Times New Roman", size: 16, color: "333333" }));
   }
   return new TableCell({
     borders: BORDER,
@@ -103,7 +103,7 @@ function contentCell(text: string): TableCell {
       (line) =>
         new Paragraph({
           spacing: { before: 20, after: 20 },
-          children: [new TextRun({ text: line, font: "Arial", size: 18 })],
+          children: [new TextRun({ text: line, font: "Times New Roman", size: 18 })],
         })
     ),
   });
@@ -121,7 +121,7 @@ function fullWidthContentCell(text: string): TableCell {
       (line) =>
         new Paragraph({
           spacing: { before: 20, after: 20 },
-          children: [new TextRun({ text: line, font: "Arial", size: 18 })],
+          children: [new TextRun({ text: line, font: "Times New Roman", size: 18 })],
         })
     ),
   });
@@ -202,7 +202,7 @@ function signatureRuleParagraph(): Paragraph {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { before: 40, after: 40 },
-    children: [new TextRun({ text: SIGNATURE_RULE, font: "Arial", size: 18 })],
+    children: [new TextRun({ text: SIGNATURE_RULE, font: "Times New Roman", size: 18 })],
   });
 }
 
@@ -211,7 +211,7 @@ function signatureNameParagraph(name: string): Paragraph {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { before: 80, after: 0 },
-    children: [new TextRun({ text: name.toUpperCase(), bold: true, font: "Arial", size: 18 })],
+    children: [new TextRun({ text: name.toUpperCase(), bold: true, font: "Times New Roman", size: 18 })],
   });
 }
 
@@ -220,7 +220,7 @@ function signatureTitleParagraph(title: string): Paragraph {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { before: 0, after: 80 },
-    children: [new TextRun({ text: title, italics: true, font: "Arial", size: 16 })],
+    children: [new TextRun({ text: title, italics: true, font: "Times New Roman", size: 16 })],
   });
 }
 
@@ -228,7 +228,7 @@ function signatureTitleParagraph(title: string): Paragraph {
 function signatureLabelParagraph(label: string): Paragraph {
   return new Paragraph({
     spacing: { before: 200, after: 60 },
-    children: [new TextRun({ text: label, bold: true, font: "Arial", size: 18 })],
+    children: [new TextRun({ text: label, bold: true, font: "Times New Roman", size: 18 })],
   });
 }
 
@@ -256,8 +256,8 @@ function signatureColumns(
       spacing: { before: 20, after: 20 },
       children: [
         ...cells.flatMap((cell) => [
-          new TextRun({ text: "\t", font: "Arial", size }),
-          new TextRun({ text: cell, bold, italics, font: "Arial", size }),
+          new TextRun({ text: "\t", font: "Times New Roman", size }),
+          new TextRun({ text: cell, bold, italics, font: "Times New Roman", size }),
         ]),
       ],
     });
@@ -268,8 +268,8 @@ function signatureColumns(
       tabStops,
       spacing: { before: 20, after: 20 },
       children: Array.from({ length: columns }).flatMap(() => [
-        new TextRun({ text: "\t", font: "Arial", size: 18 }),
-        new TextRun({ text: SIGNATURE_RULE, font: "Arial", size: 18 }),
+        new TextRun({ text: "\t", font: "Times New Roman", size: 18 }),
+        new TextRun({ text: SIGNATURE_RULE, font: "Times New Roman", size: 18 }),
       ]),
     }),
     buildRow(titles, false, true, 16),
@@ -332,7 +332,7 @@ export async function buildDocx(
             alignment: AlignmentType.CENTER,
             spacing: { before: 120, after: 60 },
             children: [
-              new TextRun({ text: `LESSON PLAN IN ${lesson_plan_meta.learning_area} GRADE ${lesson_plan_meta.grade_level}`, bold: true, font: "Arial", size: 24 }),
+              new TextRun({ text: `LESSON PLAN IN ${lesson_plan_meta.learning_area} GRADE ${lesson_plan_meta.grade_level}`, bold: true, font: "Times New Roman", size: 24 }),
             ],
           }),
 
@@ -440,7 +440,7 @@ export async function buildDocx(
           new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [
-              new TextRun({ text: "— End of Daily Lesson Plan —", italics: true, font: "Arial", size: 16, color: "808080" }),
+              new TextRun({ text: "— End of Daily Lesson Plan —", italics: true, font: "Times New Roman", size: 16, color: "808080" }),
             ],
           }),
         ],
@@ -459,7 +459,7 @@ function centeredLine(text: string, size: number, bold: boolean): Paragraph {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { after: 0 },
-    children: [new TextRun({ text, bold, font: "Arial", size })],
+    children: [new TextRun({ text, bold, font: "Times New Roman", size })],
   });
 }
 
@@ -578,7 +578,7 @@ export async function buildWLPDocx(
             alignment: AlignmentType.CENTER,
             spacing: { before: 120, after: 60 },
             children: [
-              new TextRun({ text: "WEEKLY LESSON PLAN (WLP)", bold: true, font: "Arial", size: 28 }),
+              new TextRun({ text: "WEEKLY LESSON PLAN (WLP)", bold: true, font: "Times New Roman", size: 28 }),
             ],
           }),
           centeredLine(input.learningArea.toUpperCase(), 24, true),
@@ -671,7 +671,7 @@ export async function buildWLPDocx(
           new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [
-              new TextRun({ text: "— End of Weekly Lesson Plan —", italics: true, font: "Arial", size: 16, color: "808080" }),
+              new TextRun({ text: "— End of Weekly Lesson Plan —", italics: true, font: "Times New Roman", size: 16, color: "808080" }),
             ],
           }),
         ],
