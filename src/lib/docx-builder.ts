@@ -11,6 +11,7 @@ import {
   BorderStyle,
   ShadingType,
   VerticalAlign,
+  TabStopType,
 } from "docx";
 import type { ITableCellBorders } from "docx";
 import type { GeneratedDLPPlan, WeeklyLessonPlan, LessonPlanInput, DLPFlowPhases, DLPFormativeAssessment, DLPExtendedLearning } from "@/types/lesson-plan";
@@ -32,7 +33,7 @@ const BANNER_FILL = "D9D9D9";
 const DEFAULT_CHECKED = [
   { name: "TRIXIA A. PALMOS", title: "Master Teacher II - Science" },
   { name: "CARMELITA G. YAP", title: "SCIENCE Coordinator" },
-  { name: "JEANETTE J. RUGA, Ph.D.", title: "Assistant School Principal II\nOfficer-in-Charge" },
+  { name: "Jeanette J. Ruga, Ph.D.", title: "Assistant school Principal II / Officer – in – Charge" },
 ];
 const DEFAULT_NOTED = [
   { name: "MILDRED T. TUBLE", title: "Public Schools District Supervisor – Cluster I" },
@@ -190,89 +191,104 @@ function resolveExtendedLearning(el?: DLPExtendedLearning, flat?: {
 }
 
 // ============================================================
-// SIGNATURE BLOCK (exact 3-tier layout)
+// SIGNATURE BLOCK (clean, unbordered paragraph text — no table)
 // ============================================================
 
-/** Centered signature cell: bold uppercase name, underline rule, italic title. */
-function signatureCell(name: string, title: string): TableCell {
-  return new TableCell({
-    borders: BORDER,
-    verticalAlign: VerticalAlign.TOP,
-    children: [
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { before: 80, after: 40 },
-        children: [new TextRun({ text: name.toUpperCase(), bold: true, font: "Arial", size: 18 })],
-      }),
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { before: 40, after: 40 },
-        children: [new TextRun({ text: SIGNATURE_RULE, font: "Arial", size: 18 })],
-      }),
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { before: 40, after: 80 },
-        children: [new TextRun({ text: title, italics: true, font: "Arial", size: 16 })],
-      }),
-    ],
+/** Solid signature rule line. */
+function signatureRuleParagraph(): Paragraph {
+  return new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 40, after: 40 },
+    children: [new TextRun({ text: SIGNATURE_RULE, font: "Arial", size: 18 })],
   });
 }
 
-/** Signature label cell (unshaded, bold). */
-function signatureLabelCell(label: string): TableCell {
-  return new TableCell({
-    borders: BORDER,
-    verticalAlign: VerticalAlign.TOP,
-    width: { size: 20, type: WidthType.PERCENTAGE },
-    children: [
-      new Paragraph({
-        spacing: { before: 80, after: 80 },
-        children: [new TextRun({ text: label, bold: true, font: "Arial", size: 18 })],
-      }),
-    ],
+/** Centered name line (bold). */
+function signatureNameParagraph(name: string): Paragraph {
+  return new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 80, after: 0 },
+    children: [new TextRun({ text: name.toUpperCase(), bold: true, font: "Arial", size: 18 })],
   });
 }
 
-/** Empty spacer cell used to pad the signature grid. */
-function emptyCell(): TableCell {
-  return new TableCell({
-    borders: BORDER,
-    verticalAlign: VerticalAlign.TOP,
-    children: [new Paragraph({ children: [] })],
+/** Centered title line (italic). */
+function signatureTitleParagraph(title: string): Paragraph {
+  return new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 0, after: 80 },
+    children: [new TextRun({ text: title, italics: true, font: "Arial", size: 16 })],
   });
 }
 
-function signatureTable(
+/** Left-aligned signature section label ("Prepared:", "Checked & Reviewed:", "Noted:"). */
+function signatureLabelParagraph(label: string): Paragraph {
+  return new Paragraph({
+    spacing: { before: 200, after: 60 },
+    children: [new TextRun({ text: label, bold: true, font: "Arial", size: 18 })],
+  });
+}
+
+/**
+ * Render signature names/titles as horizontal columns using center-aligned tab
+ * stops — no table, no gridlines. Produces N columns spread evenly across the
+ * text width (usable A4 width = 11906 - 2*1080 twips margins = 9746 twips).
+ */
+function signatureColumns(
+  signatories: { name: string; title: string }[],
+  columns: number
+): Paragraph[] {
+  const usable = 11906 - 1080 - 1080; // A4 width minus left/right margins
+  const tabStops = Array.from({ length: columns }, (_, i) => ({
+    type: TabStopType.CENTER,
+    position: Math.round(((i + 0.5) * usable) / columns),
+  }));
+
+  const names = signatories.slice(0, columns).map((s) => s.name);
+  const titles = signatories.slice(0, columns).map((s) => s.title);
+
+  const buildRow = (cells: string[], bold: boolean, italics: boolean, size: number): Paragraph =>
+    new Paragraph({
+      tabStops,
+      spacing: { before: 20, after: 20 },
+      children: [
+        ...cells.flatMap((cell) => [
+          new TextRun({ text: "\t", font: "Arial", size }),
+          new TextRun({ text: cell, bold, italics, font: "Arial", size }),
+        ]),
+      ],
+    });
+
+  return [
+    buildRow(names, true, false, 18),
+    new Paragraph({
+      tabStops,
+      spacing: { before: 20, after: 20 },
+      children: Array.from({ length: columns }).flatMap(() => [
+        new TextRun({ text: "\t", font: "Arial", size: 18 }),
+        new TextRun({ text: SIGNATURE_RULE, font: "Arial", size: 18 }),
+      ]),
+    }),
+    buildRow(titles, false, true, 16),
+  ];
+}
+
+/** Full signature block: "Prepared:" + "Checked & Reviewed:" + "Noted:". */
+function signatureBlock(
   prepared: { name: string; title: string },
   checked: { name: string; title: string }[],
   noted: { name: string; title: string }[]
-): Table {
-  const pad = (cells: TableCell[]) => [
-    ...cells,
-    ...Array.from({ length: Math.max(0, 3 - cells.length) }).map(() => emptyCell()),
+): Paragraph[] {
+  return [
+    signatureLabelParagraph("Prepared:"),
+    signatureNameParagraph(prepared.name),
+    signatureRuleParagraph(),
+    signatureTitleParagraph(prepared.title),
+    signatureLabelParagraph("Checked & Reviewed:"),
+    ...signatureColumns(checked, 3),
+    signatureLabelParagraph("Noted:"),
+    ...signatureColumns(noted, 2),
   ];
-  return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: [
-      // Prepared (name spans the three right columns)
-      new TableRow({
-        children: [
-          signatureLabelCell("Prepared:"),
-          signatureCell(prepared.name, prepared.title),
-          emptyCell(),
-          emptyCell(),
-        ],
-      }),
-      // Checked & Reviewed
-      new TableRow({
-        children: [signatureLabelCell("Checked & Reviewed:"), ...pad(checked.map((s) => signatureCell(s.name, s.title)))],
-      }),
-      // Noted
-      new TableRow({
-        children: [signatureLabelCell("Noted:"), ...pad(noted.map((s) => signatureCell(s.name, s.title)))],
-      }),
-    ],
-  });
 }
 
 // ============================================================
@@ -417,7 +433,7 @@ export async function buildDocx(
           spacer(),
 
           // ========== SECTION 4: SIGNATORIES ==========
-          signatureTable(
+          ...signatureBlock(
             { name: preparedName, title: preparedTitle },
             checked,
             noted
@@ -620,7 +636,7 @@ export async function buildWLPDocx(
           spacer(),
 
           // ========== SIGNATORIES ==========
-          signatureTable(
+          ...signatureBlock(
             { name: input.teacherName || "JOSE ROMMEL L. GARCIA", title: "Teacher III" },
             DEFAULT_CHECKED,
             DEFAULT_NOTED

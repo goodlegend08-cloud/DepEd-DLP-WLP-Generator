@@ -302,51 +302,59 @@ export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
         </tbody>
       </table>
 
-      {/* Signatories */}
-      <table className="w-full border-collapse border border-black text-xs">
-        <tbody>
-          <tr>
-            <td className={`${CELL_BORDER} p-2 w-1/5 align-top font-bold`}>Prepared:</td>
-            <td className={`${CELL_BORDER} p-2 align-top text-center`} colSpan={3}>
+      {/* Signatories — clean unbordered paragraph text after the tables */}
+      <div className="mt-8 space-y-6">
+        {/* Prepared */}
+        <div>
+          <p className="font-bold">Prepared:</p>
+          <div className="mt-2 flex">
+            <div className="flex-1 text-center">
               <p className="font-bold uppercase">{input?.teacherName || "JOSE ROMMEL L. GARCIA"}</p>
               <div className="mx-auto my-1 border-b-2 border-black w-52" />
               <p className="italic">Teacher III</p>
-            </td>
-          </tr>
-          <tr>
-            <td className={`${CELL_BORDER} p-2 align-top font-bold`}>Checked &amp; Reviewed:</td>
-            <td className={`${CELL_BORDER} p-2 align-top text-center`}>
-              <p className="font-bold uppercase">TRIXIA A. PALMOS</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Checked & Reviewed (3-column spacing, no gridlines) */}
+        <div>
+          <p className="font-bold">Checked &amp; Reviewed:</p>
+          <div className="mt-2 flex">
+            <div className="flex-1 text-center">
+              <p className="font-bold">TRIXIA A. PALMOS</p>
               <div className="mx-auto my-1 border-b-2 border-black w-52" />
               <p className="italic">Master Teacher II - Science</p>
-            </td>
-            <td className={`${CELL_BORDER} p-2 align-top text-center`}>
-              <p className="font-bold uppercase">CARMELITA G. YAP</p>
+            </div>
+            <div className="flex-1 text-center">
+              <p className="font-bold">CARMELITA G. YAP</p>
               <div className="mx-auto my-1 border-b-2 border-black w-52" />
               <p className="italic">SCIENCE Coordinator</p>
-            </td>
-            <td className={`${CELL_BORDER} p-2 align-top text-center`}>
-              <p className="font-bold uppercase">JEANETTE J. RUGA, Ph.D.</p>
+            </div>
+            <div className="flex-1 text-center">
+              <p className="font-bold">Jeanette J. Ruga, Ph.D.</p>
               <div className="mx-auto my-1 border-b-2 border-black w-52" />
-              <p className="italic whitespace-pre-wrap">Assistant School Principal II{"\n"}Officer-in-Charge</p>
-            </td>
-          </tr>
-          <tr>
-            <td className={`${CELL_BORDER} p-2 align-top font-bold`}>Noted:</td>
-            <td className={`${CELL_BORDER} p-2 align-top text-center`}>
-              <p className="font-bold uppercase">MILDRED T. TUBLE</p>
+              <p className="italic">Assistant school Principal II / Officer – in – Charge</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Noted (2-column spacing, no gridlines) */}
+        <div>
+          <p className="font-bold">Noted:</p>
+          <div className="mt-2 flex">
+            <div className="flex-1 text-center">
+              <p className="font-bold">MILDRED T. TUBLE</p>
               <div className="mx-auto my-1 border-b-2 border-black w-52" />
-              <p className="italic whitespace-pre-wrap">Public Schools District{"\n"}Supervisor – Cluster I</p>
-            </td>
-            <td className={`${CELL_BORDER} p-2 align-top text-center`}>
-              <p className="font-bold uppercase">GENOVIE G. TAGUM, Ph.D.</p>
+              <p className="italic">Public Schools District Supervisor – Cluster I</p>
+            </div>
+            <div className="flex-1 text-center">
+              <p className="font-bold">GENOVIE G. TAGUM, Ph.D.</p>
               <div className="mx-auto my-1 border-b-2 border-black w-52" />
-              <p className="italic whitespace-pre-wrap">Education Program Supervisor{"\n"}– SCIENCE</p>
-            </td>
-            <td className={`${CELL_BORDER} p-2 align-top`} />
-          </tr>
-        </tbody>
-      </table>
+              <p className="italic">Education Program Supervisor – SCIENCE</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

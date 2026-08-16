@@ -202,7 +202,7 @@ function ProcedureStep({ label, content, onEdit }: { label: string; content: str
 const DEFAULT_CHECKED = [
   { name: "TRIXIA A. PALMOS", title: "Master Teacher II - Science" },
   { name: "CARMELITA G. YAP", title: "SCIENCE Coordinator" },
-  { name: "JEANETTE J. RUGA, Ph.D.", title: "Assistant School Principal II\nOfficer-in-Charge" },
+  { name: "Jeanette J. Ruga, Ph.D.", title: "Assistant school Principal II / Officer – in – Charge" },
 ];
 const DEFAULT_NOTED = [
   { name: "MILDRED T. TUBLE", title: "Public Schools District Supervisor – Cluster I" },
@@ -213,6 +213,21 @@ function SignatureRule() {
   return <div className="mx-auto my-1 border-b-2 border-black w-52" />;
 }
 
+/** One centered signature column: bold name, underline rule, italic title. */
+function SignatureColumn({ name, title }: { name: string; title: string }) {
+  return (
+    <div className="flex-1 text-center">
+      <p className="font-bold">{name}</p>
+      <SignatureRule />
+      <p className="italic whitespace-pre-wrap">{title}</p>
+    </div>
+  );
+}
+
+/**
+ * Signature block rendered as clean, unbordered paragraph text — placed
+ * AFTER the main lesson plan table. No table borders or gridlines.
+ */
 function SignatureBlock({
   preparedName,
   preparedTitle,
@@ -225,49 +240,35 @@ function SignatureBlock({
   noted: { name: string; title: string }[];
 }) {
   return (
-    <table className="w-full border-collapse border border-black text-xs">
-      <tbody>
-        {/* Prepared */}
-        <tr>
-          <td className={`${CELL_BORDER} p-2 w-1/5 align-top font-bold`}>Prepared:</td>
-          <td className={`${CELL_BORDER} p-2 align-top text-center`} colSpan={3}>
-            <p className="font-bold uppercase">{preparedName}</p>
-            <SignatureRule />
-            <p className="italic">{preparedTitle}</p>
-          </td>
-        </tr>
+    <div className="mt-8 space-y-6">
+      {/* Prepared */}
+      <div>
+        <p className="font-bold">Prepared:</p>
+        <div className="mt-2 flex">
+          <SignatureColumn name={preparedName.toUpperCase()} title={preparedTitle} />
+        </div>
+      </div>
 
-        {/* Checked & Reviewed */}
-        <tr>
-          <td className={`${CELL_BORDER} p-2 align-top font-bold`}>Checked &amp; Reviewed:</td>
+      {/* Checked & Reviewed (3-column spacing, no gridlines) */}
+      <div>
+        <p className="font-bold">Checked &amp; Reviewed:</p>
+        <div className="mt-2 flex">
           {checked.map((s, i) => (
-            <td key={i} className={`${CELL_BORDER} p-2 align-top text-center`}>
-              <p className="font-bold uppercase">{s.name}</p>
-              <SignatureRule />
-              <p className="italic whitespace-pre-wrap">{s.title}</p>
-            </td>
+            <SignatureColumn key={i} name={s.name} title={s.title} />
           ))}
-          {Array.from({ length: Math.max(0, 3 - checked.length) }).map((_, i) => (
-            <td key={`e${i}`} className={`${CELL_BORDER} p-2 align-top`} />
-          ))}
-        </tr>
+        </div>
+      </div>
 
-        {/* Noted */}
-        <tr>
-          <td className={`${CELL_BORDER} p-2 align-top font-bold`}>Noted:</td>
+      {/* Noted (2-column spacing, no gridlines) */}
+      <div>
+        <p className="font-bold">Noted:</p>
+        <div className="mt-2 flex">
           {noted.map((s, i) => (
-            <td key={i} className={`${CELL_BORDER} p-2 align-top text-center`}>
-              <p className="font-bold uppercase">{s.name}</p>
-              <SignatureRule />
-              <p className="italic whitespace-pre-wrap">{s.title}</p>
-            </td>
+            <SignatureColumn key={i} name={s.name} title={s.title} />
           ))}
-          {Array.from({ length: Math.max(0, 3 - noted.length) }).map((_, i) => (
-            <td key={`e${i}`} className={`${CELL_BORDER} p-2 align-top`} />
-          ))}
-        </tr>
-      </tbody>
-    </table>
+        </div>
+      </div>
+    </div>
   );
 }
 

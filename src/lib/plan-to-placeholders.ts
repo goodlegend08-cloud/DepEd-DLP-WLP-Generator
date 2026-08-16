@@ -7,7 +7,7 @@ import type { GeneratedDLPPlan, DLPFlowPhases, DLPFormativeAssessment, DLPExtend
 const DEFAULT_CHECKED = [
   "TRIXIA A. PALMOS",
   "CARMELITA G. YAP",
-  "JEANETTE J. RUGA, Ph.D.",
+  "Jeanette J. Ruga, Ph.D.",
 ];
 const DEFAULT_NOTED = ["MILDRED T. TUBLE", "GENOVIE G. TAGUM, Ph.D."];
 
