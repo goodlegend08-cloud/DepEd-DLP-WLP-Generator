@@ -6,6 +6,7 @@ import {
   TableCell,
   TableRow,
   TextRun,
+  ImageRun,
   WidthType,
   AlignmentType,
   BorderStyle,
@@ -14,6 +15,8 @@ import {
   TabStopType,
 } from "docx";
 import type { ITableCellBorders } from "docx";
+import fs from "fs";
+import path from "path";
 import type { GeneratedDLPPlan, WeeklyLessonPlan, LessonPlanInput, DLPFlowPhases, DLPFormativeAssessment, DLPExtendedLearning } from "@/types/lesson-plan";
 
 // ============================================================
@@ -298,7 +301,7 @@ export async function buildDocx(
   plan: GeneratedDLPPlan,
   input: LessonPlanInput
 ): Promise<Buffer> {
-  const { header, lesson_plan_meta, intentions, learning_experience, assessment, ways_forward, signatories } = plan;
+  const { lesson_plan_meta, intentions, learning_experience, assessment, ways_forward, signatories } = plan;
   const lessonTitle = lesson_plan_meta.lesson_title || input.subjectDescription || "Lesson Plan";
   const flow = resolveFlow(learning_experience.flow, learning_experience);
   const formative = resolveFormativeAssessment(assessment.formative_assessment, assessment);
@@ -322,14 +325,7 @@ export async function buildDocx(
         },
         children: [
           // ========== SECTION 1: OFFICIAL LETTERHEAD ==========
-          letterheadLine(header.republic || "Republic of the Philippines", 32, true),
-          letterheadLine(header.department || "Department of Education", 32, true),
-          centeredLine(header.region || "NATIONAL CAPITAL REGION", 18, true),
-          centeredLine(header.division || "SCHOOLS DIVISION OF LAS PIÑAS CITY", 18, false),
-          centeredLine(header.school || "LAS PIÑAS CAA NATIONAL HIGH SCHOOL", 18, true),
-          centeredLine(header.address || "NARRA CORNER RECEIVER STS., BF INTERNATIONAL VILLAGE, LAS PIÑAS CITY", 14, false),
-
-          spacer(),
+          headerImageParagraph(),
 
           // ========== DOCUMENT TITLE ==========
           new Paragraph({
@@ -467,12 +463,45 @@ function centeredLine(text: string, size: number, bold: boolean): Paragraph {
   });
 }
 
-/** Letterhead line rendered in the Old English font. */
-function letterheadLine(text: string, size: number, bold: boolean): Paragraph {
+/**
+ * Official LPCAA DepEd header image as a centered ImageRun spanning the full
+ * document content width (~600px). Falls back to the text letterhead when the
+ * image asset cannot be read at runtime.
+ */
+function headerImageParagraph(): Paragraph {
+  const candidates = [
+    path.join(process.cwd(), "src", "templates", "lpcaa-header.png"),
+    path.join(process.cwd(), "public", "assets", "lpcaa header.png"),
+  ];
+  const file = candidates.find((p) => {
+    try {
+      return fs.statSync(p).isFile();
+    } catch {
+      return false;
+    }
+  });
+
+  if (file) {
+    const data = fs.readFileSync(file);
+    return new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 120 },
+      children: [
+        new ImageRun({
+          type: "png",
+          data,
+          transformation: { width: 600, height: 124 },
+        }),
+      ],
+    });
+  }
+
+  // Fallback: render the standard DepEd letterhead text.
   return new Paragraph({
     alignment: AlignmentType.CENTER,
-    spacing: { after: 0 },
-    children: [new TextRun({ text, bold, font: "Old English Text MT", size })],
+    children: [
+      new TextRun({ text: "Republic of the Philippines\nDepartment of Education", bold: true, font: "Old English Text MT", size: 32 }),
+    ],
   });
 }
 
@@ -543,12 +572,7 @@ export async function buildWLPDocx(
         },
         children: [
           // ========== HEADER ==========
-          letterheadLine("Republic of the Philippines", 32, true),
-          letterheadLine("Department of Education", 32, true),
-          centeredLine("NATIONAL CAPITAL REGION", 18, true),
-          centeredLine("SCHOOLS DIVISION OF LAS PIÑAS CITY", 18, false),
-          centeredLine("LAS PIÑAS CAA NATIONAL HIGH SCHOOL", 18, true),
-
+          headerImageParagraph(),
           // ========== TITLE ==========
           new Paragraph({
             alignment: AlignmentType.CENTER,

@@ -20,12 +20,6 @@ const DAY_LABELS: Record<string, string> = {
   friday: "FRIDAY",
 };
 
-/** Old English letterhead font stack used for the DepEd header. */
-const OLD_ENGLISH = {
-  fontFamily:
-    "'Old English Text MT', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', serif",
-};
-
 /** Solid black 1pt grid cell border. */
 const CELL_BORDER = "border border-black";
 /** Light-gray section banner fill (#D9D9D9 per template). */
@@ -191,17 +185,13 @@ export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
   ) as Record<(typeof textFields)[number], string>;
   return (
     <div className="text-black">
-      {/* Official DepEd Letterhead */}
-      <div className="text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/deped-logo.png" alt="DepEd Logo" className="mx-auto h-24 w-auto" />
-        <p className="text-xl font-bold leading-tight" style={OLD_ENGLISH}>Republic of the Philippines</p>
-        <p className="text-xl font-bold leading-tight" style={OLD_ENGLISH}>Department of Education</p>
-        <p className="text-sm font-bold mt-1">NATIONAL CAPITAL REGION</p>
-        <p className="text-sm">SCHOOLS DIVISION OF LAS PIÑAS CITY</p>
-        <p className="text-sm font-semibold">LAS PIÑAS CAA NATIONAL HIGH SCHOOL</p>
-        <p className="text-[10px]">S.Y. 2026-2027 | {input?.quarter || "FIRST TERM"}</p>
-      </div>
+      {/* Official LPCAA DepEd Header Image */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/lpcaa header.png"
+        alt="LPCAA DepEd Header"
+        className="w-full max-w-3xl mx-auto mb-4"
+      />
 
       {/* Title */}
       <div className="text-center py-2">
