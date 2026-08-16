@@ -57,7 +57,7 @@ function splitLabel(label: string): { header: string; instruction: string } {
   return { header: label.slice(0, idx), instruction: label.slice(idx + 1) };
 }
 
-/** Banner cell (left bold title / right italic guidance), light-gray fill. */
+/** Banner cell (left bold italic title / right italic guidance), light-gray fill. */
 function bannerCell(text: string, italic: boolean): TableCell {
   return new TableCell({
     borders: BORDER,
@@ -66,16 +66,16 @@ function bannerCell(text: string, italic: boolean): TableCell {
     children: [
       new Paragraph({
         spacing: { before: 40, after: 40 },
-        children: [new TextRun({ text, bold: !italic, italics: italic, font: "Times New Roman", size: italic ? 20 : 24 })],
+        children: [new TextRun({ text, bold: !italic, italics: true, font: "Times New Roman", size: italic ? 20 : 24 })],
       }),
     ],
   });
 }
 
-/** Left column label cell: bold underlined header (12pt) + italic instruction (10pt). */
+/** Left column label cell: bold italic underlined header (12pt) + italic instruction (10pt). */
 function labelCell(label: string): TableCell {
   const { header, instruction } = splitLabel(label);
-  const runs: TextRun[] = [new TextRun({ text: header, bold: true, underline: { type: UnderlineType.SINGLE }, font: "Times New Roman", size: 24 })];
+  const runs: TextRun[] = [new TextRun({ text: header, bold: true, italics: true, underline: { type: UnderlineType.SINGLE }, font: "Times New Roman", size: 24 })];
   if (instruction) {
     runs.push(new TextRun({ text: "\n" + instruction, italics: true, font: "Times New Roman", size: 20, color: "333333" }));
   }
@@ -325,21 +325,21 @@ function signatureRuleParagraph(): Paragraph {
   });
 }
 
-/** Centered name line (bold). */
+/** Centered name line (bold, 12pt, uppercase). */
 function signatureNameParagraph(name: string): Paragraph {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { before: 80, after: 0 },
-    children: [new TextRun({ text: name.toUpperCase(), bold: true, font: "Times New Roman", size: 18 })],
+    children: [new TextRun({ text: name.toUpperCase(), bold: true, font: "Times New Roman", size: 24 })],
   });
 }
 
-/** Centered title line (italic). */
+/** Centered title line (italic, 11pt). */
 function signatureTitleParagraph(title: string): Paragraph {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { before: 0, after: 80 },
-    children: [new TextRun({ text: title, italics: true, font: "Times New Roman", size: 16 })],
+    children: [new TextRun({ text: title, italics: true, font: "Times New Roman", size: 22 })],
   });
 }
 
@@ -366,7 +366,7 @@ function signatureColumns(
     position: Math.round(((i + 0.5) * usable) / columns),
   }));
 
-  const names = signatories.slice(0, columns).map((s) => s.name);
+  const names = signatories.slice(0, columns).map((s) => s.name.toUpperCase());
   const titles = signatories.slice(0, columns).map((s) => s.title);
 
   const buildRow = (cells: string[], bold: boolean, italics: boolean, size: number): Paragraph =>
@@ -382,7 +382,7 @@ function signatureColumns(
     });
 
   return [
-    buildRow(names, true, false, 18),
+    buildRow(names, true, false, 24),
     new Paragraph({
       tabStops,
       spacing: { before: 20, after: 20 },
@@ -391,7 +391,7 @@ function signatureColumns(
         new TextRun({ text: SIGNATURE_RULE, font: "Times New Roman", size: 18 }),
       ]),
     }),
-    buildRow(titles, false, true, 16),
+    buildRow(titles, false, true, 22),
   ];
 }
 

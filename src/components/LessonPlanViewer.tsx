@@ -98,7 +98,7 @@ function BannerRow({ title, guidance }: { title: string; guidance?: string }) {
   return (
     <tr>
       <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 w-1/3 align-top`}>
-        <span className="text-[12pt] font-bold">{title}</span>
+        <span className="text-[12pt] font-bold italic">{title}</span>
       </td>
       <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 text-[10pt] italic align-top`}>
         {guidance}
@@ -111,18 +111,16 @@ function BannerRow({ title, guidance }: { title: string; guidance?: string }) {
 function SubRow({
   label,
   instruction,
-  italicLabel,
   children,
 }: {
   label: string;
   instruction?: string;
-  italicLabel?: boolean;
   children: ReactNode;
 }) {
   return (
     <tr>
       <td className={`${CELL_BORDER} p-2 w-1/3 align-top`}>
-        <p className={`text-[12pt] font-bold underline ${italicLabel ? "italic" : ""}`}>{label}</p>
+        <p className="text-[12pt] font-bold italic underline">{label}</p>
         {instruction && <p className="text-[10pt] italic whitespace-pre-wrap mt-1 text-slate-700">{instruction}</p>}
       </td>
       <td className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>{children}</td>
@@ -225,13 +223,13 @@ function SignatureRule() {
   return <div className="mx-auto my-1 border-b-2 border-black w-52" />;
 }
 
-/** One centered signature column: bold name, underline rule, italic title. */
+/** One centered signature column: bold uppercase name, underline rule, italic title. */
 function SignatureColumn({ name, title }: { name: string; title: string }) {
   return (
     <div className="flex-1 text-center">
-      <p className="font-bold">{name}</p>
+      <p className="text-[12pt] font-bold uppercase">{name}</p>
       <SignatureRule />
-      <p className="italic whitespace-pre-wrap">{title}</p>
+      <p className="text-[11pt] italic whitespace-pre-wrap">{title}</p>
     </div>
   );
 }
@@ -416,7 +414,6 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
           </SubRow>
           <SubRow
             label="Flow:"
-            italicLabel
             instruction={`Describe the activities that you can implement in 1 or more sessions to meet the learning objectives.
 
 Apply the Learning Design Principles by thinking about how to:
@@ -531,20 +528,20 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
       <Card>
         <CardHeader className="p-0">
           <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
-            <CardTitle className="text-base font-bold text-slate-900">Intentions.</CardTitle>
+            <CardTitle className="text-base font-bold italic text-slate-900">Intentions.</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <h4 className="text-[12pt] font-bold underline mb-1">Learning Competency:</h4>
+            <h4 className="text-[12pt] font-bold italic underline mb-1">Learning Competency:</h4>
             <p className="text-sm font-bold text-center whitespace-pre-wrap">{input?.competencies || plan.content.content}</p>
           </div>
           <div>
-            <h4 className="text-[12pt] font-bold underline mb-1">Learning Objectives:</h4>
+            <h4 className="text-[12pt] font-bold italic underline mb-1">Learning Objectives:</h4>
             <p className="text-sm font-bold text-center whitespace-pre-wrap">{plan.objectives.objectives_content}</p>
           </div>
           <div>
-            <h4 className="text-[12pt] font-bold underline mb-1">Learners&apos; Context:</h4>
+            <h4 className="text-[12pt] font-bold italic underline mb-1">Learners&apos; Context:</h4>
             <p className="text-sm whitespace-pre-wrap">{plan.objectives.content}</p>
           </div>
         </CardContent>
@@ -554,7 +551,7 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
       <Card>
         <CardHeader className="p-0">
           <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
-            <CardTitle className="text-base font-bold text-slate-900">Learning Experience.</CardTitle>
+            <CardTitle className="text-base font-bold italic text-slate-900">Learning Experience.</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -580,7 +577,7 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
       <Card>
         <CardHeader className="p-0">
           <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
-            <CardTitle className="text-base font-bold text-slate-900">Assessment.</CardTitle>
+            <CardTitle className="text-base font-bold italic text-slate-900">Assessment.</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -592,14 +589,14 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
       <Card>
         <CardHeader className="p-0">
           <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
-            <CardTitle className="text-base font-bold text-slate-900">Ways Forward.</CardTitle>
+            <CardTitle className="text-base font-bold italic text-slate-900">Ways Forward.</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <ProcedureStep label="Extended Learning Opportunities" content={plan.reflection} />
           <Separator />
           <div>
-            <h4 className="text-[12pt] font-bold underline mb-2">Reflections:</h4>
+            <h4 className="text-[12pt] font-bold italic underline mb-2">Reflections:</h4>
             <ol className="text-sm list-decimal list-inside space-y-2 text-muted-foreground">
               <li>Were the differentiated group activities effective in addressing the three reading levels? What evidence from learner responses supports this?</li>
               <li>Which part of the lesson (Engage, Explore, Elaborate, Evaluate) showed the highest learner engagement, and what instructional strategy contributed to this?</li>
