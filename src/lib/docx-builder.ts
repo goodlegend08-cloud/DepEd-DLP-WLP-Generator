@@ -258,13 +258,13 @@ function signatureLabelParagraph(label: string): Paragraph {
 /**
  * Render signature names/titles as horizontal columns using center-aligned tab
  * stops — no table, no gridlines. Produces N columns spread evenly across the
- * text width (usable A4 width = 11906 - 2*1080 twips margins = 9746 twips).
+ * text width (usable width = 12240 - 2*1080 twips margins = 10080 twips).
  */
 function signatureColumns(
   signatories: { name: string; title: string }[],
   columns: number
 ): Paragraph[] {
-  const usable = 11906 - 1080 - 1080; // A4 width minus left/right margins
+  const usable = 12240 - 1080 - 1080; // 8.5 x 13 in width minus left/right margins
   const tabStops = Array.from({ length: columns }, (_, i) => ({
     type: TabStopType.CENTER,
     position: Math.round(((i + 0.5) * usable) / columns),
@@ -343,6 +343,7 @@ export async function buildDocx(
       {
         properties: {
           page: {
+            size: { width: 12240, height: 18720 }, // 8.5 x 13 in (Legal/Folio)
             margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 },
           },
         },
@@ -590,6 +591,7 @@ export async function buildWLPDocx(
       {
         properties: {
           page: {
+            size: { width: 12240, height: 18720 }, // 8.5 x 13 in (Legal/Folio)
             margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 },
           },
         },
