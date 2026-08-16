@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import type { ReactNode } from "react";
 import type { WeeklyLessonPlan, LessonPlanInput } from "@/types/lesson-plan";
 
 interface WLPViewerProps {
@@ -21,6 +19,53 @@ const DAY_LABELS: Record<string, string> = {
   thursday: "THURSDAY",
   friday: "FRIDAY",
 };
+
+/** Old English letterhead font stack used for the DepEd header. */
+const OLD_ENGLISH = {
+  fontFamily:
+    "'Old English Text MT', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', serif",
+};
+
+/** Solid black 1pt grid cell border. */
+const CELL_BORDER = "border border-black";
+/** Light-gray section banner fill (#D9D9D9 per template). */
+const BANNER_FILL = "bg-[#D9D9D9]";
+
+/** Gray section banner row: bold title (left) + italic guidance (right). */
+function BannerRow({ title, guidance }: { title: string; guidance?: string }) {
+  return (
+    <tr>
+      <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 w-1/3 align-top`}>
+        <span className="text-sm font-bold">{title}</span>
+      </td>
+      <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 text-xs italic align-top`}>
+        {guidance}
+      </td>
+    </tr>
+  );
+}
+
+/** Metadata key-value row: bold label (left), value (right). */
+function MetaRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <tr>
+      <td className={`${CELL_BORDER} p-2 w-1/3 font-semibold text-xs align-top`}>{label}</td>
+      <td className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>{children}</td>
+    </tr>
+  );
+}
+
+/** Subsection row: italic-bold label (left), content (right). */
+function SubRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <tr>
+      <td className={`${CELL_BORDER} p-2 w-1/3 align-top`}>
+        <p className="text-xs font-bold italic">{label}</p>
+      </td>
+      <td className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>{children}</td>
+    </tr>
+  );
+}
 
 /** Text that becomes an editable textarea on double-click. */
 function EditableText({
@@ -135,6 +180,7 @@ function normalizeDay(day: string, rawDay: unknown): { day: string; date: string
 }
 
 export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
+  const lessonTitle = input?.subjectDescription || "Weekly Lesson Plan";
   const days = Object.fromEntries(
     DAYS.map((day) => [day, normalizeDay(day, plan[day])])
   ) as Record<(typeof DAYS)[number], { day: string; date: string; activities: string }>;
@@ -144,143 +190,163 @@ export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
     textFields.map((key) => [key, flattenActivities((plan as unknown as Record<string, unknown>)[key])])
   ) as Record<(typeof textFields)[number], string>;
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="text-center py-4 border-b-2 border-primary">
-        <p className="text-xs text-muted-foreground">NATIONAL CAPITAL REGION</p>
-        <p className="text-xs text-muted-foreground">SCHOOLS DIVISION OF LAS PIÑAS CITY</p>
-        <p className="text-xs text-muted-foreground">S.Y. 2026-2027 | FIRST TERM</p>
-        <h2 className="text-xl font-bold text-primary mt-2">WEEKLY LESSON PLAN (WLP)</h2>
+    <div className="text-black">
+      {/* Official DepEd Letterhead */}
+      <div className="text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/deped-logo.png" alt="DepEd Logo" className="mx-auto h-24 w-auto" />
+        <p className="text-xl font-bold leading-tight" style={OLD_ENGLISH}>Republic of the Philippines</p>
+        <p className="text-xl font-bold leading-tight" style={OLD_ENGLISH}>Department of Education</p>
+        <p className="text-sm font-bold mt-1">NATIONAL CAPITAL REGION</p>
+        <p className="text-sm">SCHOOLS DIVISION OF LAS PIÑAS CITY</p>
+        <p className="text-sm font-semibold">LAS PIÑAS CAA NATIONAL HIGH SCHOOL</p>
+        <p className="text-[10px]">S.Y. 2026-2027 | {input?.quarter || "FIRST TERM"}</p>
+      </div>
+
+      {/* Title */}
+      <div className="text-center py-2">
+        <h2 className="text-base font-bold uppercase tracking-wide">WEEKLY LESSON PLAN (WLP)</h2>
         <p className="text-sm font-semibold uppercase">{input?.learningArea || "SCIENCE"}</p>
       </div>
 
-      {/* Metadata */}
-      {input && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          <Badge variant="secondary">Grade {input.gradeLevel}</Badge>
-          <Badge variant="secondary">{input.learningArea}</Badge>
-          <Badge variant="secondary">{input.quarter}</Badge>
-          <Badge variant="secondary">{input.week}</Badge>
-          <Badge variant="outline">{input.curriculumType}</Badge>
-          <Badge variant="outline">{input.teachingMethod}</Badge>
-        </div>
-      )}
+      {/* Metadata Table */}
+      <table className="w-full border-collapse border border-black text-sm">
+        <tbody>
+          <MetaRow label="Name of Lesson">
+            <EditableText value={lessonTitle} onEdit={onEdit ? (v) => onEdit("nameOfLesson", v) : undefined} />
+          </MetaRow>
+          <MetaRow label="Week">
+            {input ? `${input.quarter} | ${input.week}` : ""}
+          </MetaRow>
+          <MetaRow label="Designed by teacher/s">
+            {input?.teacherName || "[Teacher Name]"}
+          </MetaRow>
+          <MetaRow label="Designed for which Grade Level and Section">
+            Grade {input?.gradeLevel || ""}
+          </MetaRow>
+          <MetaRow label="No. of Sessions">
+            5 Sessions (50 minutes each)
+          </MetaRow>
+          <MetaRow label="References (books, websites, toolkits, etc.)">
+            MATATAG K-10 Curriculum Guide; DepEd Science Learning Materials; DepEd MATATAG Curriculum Resources; Division DBOW.
+          </MetaRow>
+        </tbody>
+      </table>
 
       {/* Weekly Objectives */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-            WEEKLY OBJECTIVES & COMPETENCIES
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <h4 className="text-sm font-semibold mb-1 bg-blue-50 py-1 px-2 rounded">Weekly Competencies</h4>
-            <p className="text-sm whitespace-pre-wrap">
-              <EditableText value={texts.weeklyCompetencies} onEdit={onEdit ? (v) => onEdit("weeklyCompetencies", v) : undefined} className="whitespace-pre-wrap" />
-            </p>
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold mb-1 bg-blue-50 py-1 px-2 rounded">Weekly Objectives</h4>
-            <p className="text-sm whitespace-pre-wrap">
-              <EditableText value={texts.weeklyObjectives} onEdit={onEdit ? (v) => onEdit("weeklyObjectives", v) : undefined} className="whitespace-pre-wrap" />
-            </p>
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold mb-1 bg-blue-50 py-1 px-2 rounded">Weekly Content Overview</h4>
-            <p className="text-sm whitespace-pre-wrap">
-              <EditableText value={texts.weeklyContent} onEdit={onEdit ? (v) => onEdit("weeklyContent", v) : undefined} className="whitespace-pre-wrap" />
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <table className="w-full border-collapse border border-black text-sm">
+        <tbody>
+          <BannerRow title="Weekly Objectives & Competencies." guidance="Weekly competencies, objectives, and the content overview for the week." />
+          <SubRow label="Weekly Competencies:">
+            <EditableText value={texts.weeklyCompetencies} onEdit={onEdit ? (v) => onEdit("weeklyCompetencies", v) : undefined} className="whitespace-pre-wrap" />
+          </SubRow>
+          <SubRow label="Weekly Objectives:">
+            <EditableText value={texts.weeklyObjectives} onEdit={onEdit ? (v) => onEdit("weeklyObjectives", v) : undefined} className="whitespace-pre-wrap" />
+          </SubRow>
+          <SubRow label="Weekly Content Overview:">
+            <EditableText value={texts.weeklyContent} onEdit={onEdit ? (v) => onEdit("weeklyContent", v) : undefined} className="whitespace-pre-wrap" />
+          </SubRow>
+        </tbody>
+      </table>
 
       {/* Daily Plans */}
       {DAYS.map((day) => {
         const dayPlan = days[day];
         return (
-          <Card key={day}>
-            <CardHeader>
-              <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-                {DAY_LABELS[day]} —{" "}
-                <EditableText value={dayPlan.date} onEdit={onEdit ? (v) => onEdit(`${day}.date`, v) : undefined} />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm whitespace-pre-wrap text-muted-foreground">
-                <EditableText value={dayPlan.activities} onEdit={onEdit ? (v) => onEdit(`${day}.activities`, v) : undefined} className="whitespace-pre-wrap" />
-              </div>
-            </CardContent>
-          </Card>
+          <table key={day} className="w-full border-collapse border border-black text-sm">
+            <tbody>
+              <BannerRow title={`${DAY_LABELS[day]} — ${dayPlan.date}`} guidance="" />
+              <tr>
+                <td colSpan={2} className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>
+                  <EditableText value={dayPlan.activities} onEdit={onEdit ? (v) => onEdit(`${day}.activities`, v) : undefined} className="whitespace-pre-wrap" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         );
       })}
 
       {/* Learning Resources */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-            LEARNING RESOURCES
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-            <EditableText value={texts.learningResources} onEdit={onEdit ? (v) => onEdit("learningResources", v) : undefined} className="whitespace-pre-wrap" />
-          </p>
-        </CardContent>
-      </Card>
+      <table className="w-full border-collapse border border-black text-sm">
+        <tbody>
+          <BannerRow title="Learning Resources." guidance="Resources used to reach the weekly objectives." />
+          <tr>
+            <td colSpan={2} className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>
+              <EditableText value={texts.learningResources} onEdit={onEdit ? (v) => onEdit("learningResources", v) : undefined} className="whitespace-pre-wrap" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       {/* Remarks */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-            REMARKS & INTEGRATION
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-            <EditableText value={texts.remarks} onEdit={onEdit ? (v) => onEdit("remarks", v) : undefined} className="whitespace-pre-wrap" />
-          </p>
-        </CardContent>
-      </Card>
+      <table className="w-full border-collapse border border-black text-sm">
+        <tbody>
+          <BannerRow title="Remarks & Integration." guidance="Integration notes and remarks for the week." />
+          <tr>
+            <td colSpan={2} className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>
+              <EditableText value={texts.remarks} onEdit={onEdit ? (v) => onEdit("remarks", v) : undefined} className="whitespace-pre-wrap" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       {/* Reflection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-            TEACHER REFLECTION
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-            <EditableText value={texts.reflection} onEdit={onEdit ? (v) => onEdit("reflection", v) : undefined} className="whitespace-pre-wrap" />
-          </p>
-        </CardContent>
-      </Card>
+      <table className="w-full border-collapse border border-black text-sm">
+        <tbody>
+          <BannerRow title="Teacher Reflection." guidance="Reflect on the week to guide the next sessions." />
+          <tr>
+            <td colSpan={2} className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>
+              <EditableText value={texts.reflection} onEdit={onEdit ? (v) => onEdit("reflection", v) : undefined} className="whitespace-pre-wrap" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       {/* Signatories */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-            SIGNATORIES
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="text-sm font-semibold mb-1">Prepared by</h4>
-            <p className="text-sm text-muted-foreground">___________________________________<br />[Teacher Name]<br />Teacher I</p>
-          </div>
-          <Separator />
-          <div>
-            <h4 className="text-sm font-semibold mb-1">Checked & Reviewed by</h4>
-            <p className="text-sm text-muted-foreground">___________________________________<br />[Master Teacher Name]<br />Master Teacher</p>
-          </div>
-          <Separator />
-          <div>
-            <h4 className="text-sm font-semibold mb-1">Noted by</h4>
-            <p className="text-sm text-muted-foreground">___________________________________<br />[Principal Name]<br />School Principal IV</p>
-          </div>
-        </CardContent>
-      </Card>
+      <table className="w-full border-collapse border border-black text-xs">
+        <tbody>
+          <tr>
+            <td className={`${CELL_BORDER} p-2 w-1/5 align-top font-bold`}>Prepared:</td>
+            <td className={`${CELL_BORDER} p-2 align-top text-center`} colSpan={3}>
+              <p className="font-bold uppercase">{input?.teacherName || "JOSE ROMMEL L. GARCIA"}</p>
+              <div className="mx-auto my-1 border-b-2 border-black w-52" />
+              <p className="italic">Teacher III</p>
+            </td>
+          </tr>
+          <tr>
+            <td className={`${CELL_BORDER} p-2 align-top font-bold`}>Checked &amp; Reviewed:</td>
+            <td className={`${CELL_BORDER} p-2 align-top text-center`}>
+              <p className="font-bold uppercase">TRIXIA A. PALMOS</p>
+              <div className="mx-auto my-1 border-b-2 border-black w-52" />
+              <p className="italic">Master Teacher II - Science</p>
+            </td>
+            <td className={`${CELL_BORDER} p-2 align-top text-center`}>
+              <p className="font-bold uppercase">CARMELITA G. YAP</p>
+              <div className="mx-auto my-1 border-b-2 border-black w-52" />
+              <p className="italic">SCIENCE Coordinator</p>
+            </td>
+            <td className={`${CELL_BORDER} p-2 align-top text-center`}>
+              <p className="font-bold uppercase">JEANETTE J. RUGA, Ph.D.</p>
+              <div className="mx-auto my-1 border-b-2 border-black w-52" />
+              <p className="italic whitespace-pre-wrap">Assistant School Principal II{"\n"}Officer-in-Charge</p>
+            </td>
+          </tr>
+          <tr>
+            <td className={`${CELL_BORDER} p-2 align-top font-bold`}>Noted:</td>
+            <td className={`${CELL_BORDER} p-2 align-top text-center`}>
+              <p className="font-bold uppercase">MILDRED T. TUBLE</p>
+              <div className="mx-auto my-1 border-b-2 border-black w-52" />
+              <p className="italic whitespace-pre-wrap">Public Schools District{"\n"}Supervisor – Cluster I</p>
+            </td>
+            <td className={`${CELL_BORDER} p-2 align-top text-center`}>
+              <p className="font-bold uppercase">GENOVIE G. TAGUM, Ph.D.</p>
+              <div className="mx-auto my-1 border-b-2 border-black w-52" />
+              <p className="italic whitespace-pre-wrap">Education Program Supervisor{"\n"}– SCIENCE</p>
+            </td>
+            <td className={`${CELL_BORDER} p-2 align-top`} />
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }

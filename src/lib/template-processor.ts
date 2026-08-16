@@ -36,6 +36,12 @@ export const DLP_PLACEHOLDERS = [
   "EXTENDED_ADVANCED",
   "EXTENDED_STRUGGLING",
   "REFLECTIONS",
+  "PREPARED_BY",
+  "CHECKED_BY_1",
+  "CHECKED_BY_2",
+  "CHECKED_BY_3",
+  "NOTED_BY_1",
+  "NOTED_BY_2",
 ] as const;
 
 export type DLPPlaceholder = (typeof DLP_PLACEHOLDERS)[number];

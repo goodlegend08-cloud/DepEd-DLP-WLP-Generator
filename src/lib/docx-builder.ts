@@ -12,78 +12,82 @@ import {
   ShadingType,
   VerticalAlign,
 } from "docx";
+import type { ITableCellBorders } from "docx";
 import type { GeneratedDLPPlan, WeeklyLessonPlan, LessonPlanInput, DLPFlowPhases, DLPFormativeAssessment, DLPExtendedLearning } from "@/types/lesson-plan";
 
 // ============================================================
-// STYLES
+// STYLES — solid black 1pt grid borders, light-gray banners
 // ============================================================
 const BORDER: ITableCellBorders = {
-  top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-  bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-  left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-  right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+  top: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+  bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+  left: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+  right: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
 };
 
-import type { ITableCellBorders } from "docx";
+/** Light-gray section banner fill (#D9D9D9). */
+const BANNER_FILL = "D9D9D9";
+
+/** Official signature names used when the AI omits them. */
+const DEFAULT_CHECKED = [
+  { name: "TRIXIA A. PALMOS", title: "Master Teacher II - Science" },
+  { name: "CARMELITA G. YAP", title: "SCIENCE Coordinator" },
+  { name: "JEANETTE J. RUGA, Ph.D.", title: "Assistant School Principal II\nOfficer-in-Charge" },
+];
+const DEFAULT_NOTED = [
+  { name: "MILDRED T. TUBLE", title: "Public Schools District Supervisor – Cluster I" },
+  { name: "GENOVIE G. TAGUM, Ph.D.", title: "Education Program Supervisor – SCIENCE" },
+];
+
+const SIGNATURE_RULE = "_____________________";
 
 // ============================================================
-// CELL HELPERS — TRUE 2-COLUMN LAYOUT
+// CELL HELPERS — TRUE 2-COLUMN LAYOUT (template-style)
 // ============================================================
 
-/** Full-width section header (colspan=2), blue background */
-function sectionHeaderCell(text: string): TableCell {
-  return new TableCell({
-    borders: BORDER,
-    shading: { fill: "1F4E79", type: ShadingType.CLEAR, color: "auto" },
-    verticalAlign: VerticalAlign.CENTER,
-    columnSpan: 2,
-    children: [
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { before: 60, after: 60 },
-        children: [
-          new TextRun({ text, bold: true, font: "Arial", size: 20, color: "FFFFFF" }),
-        ],
-      }),
-    ],
-  });
+/** Split "Label:\ninstruction" into header + italic instruction. */
+function splitLabel(label: string): { header: string; instruction: string } {
+  const idx = label.indexOf("\n");
+  if (idx === -1) return { header: label, instruction: "" };
+  return { header: label.slice(0, idx), instruction: label.slice(idx + 1) };
 }
 
-/** Full-width guidance note (colspan=2), italic */
-function guidanceCell(text: string): TableCell {
+/** Banner cell (left bold title / right italic guidance), light-gray fill. */
+function bannerCell(text: string, italic: boolean): TableCell {
   return new TableCell({
     borders: BORDER,
-    shading: { fill: "F2F7FC", type: ShadingType.CLEAR, color: "auto" },
+    shading: { fill: BANNER_FILL, type: ShadingType.CLEAR, color: "auto" },
     verticalAlign: VerticalAlign.TOP,
-    columnSpan: 2,
     children: [
       new Paragraph({
         spacing: { before: 40, after: 40 },
-        children: [
-          new TextRun({ text, italics: true, font: "Arial", size: 16, color: "444444" }),
-        ],
+        children: [new TextRun({ text, bold: !italic, italics: italic, font: "Arial", size: 20 })],
       }),
     ],
   });
 }
 
-/** Left column label cell (25% width), light blue background */
-function labelCell(text: string): TableCell {
+/** Left column label cell: bold header + italic instruction. */
+function labelCell(label: string): TableCell {
+  const { header, instruction } = splitLabel(label);
+  const runs: TextRun[] = [new TextRun({ text: header, bold: true, italics: true, font: "Arial", size: 18 })];
+  if (instruction) {
+    runs.push(new TextRun({ text: "\n" + instruction, italics: true, font: "Arial", size: 16, color: "333333" }));
+  }
   return new TableCell({
     borders: BORDER,
-    shading: { fill: "D6E4F0", type: ShadingType.CLEAR, color: "auto" },
     verticalAlign: VerticalAlign.TOP,
     width: { size: 25, type: WidthType.PERCENTAGE },
     children: [
       new Paragraph({
         spacing: { before: 40, after: 40 },
-        children: [new TextRun({ text, bold: true, font: "Arial", size: 18 })],
+        children: runs,
       }),
     ],
   });
 }
 
-/** Right column content cell (75% width) */
+/** Right column content cell (75% width). */
 function contentCell(text: string): TableCell {
   const safeText = text ?? "";
   const lines = safeText.split("\n");
@@ -101,7 +105,7 @@ function contentCell(text: string): TableCell {
   });
 }
 
-/** Full-width content cell (colspan=2) */
+/** Full-width content cell (colspan=2). */
 function fullWidthContentCell(text: string): TableCell {
   const safeText = text ?? "";
   const lines = safeText.split("\n");
@@ -123,12 +127,14 @@ function fullWidthContentCell(text: string): TableCell {
 // ROW HELPERS
 // ============================================================
 
-function sectionRow(label: string): TableRow {
-  return new TableRow({ children: [sectionHeaderCell(label)] });
-}
-
-function guidanceRow(text: string): TableRow {
-  return new TableRow({ children: [guidanceCell(text)] });
+/** Section banner row: bold title (left) + italic guidance (right). */
+function sectionBannerRow(title: string, guidance?: string): TableRow {
+  return new TableRow({
+    children: [
+      bannerCell(title, false),
+      bannerCell(guidance || "", true),
+    ],
+  });
 }
 
 function kvRow(label: string, value: string): TableRow {
@@ -184,7 +190,93 @@ function resolveExtendedLearning(el?: DLPExtendedLearning, flat?: {
 }
 
 // ============================================================
-// BUILD DOCUMENT (ILAW FORMAT — TRUE 2-COLUMN)
+// SIGNATURE BLOCK (exact 3-tier layout)
+// ============================================================
+
+/** Centered signature cell: bold uppercase name, underline rule, italic title. */
+function signatureCell(name: string, title: string): TableCell {
+  return new TableCell({
+    borders: BORDER,
+    verticalAlign: VerticalAlign.TOP,
+    children: [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 80, after: 40 },
+        children: [new TextRun({ text: name.toUpperCase(), bold: true, font: "Arial", size: 18 })],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 40, after: 40 },
+        children: [new TextRun({ text: SIGNATURE_RULE, font: "Arial", size: 18 })],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 40, after: 80 },
+        children: [new TextRun({ text: title, italics: true, font: "Arial", size: 16 })],
+      }),
+    ],
+  });
+}
+
+/** Signature label cell (unshaded, bold). */
+function signatureLabelCell(label: string): TableCell {
+  return new TableCell({
+    borders: BORDER,
+    verticalAlign: VerticalAlign.TOP,
+    width: { size: 20, type: WidthType.PERCENTAGE },
+    children: [
+      new Paragraph({
+        spacing: { before: 80, after: 80 },
+        children: [new TextRun({ text: label, bold: true, font: "Arial", size: 18 })],
+      }),
+    ],
+  });
+}
+
+/** Empty spacer cell used to pad the signature grid. */
+function emptyCell(): TableCell {
+  return new TableCell({
+    borders: BORDER,
+    verticalAlign: VerticalAlign.TOP,
+    children: [new Paragraph({ children: [] })],
+  });
+}
+
+function signatureTable(
+  prepared: { name: string; title: string },
+  checked: { name: string; title: string }[],
+  noted: { name: string; title: string }[]
+): Table {
+  const pad = (cells: TableCell[]) => [
+    ...cells,
+    ...Array.from({ length: Math.max(0, 3 - cells.length) }).map(() => emptyCell()),
+  ];
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      // Prepared (name spans the three right columns)
+      new TableRow({
+        children: [
+          signatureLabelCell("Prepared:"),
+          signatureCell(prepared.name, prepared.title),
+          emptyCell(),
+          emptyCell(),
+        ],
+      }),
+      // Checked & Reviewed
+      new TableRow({
+        children: [signatureLabelCell("Checked & Reviewed:"), ...pad(checked.map((s) => signatureCell(s.name, s.title)))],
+      }),
+      // Noted
+      new TableRow({
+        children: [signatureLabelCell("Noted:"), ...pad(noted.map((s) => signatureCell(s.name, s.title)))],
+      }),
+    ],
+  });
+}
+
+// ============================================================
+// BUILD DOCUMENT (ILAW FORMAT — template-style 2-column)
 // ============================================================
 export async function buildDocx(
   plan: GeneratedDLPPlan,
@@ -195,6 +287,12 @@ export async function buildDocx(
   const flow = resolveFlow(learning_experience.flow, learning_experience);
   const formative = resolveFormativeAssessment(assessment.formative_assessment, assessment);
   const extended = resolveExtendedLearning(ways_forward.extended_learning, ways_forward);
+
+  const preparedName =
+    signatories?.prepared_by?.name || lesson_plan_meta.teacher_name || "JOSE ROMMEL L. GARCIA";
+  const preparedTitle = signatories?.prepared_by?.title || "Teacher III";
+  const checked = signatories?.checked_by?.length ? signatories.checked_by : DEFAULT_CHECKED;
+  const noted = signatories?.noted_by?.length ? signatories.noted_by : DEFAULT_NOTED;
 
   const doc = new Document({
     creator: "DepEd DLP Generator",
@@ -207,13 +305,13 @@ export async function buildDocx(
           },
         },
         children: [
-          // ========== SECTION 1: OFFICIAL HEADER (LETTERHEAD) ==========
-          centeredLine(header.republic, 18, false),
-          centeredLine(header.department, 20, true),
-          centeredLine(header.region, 18, false),
-          centeredLine(header.division, 18, false),
-          centeredLine(header.school, 18, true),
-          centeredLine(header.address, 14, false),
+          // ========== SECTION 1: OFFICIAL LETTERHEAD ==========
+          letterheadLine(header.republic || "Republic of the Philippines", 32, true),
+          letterheadLine(header.department || "Department of Education", 32, true),
+          centeredLine(header.region || "NATIONAL CAPITAL REGION", 18, true),
+          centeredLine(header.division || "SCHOOLS DIVISION OF LAS PIÑAS CITY", 18, false),
+          centeredLine(header.school || "LAS PIÑAS CAA NATIONAL HIGH SCHOOL", 18, true),
+          centeredLine(header.address || "NARRA CORNER RECEIVER STS., BF INTERNATIONAL VILLAGE, LAS PIÑAS CITY", 14, false),
 
           spacer(),
 
@@ -221,24 +319,23 @@ export async function buildDocx(
           new Paragraph({
             alignment: AlignmentType.CENTER,
             spacing: { before: 120, after: 60 },
-            border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "1F4E79" } },
             children: [
-              new TextRun({ text: `LESSON PLAN IN ${lesson_plan_meta.learning_area} GRADE ${lesson_plan_meta.grade_level}`, bold: true, font: "Arial", size: 24, color: "1F4E79" }),
+              new TextRun({ text: `LESSON PLAN IN ${lesson_plan_meta.learning_area} GRADE ${lesson_plan_meta.grade_level}`, bold: true, font: "Arial", size: 24 }),
             ],
           }),
 
           spacer(),
 
-          // ========== SECTION 2: METADATA TABLE (2-COLUMN) ==========
+          // ========== SECTION 2: METADATA TABLE ==========
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               kvRow("Name of Lesson", lessonTitle),
-              kvRow("Date, Week, Day", `${lesson_plan_meta.calendar_date}, ${lesson_plan_meta.week_number}, ${lesson_plan_meta.day_number}`),
+              kvRow("Date, Week, Day", `${lesson_plan_meta.calendar_date} | Week: ${lesson_plan_meta.week_number} | Day: ${lesson_plan_meta.day_number}`),
               kvRow("Designed by teacher/s", lesson_plan_meta.teacher_name),
               kvRow("Designed for which Grade Level and Section", lesson_plan_meta.grade_and_section),
               kvRow("No. of Sessions", lesson_plan_meta.sessions),
-              kvRow("References", lesson_plan_meta.references),
+              kvRow("References (books, websites, toolkits, etc.)", lesson_plan_meta.references),
               kvRow("Declaration of AI Use\n(Cite how AI was used in the formulation of the lesson plan.) See DO 3 s.2026 Annex A", lesson_plan_meta.ai_declaration),
             ],
           }),
@@ -251,8 +348,7 @@ export async function buildDocx(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
-              sectionRow("INTENTIONS"),
-              guidanceRow(intentions.framework_guidance_note),
+              sectionBannerRow("Intentions.", intentions.framework_guidance_note || "Meaningful learning experiences are anchored on how we frame them. Start by deciding what you want your learners to master by the end of the lesson – keep it clear and simple. Remember: Understanding your learner's evolving context and designing around it helps ensure that your lessons connect with and are relevant to them."),
               kvRow("Learning Competency:\nWrite the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions", intentions.learning_competency),
               kvRow("Learning Objectives:\nWrite the smaller knowledge, skills or tasks from the competency that the learners will work on and be able to show by the end of the sessions", intentions.learning_objectives),
               kvRow("Learners' Context:\nWrite your observations of your learners, and how they have been performing or responding to learning experiences recently, including strengths, interests, and possible barriers to learning", intentions.learners_context),
@@ -265,19 +361,18 @@ export async function buildDocx(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
-              sectionRow("LEARNING EXPERIENCE"),
-              guidanceRow(learning_experience.framework_guidance_note),
+              sectionBannerRow("Learning Experience.", learning_experience.framework_guidance_note || "Each activity and interaction builds towards meaningful understanding and growth. Identify activities and interactions to help learners gain knowledge, skills, or understanding in a purposeful way."),
               kvRow("Pre Lesson:\nDescribe how you will help learners get ready for the lesson.", learning_experience.pre_lesson),
-              kvRow("Flow:\nDescribe the activities that you can implement in 1 or more sessions to meet the learning objectives.", [
-                `• ENGAGE: 00:00-00:05 (5 mins)\n${flow.engage}`,
+              kvRow("Flow:\nDescribe the activities that you can implement in 1 or more sessions to meet the learning objectives. Apply the Learning Design Principles by thinking about how to: make the objectives clear for the learners; guide learners before letting them try the task on their own; check the state of the learners' well-being, understanding, and mastery over the lesson; connect today's new concept with past competencies; encourage collaboration among learners; invite learners to reflect on why these matters to them; ensure inclusion for learners' varied abilities, learning styles, and contexts.", [
+                `• ENGAGE (5 mins) — Hook & Well-being:\n${flow.engage}`,
                 "",
-                `• 00:05-00:20 (15 mins) - Explore & Explain / Modeling (I Do):\n${flow.explore_explain_modeling}`,
+                `• Explore & Explain / Modeling (I Do — 15 mins):\n${flow.explore_explain_modeling}`,
                 "",
-                `• 00:20-00:30 (10 mins) - Elaborate / Guided & Collaborative Practice (We Do):\n${flow.elaborate_guided_practice}`,
+                `• Elaborate / Guided & Collaborative Practice (We Do — 10 mins):\n${flow.elaborate_guided_practice}`,
                 "",
-                `• 00:30-00:40 (10 mins) - Evaluate / Independent Practice (You Do):\n${flow.evaluate_independent_practice}`,
+                `• Evaluate / Independent Practice (You Do — 10 mins):\n${flow.evaluate_independent_practice}`,
                 "",
-                `• 00:40-00:45 (5 mins) - Reflection & Closure:\n${flow.reflection_closure}`,
+                `• Reflection & Closure (5 mins):\n${flow.reflection_closure}`,
               ].join("\n")),
               kvRow("Learning Resources:\nList down the learning resources that will help you reach your objectives. Ensure that they are available and inclusive. Including options and alternatives in case of emergencies", learning_experience.learning_resources),
               kvRow("Opportunities for Integration:\nWrite down any possibilities to meaningfully integrate another learning area, special topic, or technology. Write NA if none.", learning_experience.opportunities_for_integration),
@@ -290,16 +385,15 @@ export async function buildDocx(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
-              sectionRow("ASSESSMENT"),
-              guidanceRow(assessment.framework_guidance_note),
+              sectionBannerRow("Assessment.", assessment.framework_guidance_note || "Assessments reveal what learners have gained and what they still need help with. These are helpful in providing you with information to guide your future instruction throughout the entire session."),
               kvRow("Formative Assessment:\nCreate a task, activity or questions to evaluate learning and provide feedback. Provide ways for learners to ask for guidance and support.\nRemember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports)", [
                 "Targeted Assessment Tasks:",
                 "",
-                `1. Frustration Level: ${formative.frustration}`,
+                `1. Frustration Level (25%): ${formative.frustration}`,
                 "",
-                `2. Instructional Level: ${formative.instructional}`,
+                `2. Instructional Level (50%): ${formative.instructional}`,
                 "",
-                `3. Independent Level (HOTS): ${formative.independent}`,
+                `3. Independent Level / HOTS (25%): ${formative.independent}`,
               ].join("\n")),
             ],
           }),
@@ -310,12 +404,11 @@ export async function buildDocx(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
-              sectionRow("WAYS FORWARD"),
-              guidanceRow(ways_forward.framework_guidance_note),
+              sectionBannerRow("Ways Forward.", ways_forward.framework_guidance_note || "Meaningful learning can also happen beyond the classroom – for both the learners and the teacher. Pause and reflect on what happened today."),
               kvRow("Extended learning opportunities:\nSuggest other learning experiences outside the classroom hours that learners may want to access or reinforce what they have learned, to spark their curiosity further, or that may provide them support in areas of difficulty.", [
-                `Advanced Readers: ${extended.advanced}`,
+                `Advanced Readers (Independent Level — 25%): ${extended.advanced}`,
                 "",
-                `Struggling Readers: ${extended.struggling}`,
+                `Struggling Readers (Frustration Level — 25%): ${extended.struggling}`,
               ].join("\n")),
               kvRow("Reflections:\nThink about what you need to change for the next session based on what happened today. Is there something the learners are interested in exploring? Are there some things you would like to share with your co-teachers, parents or school leaders about your classroom experience? What would you like your instructional coach to help you with?", ways_forward.reflections),
             ],
@@ -324,15 +417,11 @@ export async function buildDocx(
           spacer(),
 
           // ========== SECTION 4: SIGNATORIES ==========
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-              sectionRow("SIGNATORIES"),
-              kvRow("Prepared:", `${signatories.prepared_by.name}\n${signatories.prepared_by.title}`),
-              kvRow("Checked & Reviewed:", signatories.checked_by.map(s => `${s.name}\n${s.title}`).join("\n\n")),
-              kvRow("Noted:", signatories.noted_by.map(s => `${s.name}\n${s.title}`).join("\n\n")),
-            ],
-          }),
+          signatureTable(
+            { name: preparedName, title: preparedTitle },
+            checked,
+            noted
+          ),
 
           // Footer
           spacer(),
@@ -359,6 +448,15 @@ function centeredLine(text: string, size: number, bold: boolean): Paragraph {
     alignment: AlignmentType.CENTER,
     spacing: { after: 0 },
     children: [new TextRun({ text, bold, font: "Arial", size })],
+  });
+}
+
+/** Letterhead line rendered in the Old English font. */
+function letterheadLine(text: string, size: number, bold: boolean): Paragraph {
+  return new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 0 },
+    children: [new TextRun({ text, bold, font: "Old English Text MT", size })],
   });
 }
 
@@ -429,18 +527,18 @@ export async function buildWLPDocx(
         },
         children: [
           // ========== HEADER ==========
-          centeredLine("NATIONAL CAPITAL REGION", 18, false),
+          letterheadLine("Republic of the Philippines", 32, true),
+          letterheadLine("Department of Education", 32, true),
+          centeredLine("NATIONAL CAPITAL REGION", 18, true),
           centeredLine("SCHOOLS DIVISION OF LAS PIÑAS CITY", 18, false),
-          centeredLine("S.Y. 2026-2027", 18, false),
-          centeredLine("FIRST TERM", 18, false),
+          centeredLine("LAS PIÑAS CAA NATIONAL HIGH SCHOOL", 18, true),
 
           // ========== TITLE ==========
           new Paragraph({
             alignment: AlignmentType.CENTER,
             spacing: { before: 120, after: 60 },
-            border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "1F4E79" } },
             children: [
-              new TextRun({ text: "WEEKLY LESSON PLAN (WLP)", bold: true, font: "Arial", size: 28, color: "1F4E79" }),
+              new TextRun({ text: "WEEKLY LESSON PLAN (WLP)", bold: true, font: "Arial", size: 28 }),
             ],
           }),
           centeredLine(input.learningArea.toUpperCase(), 24, true),
@@ -451,10 +549,10 @@ export async function buildWLPDocx(
             rows: [
               kvRow("Name of Lesson", lessonTitle),
               kvRow("Week", `${input.quarter} | ${input.week}`),
-              kvRow("Designed by Teacher/s", "[Teacher Name]"),
+              kvRow("Designed by Teacher/s", input.teacherName || "[Teacher Name]"),
               kvRow("Grade Level & Section", `Grade ${input.gradeLevel}`),
               kvRow("No. of Sessions", "5 Sessions (50 minutes each)"),
-              kvRow("References", "MATATAG K-10 Curriculum Guide; DepEd Science Learning Materials; DepEd MATATAG Curriculum Resources; Division DBOW."),
+              kvRow("References (books, websites, toolkits, etc.)", "MATATAG K-10 Curriculum Guide; DepEd Science Learning Materials; DepEd MATATAG Curriculum Resources; Division DBOW."),
             ],
           }),
 
@@ -464,10 +562,10 @@ export async function buildWLPDocx(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
-              sectionRow("WEEKLY OBJECTIVES & COMPETENCIES"),
-              kvRow("Weekly Competencies", flattenActivities(plan.weeklyCompetencies)),
-              kvRow("Weekly Objectives", flattenActivities(plan.weeklyObjectives)),
-              kvRow("Weekly Content Overview", flattenActivities(plan.weeklyContent)),
+              sectionBannerRow("Weekly Objectives & Competencies.", "Weekly competencies, objectives, and the content overview for the week."),
+              kvRow("Weekly Competencies:", flattenActivities(plan.weeklyCompetencies)),
+              kvRow("Weekly Objectives:", flattenActivities(plan.weeklyObjectives)),
+              kvRow("Weekly Content Overview:", flattenActivities(plan.weeklyContent)),
             ],
           }),
 
@@ -480,7 +578,7 @@ export async function buildWLPDocx(
               new Table({
                 width: { size: 100, type: WidthType.PERCENTAGE },
                 rows: [
-                  sectionRow(`${DAY_LABELS[day]} — ${dayPlan.date}`),
+                  sectionBannerRow(`${DAY_LABELS[day]} — ${dayPlan.date}`, ""),
                   fullRow(dayPlan.activities),
                 ],
               }),
@@ -492,7 +590,7 @@ export async function buildWLPDocx(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
-              sectionRow("LEARNING RESOURCES"),
+              sectionBannerRow("Learning Resources.", "Resources used to reach the weekly objectives."),
               fullRow(flattenActivities(plan.learningResources)),
             ],
           }),
@@ -503,7 +601,7 @@ export async function buildWLPDocx(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
-              sectionRow("REMARKS & INTEGRATION"),
+              sectionBannerRow("Remarks & Integration.", "Integration notes and remarks for the week."),
               fullRow(flattenActivities(plan.remarks)),
             ],
           }),
@@ -514,7 +612,7 @@ export async function buildWLPDocx(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
-              sectionRow("TEACHER REFLECTION"),
+              sectionBannerRow("Teacher Reflection.", "Reflect on the week to guide the next sessions."),
               fullRow(flattenActivities(plan.reflection)),
             ],
           }),
@@ -522,15 +620,11 @@ export async function buildWLPDocx(
           spacer(),
 
           // ========== SIGNATORIES ==========
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-              sectionRow("SIGNATORIES"),
-              kvRow("Prepared by", "___________________________________\n[Teacher Name]\nTeacher I"),
-              kvRow("Checked & Reviewed by", "___________________________________\n[Master Teacher Name]\nMaster Teacher"),
-              kvRow("Noted by", "___________________________________\n[Principal Name]\nSchool Principal IV"),
-            ],
-          }),
+          signatureTable(
+            { name: input.teacherName || "JOSE ROMMEL L. GARCIA", title: "Teacher III" },
+            DEFAULT_CHECKED,
+            DEFAULT_NOTED
+          ),
 
           // Footer
           spacer(),

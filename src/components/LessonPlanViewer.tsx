@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { GeneratedLessonPlan, GeneratedDLPPlan, LessonPlanInput, DLPFlowPhases, DLPFormativeAssessment, DLPExtendedLearning } from "@/types/lesson-plan";
@@ -58,20 +59,61 @@ function resolveExtendedLearning(el?: DLPExtendedLearning, flat?: {
   };
 }
 
-export function LessonPlanViewer({ plan, input, onEdit }: LessonPlanViewerProps) {
-  if (isILAWFormat(plan)) {
-    return <ILAWViewer plan={plan} input={input} onEdit={onEdit} />;
-  }
-  return <LegacyViewer plan={plan} input={input} />;
+// ============================================================
+// TEMPLATE-STYLE BUILDING BLOCKS (mirrors the SCIENCE-ILAW docx)
+// ============================================================
+
+/** Old English letterhead font stack used for the DepEd header. */
+const OLD_ENGLISH = {
+  fontFamily:
+    "'Old English Text MT', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', serif",
+};
+
+/** Solid black 1pt grid cell border. */
+const CELL_BORDER = "border border-black";
+/** Light-gray section banner fill (#D9D9D9 per template). */
+const BANNER_FILL = "bg-[#D9D9D9]";
+
+function MetaRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <tr>
+      <td className={`${CELL_BORDER} p-2 w-1/3 font-semibold text-xs align-top`}>{label}</td>
+      <td className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>{children}</td>
+    </tr>
+  );
 }
 
-function MetaRow({ label, value, onEdit }: { label: string; value: string; onEdit?: (value: string) => void }) {
+/** Gray section banner row: bold title (left) + italic guidance (right). */
+function BannerRow({ title, guidance }: { title: string; guidance?: string }) {
   return (
-    <tr className="border-b">
-      <td className="p-2 font-semibold bg-muted/50 w-1/3 text-xs whitespace-pre-wrap">{label}</td>
-      <td className="p-2 text-xs whitespace-pre-wrap">
-        <EditableText value={value} onEdit={onEdit} />
+    <tr>
+      <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 w-1/3 align-top`}>
+        <span className="text-sm font-bold">{title}</span>
       </td>
+      <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 text-xs italic align-top`}>
+        {guidance}
+      </td>
+    </tr>
+  );
+}
+
+/** Subsection row: italic-bold label + instruction (left), content (right). */
+function SubRow({
+  label,
+  instruction,
+  children,
+}: {
+  label: string;
+  instruction?: string;
+  children: ReactNode;
+}) {
+  return (
+    <tr>
+      <td className={`${CELL_BORDER} p-2 w-1/3 align-top`}>
+        <p className="text-xs font-bold italic">{label}</p>
+        {instruction && <p className="text-[10px] italic mt-1 text-slate-700">{instruction}</p>}
+      </td>
+      <td className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>{children}</td>
     </tr>
   );
 }
@@ -144,16 +186,99 @@ function EditableText({
 
 function ProcedureStep({ label, content, onEdit }: { label: string; content: string; onEdit?: (value: string) => void }) {
   return (
-    <div>
-      <h4 className="text-sm font-bold italic mb-2 text-slate-900">{label}</h4>
-      <div className="text-sm whitespace-pre-wrap text-muted-foreground">
+    <div className="mb-2">
+      <p className="text-xs font-bold italic mb-1">{label}</p>
+      <div className="text-xs whitespace-pre-wrap">
         <EditableText value={content} onEdit={onEdit} className="whitespace-pre-wrap" />
       </div>
     </div>
   );
 }
 
-function ILAWViewer({ plan, input, onEdit }: { plan: GeneratedDLPPlan; input?: LessonPlanInput; onEdit?: (key: string, value: string) => void }) {
+// ============================================================
+// SIGNATURE BLOCK (exact 3-tier layout)
+// ============================================================
+
+const DEFAULT_CHECKED = [
+  { name: "TRIXIA A. PALMOS", title: "Master Teacher II - Science" },
+  { name: "CARMELITA G. YAP", title: "SCIENCE Coordinator" },
+  { name: "JEANETTE J. RUGA, Ph.D.", title: "Assistant School Principal II\nOfficer-in-Charge" },
+];
+const DEFAULT_NOTED = [
+  { name: "MILDRED T. TUBLE", title: "Public Schools District Supervisor – Cluster I" },
+  { name: "GENOVIE G. TAGUM, Ph.D.", title: "Education Program Supervisor – SCIENCE" },
+];
+
+function SignatureRule() {
+  return <div className="mx-auto my-1 border-b-2 border-black w-52" />;
+}
+
+function SignatureBlock({
+  preparedName,
+  preparedTitle,
+  checked,
+  noted,
+}: {
+  preparedName: string;
+  preparedTitle: string;
+  checked: { name: string; title: string }[];
+  noted: { name: string; title: string }[];
+}) {
+  return (
+    <table className="w-full border-collapse border border-black text-xs">
+      <tbody>
+        {/* Prepared */}
+        <tr>
+          <td className={`${CELL_BORDER} p-2 w-1/5 align-top font-bold`}>Prepared:</td>
+          <td className={`${CELL_BORDER} p-2 align-top text-center`} colSpan={3}>
+            <p className="font-bold uppercase">{preparedName}</p>
+            <SignatureRule />
+            <p className="italic">{preparedTitle}</p>
+          </td>
+        </tr>
+
+        {/* Checked & Reviewed */}
+        <tr>
+          <td className={`${CELL_BORDER} p-2 align-top font-bold`}>Checked &amp; Reviewed:</td>
+          {checked.map((s, i) => (
+            <td key={i} className={`${CELL_BORDER} p-2 align-top text-center`}>
+              <p className="font-bold uppercase">{s.name}</p>
+              <SignatureRule />
+              <p className="italic whitespace-pre-wrap">{s.title}</p>
+            </td>
+          ))}
+          {Array.from({ length: Math.max(0, 3 - checked.length) }).map((_, i) => (
+            <td key={`e${i}`} className={`${CELL_BORDER} p-2 align-top`} />
+          ))}
+        </tr>
+
+        {/* Noted */}
+        <tr>
+          <td className={`${CELL_BORDER} p-2 align-top font-bold`}>Noted:</td>
+          {noted.map((s, i) => (
+            <td key={i} className={`${CELL_BORDER} p-2 align-top text-center`}>
+              <p className="font-bold uppercase">{s.name}</p>
+              <SignatureRule />
+              <p className="italic whitespace-pre-wrap">{s.title}</p>
+            </td>
+          ))}
+          {Array.from({ length: Math.max(0, 3 - noted.length) }).map((_, i) => (
+            <td key={`e${i}`} className={`${CELL_BORDER} p-2 align-top`} />
+          ))}
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+export function LessonPlanViewer({ plan, input, onEdit }: LessonPlanViewerProps) {
+  if (isILAWFormat(plan)) {
+    return <ILAWViewer plan={plan} onEdit={onEdit} />;
+  }
+  return <LegacyViewer plan={plan} input={input} />;
+}
+
+function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: string, value: string) => void }) {
   const { header, lesson_plan_meta, intentions, learning_experience, assessment, ways_forward, signatories } = plan;
   const flow = resolveFlow(learning_experience.flow, {
     engage: learning_experience.engage,
@@ -172,260 +297,214 @@ function ILAWViewer({ plan, input, onEdit }: { plan: GeneratedDLPPlan; input?: L
     extended_learning_struggling: ways_forward.extended_learning_struggling,
   });
 
+  const preparedName =
+    signatories?.prepared_by?.name || lesson_plan_meta.teacher_name || "JOSE ROMMEL L. GARCIA";
+  const preparedTitle = signatories?.prepared_by?.title || "Teacher III";
+  const checked =
+    signatories?.checked_by?.length ? signatories.checked_by : DEFAULT_CHECKED;
+  const noted =
+    signatories?.noted_by?.length ? signatories.noted_by : DEFAULT_NOTED;
+
+  const INTENTIONS_GUIDANCE =
+    intentions.framework_guidance_note ||
+    "Meaningful learning experiences are anchored on how we frame them. Start by deciding what you want your learners to master by the end of the lesson – keep it clear and simple. Remember: Understanding your learner's evolving context and designing around it helps ensure that your lessons connect with and are relevant to them.";
+  const EXPERIENCE_GUIDANCE =
+    learning_experience.framework_guidance_note ||
+    "Each activity and interaction builds towards meaningful understanding and growth. Identify activities and interactions to help learners gain knowledge, skills, or understanding in a purposeful way.";
+  const ASSESSMENT_GUIDANCE =
+    assessment.framework_guidance_note ||
+    "Assessments reveal what learners have gained and what they still need help with. These are helpful in providing you with information to guide your future instruction throughout the entire session.";
+  const FORWARD_GUIDANCE =
+    ways_forward.framework_guidance_note ||
+    "Meaningful learning can also happen beyond the classroom – for both the learners and the teacher. Pause and reflect on what happened today.";
+
   return (
-    <div className="space-y-4">
-      {/* Official DepEd Header */}
-      <div className="text-center py-4 border-b-2 border-primary">
-        <p className="text-xs font-semibold">{header.republic}</p>
-        <h2 className="text-lg font-bold">{header.department}</h2>
-        <p className="text-xs">{header.region}</p>
-        <p className="text-xs">{header.division}</p>
-        <p className="text-xs font-semibold">{header.school}</p>
-        <p className="text-[10px] text-muted-foreground">{header.address}</p>
+    <div className="text-black">
+      {/* Official DepEd Letterhead */}
+      <div className="text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/deped-logo.png" alt="DepEd Logo" className="mx-auto h-24 w-auto" />
+        <p className="text-xl font-bold leading-tight" style={OLD_ENGLISH}>
+          {header.republic || "Republic of the Philippines"}
+        </p>
+        <p className="text-xl font-bold leading-tight" style={OLD_ENGLISH}>
+          {header.department || "Department of Education"}
+        </p>
+        <p className="text-sm font-bold mt-1">{header.region || "NATIONAL CAPITAL REGION"}</p>
+        <p className="text-sm">{header.division || "SCHOOLS DIVISION OF LAS PIÑAS CITY"}</p>
+        <p className="text-sm font-semibold">
+          {header.school || "LAS PIÑAS CAA NATIONAL HIGH SCHOOL"}
+        </p>
+        <p className="text-[10px]">
+          {header.address || "NARRA CORNER RECEIVER STS., BF INTERNATIONAL VILLAGE, LAS PIÑAS CITY"}
+        </p>
       </div>
 
       {/* Lesson Plan Title */}
       <div className="text-center py-2">
-        <h3 className="text-base font-bold uppercase">
-          LESSON PLAN IN {lesson_plan_meta.learning_area} {lesson_plan_meta.grade_level}
+        <h3 className="text-base font-bold uppercase tracking-wide">
+          LESSON PLAN IN {lesson_plan_meta.learning_area} GRADE {lesson_plan_meta.grade_level}
         </h3>
       </div>
 
       {/* Metadata Table */}
-      <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm border-collapse">
-            <tbody>
-              <MetaRow label="Name of Lesson" value={lesson_plan_meta.lesson_title} onEdit={(v) => onEdit?.("lesson_plan_meta.lesson_title", v)} />
-              <tr className="border-b">
-                <td className="p-2 font-semibold bg-muted/50 w-1/3 text-xs whitespace-pre-wrap">Date, Week, Day</td>
-                <td className="p-2 text-xs whitespace-pre-wrap">
-                  <EditableText value={lesson_plan_meta.calendar_date} onEdit={(v) => onEdit?.("lesson_plan_meta.calendar_date", v)} /> |{" "}
-                  <EditableText value={lesson_plan_meta.week_number} onEdit={(v) => onEdit?.("lesson_plan_meta.week_number", v)} /> |{" "}
-                  <EditableText value={lesson_plan_meta.day_number} onEdit={(v) => onEdit?.("lesson_plan_meta.day_number", v)} />
-                </td>
-              </tr>
-              <MetaRow label="Designed by teacher/s" value={lesson_plan_meta.teacher_name} onEdit={(v) => onEdit?.("lesson_plan_meta.teacher_name", v)} />
-              <MetaRow label="Designed for which Grade Level and Section" value={lesson_plan_meta.grade_and_section} onEdit={(v) => onEdit?.("lesson_plan_meta.grade_and_section", v)} />
-              <MetaRow label="No. of Sessions" value={lesson_plan_meta.sessions} onEdit={(v) => onEdit?.("lesson_plan_meta.sessions", v)} />
-              <MetaRow label="References" value={lesson_plan_meta.references} onEdit={(v) => onEdit?.("lesson_plan_meta.references", v)} />
-              <MetaRow
-                label="Declaration of AI Use (See DO 3 s.2026 Annex A)"
-                value={lesson_plan_meta.ai_declaration}
-                onEdit={(v) => onEdit?.("lesson_plan_meta.ai_declaration", v)}
-              />
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+      <table className="w-full border-collapse border border-black text-sm">
+        <tbody>
+          <MetaRow label="Name of Lesson">
+            <EditableText value={lesson_plan_meta.lesson_title} onEdit={(v) => onEdit?.("lesson_plan_meta.lesson_title", v)} />
+          </MetaRow>
+          <MetaRow label="Date, Week, Day">
+            <EditableText value={lesson_plan_meta.calendar_date} onEdit={(v) => onEdit?.("lesson_plan_meta.calendar_date", v)} />{" | "}
+            <span className="font-semibold">Week:</span>{" "}
+            <EditableText value={lesson_plan_meta.week_number} onEdit={(v) => onEdit?.("lesson_plan_meta.week_number", v)} />{" | "}
+            <span className="font-semibold">Day:</span>{" "}
+            <EditableText value={lesson_plan_meta.day_number} onEdit={(v) => onEdit?.("lesson_plan_meta.day_number", v)} />
+          </MetaRow>
+          <MetaRow label="Designed by teacher/s">
+            <EditableText value={lesson_plan_meta.teacher_name} onEdit={(v) => onEdit?.("lesson_plan_meta.teacher_name", v)} />
+          </MetaRow>
+          <MetaRow label="Designed for which Grade Level and Section">
+            <EditableText value={lesson_plan_meta.grade_and_section} onEdit={(v) => onEdit?.("lesson_plan_meta.grade_and_section", v)} />
+          </MetaRow>
+          <MetaRow label="No. of Sessions">
+            <EditableText value={lesson_plan_meta.sessions} onEdit={(v) => onEdit?.("lesson_plan_meta.sessions", v)} />
+          </MetaRow>
+          <MetaRow label="References (books, websites, toolkits, etc.)">
+            <EditableText value={lesson_plan_meta.references} onEdit={(v) => onEdit?.("lesson_plan_meta.references", v)} />
+          </MetaRow>
+          <MetaRow label="Declaration of AI Use (Cite how AI was used in the formulation of the lesson plan.) See DO 3 s.2026 Annex A">
+            <EditableText value={lesson_plan_meta.ai_declaration} onEdit={(v) => onEdit?.("lesson_plan_meta.ai_declaration", v)} />
+          </MetaRow>
+        </tbody>
+      </table>
 
       {/* Intentions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-slate-300 text-slate-900 py-2 px-4 rounded">
-            INTENTIONS
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {intentions.framework_guidance_note && (
-            <div>
-              <h4 className="text-sm italic mb-1 bg-slate-100 py-1 px-2 rounded text-muted-foreground">
-                {intentions.framework_guidance_note}
-              </h4>
-            </div>
-          )}
-          <div>
-            <h4 className="text-sm font-bold italic mb-1 bg-slate-100 py-1 px-2 rounded">Learning Competency</h4>
-            <p className="text-sm whitespace-pre-wrap">
-              <EditableText value={intentions.learning_competency} onEdit={(v) => onEdit?.("intentions.learning_competency", v)} />
-            </p>
-          </div>
-          <div>
-            <h4 className="text-sm font-bold italic mb-1 bg-slate-100 py-1 px-2 rounded">Learning Objectives</h4>
-            <p className="text-sm whitespace-pre-wrap">
-              <EditableText value={intentions.learning_objectives} onEdit={(v) => onEdit?.("intentions.learning_objectives", v)} />
-            </p>
-          </div>
-          <div>
-            <h4 className="text-sm font-bold italic mb-1 bg-slate-100 py-1 px-2 rounded">Learners&apos; Context</h4>
-            <p className="text-sm whitespace-pre-wrap">
-              <EditableText value={intentions.learners_context} onEdit={(v) => onEdit?.("intentions.learners_context", v)} />
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <table className="w-full border-collapse border border-black text-sm">
+        <tbody>
+          <BannerRow title="Intentions." guidance={INTENTIONS_GUIDANCE} />
+          <SubRow
+            label="Learning Competency:"
+            instruction="Write the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions"
+          >
+            <EditableText value={intentions.learning_competency} onEdit={(v) => onEdit?.("intentions.learning_competency", v)} />
+          </SubRow>
+          <SubRow
+            label="Learning Objectives:"
+            instruction="Write the smaller knowledge, skills or tasks from the competency that the learners will work on and be able to show by the end of the sessions"
+          >
+            <EditableText value={intentions.learning_objectives} onEdit={(v) => onEdit?.("intentions.learning_objectives", v)} />
+          </SubRow>
+          <SubRow
+            label="Learners' Context:"
+            instruction="Write your observations of your learners, and how they have been performing or responding to learning experiences recently, including strengths, interests, and possible barriers to learning"
+          >
+            <EditableText value={intentions.learners_context} onEdit={(v) => onEdit?.("intentions.learners_context", v)} />
+          </SubRow>
+        </tbody>
+      </table>
 
       {/* Learning Experience */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-slate-300 text-slate-900 py-2 px-4 rounded">
-            LEARNING EXPERIENCE
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {learning_experience.framework_guidance_note && (
-            <div>
-              <h4 className="text-sm italic mb-1 bg-slate-100 py-1 px-2 rounded text-muted-foreground">
-                {learning_experience.framework_guidance_note}
-              </h4>
+      <table className="w-full border-collapse border border-black text-sm">
+        <tbody>
+          <BannerRow title="Learning Experience." guidance={EXPERIENCE_GUIDANCE} />
+          <SubRow
+            label="Pre Lesson:"
+            instruction="Describe how you will help learners get ready for the lesson."
+          >
+            <EditableText value={learning_experience.pre_lesson} onEdit={(v) => onEdit?.("learning_experience.pre_lesson", v)} />
+          </SubRow>
+          <SubRow
+            label="Flow:"
+            instruction="Describe the activities that you can implement in 1 or more sessions to meet the learning objectives."
+          >
+            <div className="space-y-2">
+              <ProcedureStep label="• ENGAGE (5 mins) — Hook & Well-being" content={flow.engage} onEdit={(v) => onEdit?.("learning_experience.flow.engage", v)} />
+              <ProcedureStep label="• Explore & Explain / Modeling (I Do — 15 mins)" content={flow.explore_explain_modeling} onEdit={(v) => onEdit?.("learning_experience.flow.explore_explain_modeling", v)} />
+              <ProcedureStep label="• Elaborate / Guided & Collaborative Practice (We Do — 10 mins)" content={flow.elaborate_guided_practice} onEdit={(v) => onEdit?.("learning_experience.flow.elaborate_guided_practice", v)} />
+              <ProcedureStep label="• Evaluate / Independent Practice (You Do — 10 mins)" content={flow.evaluate_independent_practice} onEdit={(v) => onEdit?.("learning_experience.flow.evaluate_independent_practice", v)} />
+              <ProcedureStep label="• Reflection & Closure (5 mins)" content={flow.reflection_closure} onEdit={(v) => onEdit?.("learning_experience.flow.reflection_closure", v)} />
             </div>
-          )}
-          <ProcedureStep label="Pre-Lesson" content={learning_experience.pre_lesson} onEdit={(v) => onEdit?.("learning_experience.pre_lesson", v)} />
-          <Separator />
-
-          {/* Flow Section */}
-          <div>
-            <h4 className="text-sm font-bold italic mb-2 text-slate-900">Flow</h4>
-            <div className="space-y-3 ml-2 border-l-2 border-primary/20 pl-4">
-              <ProcedureStep label="ENGAGE (5 mins) — Hook & Well-being" content={flow.engage} onEdit={(v) => onEdit?.("learning_experience.flow.engage", v)} />
-              <Separator />
-              <ProcedureStep label="EXPLORE & EXPLAIN / MODELING (I Do — 15 mins)" content={flow.explore_explain_modeling} onEdit={(v) => onEdit?.("learning_experience.flow.explore_explain_modeling", v)} />
-              <Separator />
-              <ProcedureStep label="ELABORATE / GUIDED & COLLABORATIVE PRACTICE (We Do — 10 mins)" content={flow.elaborate_guided_practice} onEdit={(v) => onEdit?.("learning_experience.flow.elaborate_guided_practice", v)} />
-              <Separator />
-              <ProcedureStep label="EVALUATE / INDEPENDENT PRACTICE (You Do — 10 mins)" content={flow.evaluate_independent_practice} onEdit={(v) => onEdit?.("learning_experience.flow.evaluate_independent_practice", v)} />
-              <Separator />
-              <ProcedureStep label="REFLECTION & CLOSURE (5 mins)" content={flow.reflection_closure} onEdit={(v) => onEdit?.("learning_experience.flow.reflection_closure", v)} />
-            </div>
-          </div>
-
-          <Separator />
-          <ProcedureStep label="Learning Resources" content={learning_experience.learning_resources} onEdit={(v) => onEdit?.("learning_experience.learning_resources", v)} />
-          <Separator />
-          <ProcedureStep label="Opportunities for Integration" content={learning_experience.opportunities_for_integration} onEdit={(v) => onEdit?.("learning_experience.opportunities_for_integration", v)} />
-        </CardContent>
-      </Card>
+          </SubRow>
+          <SubRow
+            label="Learning Resources:"
+            instruction="List down the learning resources that will help you reach your objectives. Ensure that they are available and inclusive. Including options and alternatives in case of emergencies"
+          >
+            <EditableText value={learning_experience.learning_resources} onEdit={(v) => onEdit?.("learning_experience.learning_resources", v)} />
+          </SubRow>
+          <SubRow
+            label="Opportunities for Integration:"
+            instruction="Write down any possibilities to meaningfully integrate another learning area, special topic, or technology. Write NA if none."
+          >
+            <EditableText value={learning_experience.opportunities_for_integration} onEdit={(v) => onEdit?.("learning_experience.opportunities_for_integration", v)} />
+          </SubRow>
+        </tbody>
+      </table>
 
       {/* Assessment */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-slate-300 text-slate-900 py-2 px-4 rounded">
-            ASSESSMENT
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {assessment.framework_guidance_note && (
-              <div>
-                <h4 className="text-sm italic mb-1 bg-slate-100 py-1 px-2 rounded text-muted-foreground">
-                  {assessment.framework_guidance_note}
-                </h4>
-              </div>
-            )}
-            <div>
-              <h4 className="text-sm font-bold italic mb-2 text-slate-900">Formative Assessment — Targeted Assessment Tasks</h4>
-              <div className="space-y-3 ml-2">
-                <ProcedureStep
-                  label="1. Frustration Level (25%)"
-                  content={formative.frustration}
-                  onEdit={(v) => onEdit?.("assessment.formative_assessment.frustration", v)}
-                />
-                <Separator />
-                <ProcedureStep
-                  label="2. Instructional Level (50%)"
-                  content={formative.instructional}
-                  onEdit={(v) => onEdit?.("assessment.formative_assessment.instructional", v)}
-                />
-                <Separator />
-                <ProcedureStep
-                  label="3. Independent Level / HOTS (25%)"
-                  content={formative.independent}
-                  onEdit={(v) => onEdit?.("assessment.formative_assessment.independent", v)}
-                />
-              </div>
+      <table className="w-full border-collapse border border-black text-sm">
+        <tbody>
+          <BannerRow title="Assessment." guidance={ASSESSMENT_GUIDANCE} />
+          <SubRow
+            label="Formative Assessment:"
+            instruction="Create a task, activity or questions to evaluate learning and provide feedback. Provide ways for learners to ask for guidance and support. Remember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports)"
+          >
+            <p className="font-bold italic mb-1">Targeted Assessment Tasks:</p>
+            <div className="space-y-2">
+              <ProcedureStep label="1. Frustration Level (25%)" content={formative.frustration} onEdit={(v) => onEdit?.("assessment.formative_assessment.frustration", v)} />
+              <ProcedureStep label="2. Instructional Level (50%)" content={formative.instructional} onEdit={(v) => onEdit?.("assessment.formative_assessment.instructional", v)} />
+              <ProcedureStep label="3. Independent Level / HOTS (25%)" content={formative.independent} onEdit={(v) => onEdit?.("assessment.formative_assessment.independent", v)} />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </SubRow>
+        </tbody>
+      </table>
 
       {/* Ways Forward */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-slate-300 text-slate-900 py-2 px-4 rounded">
-            WAYS FORWARD
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {ways_forward.framework_guidance_note && (
-            <div>
-              <h4 className="text-sm italic mb-1 bg-slate-100 py-1 px-2 rounded text-muted-foreground">
-                {ways_forward.framework_guidance_note}
-              </h4>
-            </div>
-          )}
-          <div>
-            <h4 className="text-sm font-bold italic mb-2 text-slate-900">Extended Learning Opportunities</h4>
-            <div className="space-y-3 ml-2">
+      <table className="w-full border-collapse border border-black text-sm">
+        <tbody>
+          <BannerRow title="Ways Forward." guidance={FORWARD_GUIDANCE} />
+          <SubRow
+            label="Extended learning opportunities:"
+            instruction="Suggest other learning experiences outside the classroom hours that learners may want to access or reinforce what they have learned, to spark their curiosity further, or that may provide them support in areas of difficulty."
+          >
+            <div className="space-y-2">
               <ProcedureStep label="Advanced Readers (Independent Level — 25%)" content={extended.advanced} onEdit={(v) => onEdit?.("ways_forward.extended_learning.advanced", v)} />
-              <Separator />
               <ProcedureStep label="Struggling Readers (Frustration Level — 25%)" content={extended.struggling} onEdit={(v) => onEdit?.("ways_forward.extended_learning.struggling", v)} />
             </div>
-          </div>
-          <Separator />
-          <ProcedureStep label="Reflections (Teacher Reflective Prompts & Instructional Coach Items)" content={ways_forward.reflections} onEdit={(v) => onEdit?.("ways_forward.reflections", v)} />
-        </CardContent>
-      </Card>
+          </SubRow>
+          <SubRow
+            label="Reflections:"
+            instruction="Think about what you need to change for the next session based on what happened today. Is there something the learners are interested in exploring? Are there some things you would like to share with your co-teachers, parents or school leaders about your classroom experience? What would you like your instructional coach to help you with?"
+          >
+            <EditableText value={ways_forward.reflections} onEdit={(v) => onEdit?.("ways_forward.reflections", v)} />
+          </SubRow>
+        </tbody>
+      </table>
 
       {/* Signatories */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-slate-300 text-slate-900 py-2 px-4 rounded">
-            SIGNATORIES
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <table className="w-full text-sm">
-            <tbody>
-              <tr>
-                <td className="p-2 w-1/3 align-top">
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Prepared:</p>
-                    <div className="mb-4">
-                      <p className="font-semibold">{signatories.prepared_by.name}</p>
-                      <p className="text-xs text-muted-foreground">{signatories.prepared_by.title}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-2 w-1/3 align-top">
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Checked & Reviewed:</p>
-                    {signatories.checked_by.map((s, i) => (
-                      <div key={i} className="mb-4">
-                        <p className="font-semibold">{s.name}</p>
-                        <p className="text-xs text-muted-foreground">{s.title}</p>
-                      </div>
-                    ))}
-                  </div>
-                </td>
-                <td className="p-2 w-1/3 align-top">
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Noted:</p>
-                    {signatories.noted_by.map((s, i) => (
-                      <div key={i} className="mb-4">
-                        <p className="font-semibold">{s.name}</p>
-                        <p className="text-xs text-muted-foreground">{s.title}</p>
-                      </div>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+      <SignatureBlock
+        preparedName={preparedName}
+        preparedTitle={preparedTitle}
+        checked={checked}
+        noted={noted}
+      />
     </div>
   );
 }
 
 function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: LessonPlanInput }) {
   return (
-    <div className="space-y-4">
+    <div className="text-black space-y-4">
       {/* Header */}
-      <div className="text-center py-4 border-b-2 border-primary">
-        <p className="text-xs text-muted-foreground">NATIONAL CAPITAL REGION</p>
-        <p className="text-xs text-muted-foreground">SCHOOLS DIVISION OF LAS PIÑAS CITY</p>
-        <p className="text-xs text-muted-foreground">S.Y. 2026-2027 | FIRST TERM</p>
-        <h2 className="text-xl font-bold text-primary mt-2">DAILY LESSON PLAN (DLP)</h2>
+      <div className="text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/deped-logo.png" alt="DepEd Logo" className="mx-auto h-24 w-auto" />
+        <p className="text-lg font-bold" style={OLD_ENGLISH}>Republic of the Philippines</p>
+        <p className="text-lg font-bold" style={OLD_ENGLISH}>Department of Education</p>
+        <p className="text-sm font-semibold mt-1">NATIONAL CAPITAL REGION</p>
+        <p className="text-sm">SCHOOLS DIVISION OF LAS PIÑAS CITY</p>
+        <p className="text-sm font-semibold">LAS PIÑAS CAA NATIONAL HIGH SCHOOL</p>
+        <p className="text-[10px]">S.Y. 2026-2027 | FIRST TERM</p>
+        <h2 className="text-lg font-bold mt-2">DAILY LESSON PLAN (DLP)</h2>
         <p className="text-sm font-semibold uppercase">{input?.learningArea || "SCIENCE"}</p>
       </div>
 
@@ -441,22 +520,22 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
 
       {/* Intentions */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-            INTENTIONS
-          </CardTitle>
+        <CardHeader className="p-0">
+          <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
+            <CardTitle className="text-base font-bold text-slate-900">Intentions.</CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <h4 className="text-sm font-semibold mb-1 bg-blue-50 py-1 px-2 rounded">Learning Competency</h4>
+            <h4 className="text-sm font-bold italic mb-1">Learning Competency:</h4>
             <p className="text-sm whitespace-pre-wrap">{input?.competencies || plan.content.content}</p>
           </div>
           <div>
-            <h4 className="text-sm font-semibold mb-1 bg-blue-50 py-1 px-2 rounded">Learning Objectives</h4>
+            <h4 className="text-sm font-bold italic mb-1">Learning Objectives:</h4>
             <p className="text-sm whitespace-pre-wrap">{plan.objectives.objectives_content}</p>
           </div>
           <div>
-            <h4 className="text-sm font-semibold mb-1 bg-blue-50 py-1 px-2 rounded">Learners&apos; Context</h4>
+            <h4 className="text-sm font-bold italic mb-1">Learners&apos; Context:</h4>
             <p className="text-sm whitespace-pre-wrap">{plan.objectives.content}</p>
           </div>
         </CardContent>
@@ -464,10 +543,10 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
 
       {/* Learning Experience */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-            LEARNING EXPERIENCE
-          </CardTitle>
+        <CardHeader className="p-0">
+          <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
+            <CardTitle className="text-base font-bold text-slate-900">Learning Experience.</CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <ProcedureStep label="Pre-Lesson" content={plan.procedures.balik_aral} />
@@ -490,10 +569,10 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
 
       {/* Assessment */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-            ASSESSMENT
-          </CardTitle>
+        <CardHeader className="p-0">
+          <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
+            <CardTitle className="text-base font-bold text-slate-900">Assessment.</CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           <ProcedureStep label="Formative Assessment" content={plan.procedures.evaluation} />
@@ -502,16 +581,16 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
 
       {/* Ways Forward */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-            WAYS FORWARD
-          </CardTitle>
+        <CardHeader className="p-0">
+          <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
+            <CardTitle className="text-base font-bold text-slate-900">Ways Forward.</CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <ProcedureStep label="Extended Learning Opportunities" content={plan.reflection} />
           <Separator />
           <div>
-            <h4 className="text-sm font-semibold mb-2 bg-blue-50 py-1 px-2 rounded">Reflections (Teacher Reflective Prompts)</h4>
+            <h4 className="text-sm font-bold italic mb-2">Reflections:</h4>
             <ol className="text-sm list-decimal list-inside space-y-2 text-muted-foreground">
               <li>Were the differentiated group activities effective in addressing the three reading levels? What evidence from learner responses supports this?</li>
               <li>Which part of the lesson (Engage, Explore, Elaborate, Evaluate) showed the highest learner engagement, and what instructional strategy contributed to this?</li>
@@ -523,28 +602,18 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
 
       {/* Signatories */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base bg-primary text-primary-foreground py-2 px-4 rounded">
-            SIGNATORIES
-          </CardTitle>
+        <CardHeader className="p-0">
+          <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
+            <CardTitle className="text-base font-bold text-slate-900">Signatories.</CardTitle>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="text-sm font-semibold mb-1">Prepared by</h4>
-            <p className="text-sm text-muted-foreground">___________________________________<br />[Teacher Name]<br />Designed by</p>
-          </div>
-          <Separator />
-          <div>
-            <h4 className="text-sm font-semibold mb-1">Checked & Reviewed by</h4>
-            <p className="text-sm text-muted-foreground">___________________________________<br />[Master Teacher Name]<br />Master Teacher</p>
-            <p className="text-sm text-muted-foreground mt-2">___________________________________<br />[Coordinator Name]<br />Coordinator</p>
-          </div>
-          <Separator />
-          <div>
-            <h4 className="text-sm font-semibold mb-1">Noted by</h4>
-            <p className="text-sm text-muted-foreground">___________________________________<br />[PSDS Name]<br />Public Schools District Supervisor</p>
-            <p className="text-sm text-muted-foreground mt-2">___________________________________<br />[EPS Name]<br />Education Program Specialist — Science</p>
-          </div>
+        <CardContent>
+          <SignatureBlock
+            preparedName={input?.teacherName || "JOSE ROMMEL L. GARCIA"}
+            preparedTitle="Teacher III"
+            checked={DEFAULT_CHECKED}
+            noted={DEFAULT_NOTED}
+          />
         </CardContent>
       </Card>
     </div>

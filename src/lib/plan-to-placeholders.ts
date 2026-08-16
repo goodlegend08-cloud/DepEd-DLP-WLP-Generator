@@ -1,9 +1,15 @@
 import type { GeneratedDLPPlan, DLPFlowPhases, DLPFormativeAssessment, DLPExtendedLearning } from "@/types/lesson-plan";
-import type { PlaceholderValues } from "@/lib/template-processor";
 
 // ============================================================
 // MAP GENERATED DLP PLAN → TEMPLATE PLACEHOLDER VALUES
 // ============================================================
+
+const DEFAULT_CHECKED = [
+  "TRIXIA A. PALMOS",
+  "CARMELITA G. YAP",
+  "JEANETTE J. RUGA, Ph.D.",
+];
+const DEFAULT_NOTED = ["MILDRED T. TUBLE", "GENOVIE G. TAGUM, Ph.D."];
 
 function resolveFlow(flow?: DLPFlowPhases, flat?: {
   engage?: string;
@@ -51,10 +57,16 @@ function resolveExtendedLearning(el?: DLPExtendedLearning, flat?: {
  * The keys match the {{PLACEHOLDER}} names used in the .docx template.
  */
 export function planToPlaceholderValues(plan: GeneratedDLPPlan): Record<string, string> {
-  const { lesson_plan_meta, intentions, learning_experience, assessment, ways_forward } = plan;
+  const { lesson_plan_meta, intentions, learning_experience, assessment, ways_forward, signatories } = plan;
   const flow = resolveFlow(learning_experience.flow, learning_experience);
   const formative = resolveFormativeAssessment(assessment.formative_assessment, assessment);
   const extended = resolveExtendedLearning(ways_forward.extended_learning, ways_forward);
+
+  const preparedBy = signatories?.prepared_by?.name || lesson_plan_meta.teacher_name || "JOSE ROMMEL L. GARCIA";
+  const checkedBy =
+    signatories?.checked_by?.length ? signatories.checked_by.map((s) => s.name) : DEFAULT_CHECKED;
+  const notedBy =
+    signatories?.noted_by?.length ? signatories.noted_by.map((s) => s.name) : DEFAULT_NOTED;
 
   return {
     CALENDAR_DATE: lesson_plan_meta.calendar_date || "",
@@ -86,5 +98,11 @@ export function planToPlaceholderValues(plan: GeneratedDLPPlan): Record<string, 
     EXTENDED_ADVANCED: extended.advanced || "",
     EXTENDED_STRUGGLING: extended.struggling || "",
     REFLECTIONS: ways_forward.reflections || "",
+    PREPARED_BY: preparedBy,
+    CHECKED_BY_1: checkedBy[0] || "",
+    CHECKED_BY_2: checkedBy[1] || "",
+    CHECKED_BY_3: checkedBy[2] || "",
+    NOTED_BY_1: notedBy[0] || "",
+    NOTED_BY_2: notedBy[1] || "",
   };
 }
