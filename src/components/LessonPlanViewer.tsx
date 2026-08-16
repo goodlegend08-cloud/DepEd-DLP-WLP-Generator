@@ -369,13 +369,13 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
             label="Learning Competency:"
             instruction="Write the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions"
           >
-            <EditableText value={intentions.learning_competency} onEdit={(v) => onEdit?.("intentions.learning_competency", v)} />
+            <EditableText value={intentions.learning_competency} onEdit={(v) => onEdit?.("intentions.learning_competency", v)} className="block text-center font-bold" />
           </SubRow>
           <SubRow
             label="Learning Objectives:"
             instruction="Write the smaller knowledge, skills or tasks from the competency that the learners will work on and be able to show by the end of the sessions"
           >
-            <EditableText value={intentions.learning_objectives} onEdit={(v) => onEdit?.("intentions.learning_objectives", v)} />
+            <EditableText value={intentions.learning_objectives} onEdit={(v) => onEdit?.("intentions.learning_objectives", v)} className="block text-center font-bold" />
           </SubRow>
           <SubRow
             label="Learners' Context:"
@@ -509,11 +509,11 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
         <CardContent className="space-y-3">
           <div>
             <h4 className="text-sm font-bold italic mb-1">Learning Competency:</h4>
-            <p className="text-sm whitespace-pre-wrap">{input?.competencies || plan.content.content}</p>
+            <p className="text-sm font-bold text-center whitespace-pre-wrap">{input?.competencies || plan.content.content}</p>
           </div>
           <div>
             <h4 className="text-sm font-bold italic mb-1">Learning Objectives:</h4>
-            <p className="text-sm whitespace-pre-wrap">{plan.objectives.objectives_content}</p>
+            <p className="text-sm font-bold text-center whitespace-pre-wrap">{plan.objectives.objectives_content}</p>
           </div>
           <div>
             <h4 className="text-sm font-bold italic mb-1">Learners&apos; Context:</h4>

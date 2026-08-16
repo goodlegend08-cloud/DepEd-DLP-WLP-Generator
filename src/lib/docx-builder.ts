@@ -109,6 +109,25 @@ function contentCell(text: string): TableCell {
   });
 }
 
+/** Right column content cell (75% width), bold and centered. */
+function centeredBoldContentCell(text: string): TableCell {
+  const safeText = text ?? "";
+  const lines = safeText.split("\n");
+  return new TableCell({
+    borders: BORDER,
+    verticalAlign: VerticalAlign.TOP,
+    width: { size: 75, type: WidthType.PERCENTAGE },
+    children: lines.map(
+      (line) =>
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 20, after: 20 },
+          children: [new TextRun({ text: line, bold: true, font: "Times New Roman", size: 18 })],
+        })
+    ),
+  });
+}
+
 /** Full-width content cell (colspan=2). */
 function fullWidthContentCell(text: string): TableCell {
   const safeText = text ?? "";
@@ -143,6 +162,10 @@ function sectionBannerRow(title: string, guidance?: string): TableRow {
 
 function kvRow(label: string, value: string): TableRow {
   return new TableRow({ children: [labelCell(label), contentCell(value)] });
+}
+
+function kvRowCentered(label: string, value: string): TableRow {
+  return new TableRow({ children: [labelCell(label), centeredBoldContentCell(value)] });
 }
 
 function fullRow(text: string): TableRow {
@@ -361,8 +384,8 @@ export async function buildDocx(
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               sectionBannerRow("Intentions.", intentions.framework_guidance_note || "Meaningful learning experiences are anchored on how we frame them. Start by deciding what you want your learners to master by the end of the lesson – keep it clear and simple. Remember: Understanding your learner's evolving context and designing around it helps ensure that your lessons connect with and are relevant to them."),
-              kvRow("Learning Competency:\nWrite the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions", intentions.learning_competency),
-              kvRow("Learning Objectives:\nWrite the smaller knowledge, skills or tasks from the competency that the learners will work on and be able to show by the end of the sessions", intentions.learning_objectives),
+              kvRowCentered("Learning Competency:\nWrite the competency/ies from the curriculum guide that we are targeting, and the content or performance standards applicable to the sessions", intentions.learning_competency),
+              kvRowCentered("Learning Objectives:\nWrite the smaller knowledge, skills or tasks from the competency that the learners will work on and be able to show by the end of the sessions", intentions.learning_objectives),
               kvRow("Learners' Context:\nWrite your observations of your learners, and how they have been performing or responding to learning experiences recently, including strengths, interests, and possible barriers to learning", intentions.learners_context),
             ],
           }),
