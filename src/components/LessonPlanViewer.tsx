@@ -68,12 +68,28 @@ const CELL_BORDER = "border border-black";
 /** Light-gray section banner fill (#D9D9D9 per template). */
 const BANNER_FILL = "bg-[#D9D9D9]";
 
-function MetaRow({ label, children }: { label: string; children: ReactNode }) {
+function MetaRow({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <tr>
       <td className={`${CELL_BORDER} p-2 w-1/3 text-[10pt] align-top`}>{label}</td>
       <td className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>{children}</td>
     </tr>
+  );
+}
+
+/**
+ * Declaration of AI Use label with exact inline typography:
+ * - "Declaration of AI Use": 12pt bold regular
+ * - "(Cite how AI was used in the formulation of the lesson plan.)": 8pt normal italic
+ * - "See DO 3 s.2026 Annex A": 8pt bold italic
+ */
+function AiDeclarationLabel() {
+  return (
+    <div className="space-y-1">
+      <p className="text-[12pt] font-bold">Declaration of AI Use</p>
+      <p className="text-[8pt] italic">(Cite how AI was used in the formulation of the lesson plan.)</p>
+      <p className="text-[8pt] font-bold italic">See DO 3 s.2026 Annex A</p>
+    </div>
   );
 }
 
@@ -355,7 +371,7 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
           <MetaRow label="References (books, websites, toolkits, etc.)">
             <EditableText value={lesson_plan_meta.references} onEdit={(v) => onEdit?.("lesson_plan_meta.references", v)} />
           </MetaRow>
-          <MetaRow label="Declaration of AI Use (Cite how AI was used in the formulation of the lesson plan.) See DO 3 s.2026 Annex A">
+          <MetaRow label={<AiDeclarationLabel />}>
             <EditableText value={lesson_plan_meta.ai_declaration} onEdit={(v) => onEdit?.("lesson_plan_meta.ai_declaration", v)} />
           </MetaRow>
         </tbody>

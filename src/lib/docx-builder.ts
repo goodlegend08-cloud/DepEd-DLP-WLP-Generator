@@ -107,6 +107,34 @@ function metaLabelCell(label: string): TableCell {
   });
 }
 
+/**
+ * Declaration of AI Use label cell with exact inline typography:
+ * - "Declaration of AI Use": 12pt bold regular
+ * - "(Cite how AI was used in the formulation of the lesson plan.)": 8pt normal italic
+ * - "See DO 3 s.2026 Annex A": 8pt bold italic
+ */
+function aiDeclarationLabelCell(): TableCell {
+  return new TableCell({
+    borders: BORDER,
+    verticalAlign: VerticalAlign.TOP,
+    width: { size: 25, type: WidthType.PERCENTAGE },
+    children: [
+      new Paragraph({
+        spacing: { before: 40, after: 20 },
+        children: [new TextRun({ text: "Declaration of AI Use", bold: true, font: "Times New Roman", size: 24 })],
+      }),
+      new Paragraph({
+        spacing: { before: 20, after: 20 },
+        children: [new TextRun({ text: "(Cite how AI was used in the formulation of the lesson plan.)", italics: true, font: "Times New Roman", size: 16 })],
+      }),
+      new Paragraph({
+        spacing: { before: 20, after: 40 },
+        children: [new TextRun({ text: "See DO 3 s.2026 Annex A", bold: true, italics: true, font: "Times New Roman", size: 16 })],
+      }),
+    ],
+  });
+}
+
 /** Right column content cell (75% width). */
 function contentCell(text: string): TableCell {
   const safeText = text ?? "";
@@ -183,6 +211,11 @@ function kvRow(label: string, value: string): TableRow {
 /** Metadata table row: 10pt regular label (not bold) + content. */
 function kvMetaRow(label: string, value: string): TableRow {
   return new TableRow({ children: [metaLabelCell(label), contentCell(value)] });
+}
+
+/** Declaration of AI Use row with its special label cell. */
+function aiDeclarationRow(value: string): TableRow {
+  return new TableRow({ children: [aiDeclarationLabelCell(), contentCell(value)] });
 }
 
 function kvRowCentered(label: string, value: string): TableRow {
@@ -393,7 +426,7 @@ export async function buildDocx(
               kvMetaRow("Designed for which Grade Level and Section", lesson_plan_meta.grade_and_section),
               kvMetaRow("No. of Sessions", lesson_plan_meta.sessions),
               kvMetaRow("References (books, websites, toolkits, etc.)", lesson_plan_meta.references),
-              kvMetaRow("Declaration of AI Use\n(Cite how AI was used in the formulation of the lesson plan.) See DO 3 s.2026 Annex A", lesson_plan_meta.ai_declaration),
+              aiDeclarationRow(lesson_plan_meta.ai_declaration),
             ],
           }),
 
