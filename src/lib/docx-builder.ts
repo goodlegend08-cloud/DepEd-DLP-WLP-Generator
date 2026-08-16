@@ -13,6 +13,7 @@ import {
   ShadingType,
   VerticalAlign,
   TabStopType,
+  UnderlineType,
 } from "docx";
 import type { ITableCellBorders } from "docx";
 import fs from "fs";
@@ -65,18 +66,18 @@ function bannerCell(text: string, italic: boolean): TableCell {
     children: [
       new Paragraph({
         spacing: { before: 40, after: 40 },
-        children: [new TextRun({ text, bold: !italic, italics: italic, font: "Times New Roman", size: 20 })],
+        children: [new TextRun({ text, bold: !italic, italics: italic, font: "Times New Roman", size: italic ? 20 : 24 })],
       }),
     ],
   });
 }
 
-/** Left column label cell: bold header + italic instruction. */
+/** Left column label cell: bold underlined header (12pt) + italic instruction (10pt). */
 function labelCell(label: string): TableCell {
   const { header, instruction } = splitLabel(label);
-  const runs: TextRun[] = [new TextRun({ text: header, bold: true, italics: true, font: "Times New Roman", size: 18 })];
+  const runs: TextRun[] = [new TextRun({ text: header, bold: true, underline: { type: UnderlineType.SINGLE }, font: "Times New Roman", size: 24 })];
   if (instruction) {
-    runs.push(new TextRun({ text: "\n" + instruction, italics: true, font: "Times New Roman", size: 16, color: "333333" }));
+    runs.push(new TextRun({ text: "\n" + instruction, italics: true, font: "Times New Roman", size: 20, color: "333333" }));
   }
   return new TableCell({
     borders: BORDER,
@@ -86,6 +87,21 @@ function labelCell(label: string): TableCell {
       new Paragraph({
         spacing: { before: 40, after: 40 },
         children: runs,
+      }),
+    ],
+  });
+}
+
+/** Metadata table label cell: 10pt regular (not bold), left column. */
+function metaLabelCell(label: string): TableCell {
+  return new TableCell({
+    borders: BORDER,
+    verticalAlign: VerticalAlign.TOP,
+    width: { size: 25, type: WidthType.PERCENTAGE },
+    children: [
+      new Paragraph({
+        spacing: { before: 40, after: 40 },
+        children: [new TextRun({ text: label, font: "Times New Roman", size: 20 })],
       }),
     ],
   });
@@ -162,6 +178,11 @@ function sectionBannerRow(title: string, guidance?: string): TableRow {
 
 function kvRow(label: string, value: string): TableRow {
   return new TableRow({ children: [labelCell(label), contentCell(value)] });
+}
+
+/** Metadata table row: 10pt regular label (not bold) + content. */
+function kvMetaRow(label: string, value: string): TableRow {
+  return new TableRow({ children: [metaLabelCell(label), contentCell(value)] });
 }
 
 function kvRowCentered(label: string, value: string): TableRow {
@@ -366,13 +387,13 @@ export async function buildDocx(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
-              kvRow("Name of Lesson", lessonTitle),
-              kvRow("Date, Week, Day", `${lesson_plan_meta.calendar_date} | Week: ${lesson_plan_meta.week_number} | Day: ${lesson_plan_meta.day_number}`),
-              kvRow("Designed by teacher/s", lesson_plan_meta.teacher_name),
-              kvRow("Designed for which Grade Level and Section", lesson_plan_meta.grade_and_section),
-              kvRow("No. of Sessions", lesson_plan_meta.sessions),
-              kvRow("References (books, websites, toolkits, etc.)", lesson_plan_meta.references),
-              kvRow("Declaration of AI Use\n(Cite how AI was used in the formulation of the lesson plan.) See DO 3 s.2026 Annex A", lesson_plan_meta.ai_declaration),
+              kvMetaRow("Name of Lesson", lessonTitle),
+              kvMetaRow("Date, Week, Day", `${lesson_plan_meta.calendar_date} | Week: ${lesson_plan_meta.week_number} | Day: ${lesson_plan_meta.day_number}`),
+              kvMetaRow("Designed by teacher/s", lesson_plan_meta.teacher_name),
+              kvMetaRow("Designed for which Grade Level and Section", lesson_plan_meta.grade_and_section),
+              kvMetaRow("No. of Sessions", lesson_plan_meta.sessions),
+              kvMetaRow("References (books, websites, toolkits, etc.)", lesson_plan_meta.references),
+              kvMetaRow("Declaration of AI Use\n(Cite how AI was used in the formulation of the lesson plan.) See DO 3 s.2026 Annex A", lesson_plan_meta.ai_declaration),
             ],
           }),
 
@@ -612,12 +633,12 @@ export async function buildWLPDocx(
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
-              kvRow("Name of Lesson", lessonTitle),
-              kvRow("Week", `${input.quarter} | ${input.week}`),
-              kvRow("Designed by Teacher/s", input.teacherName || "[Teacher Name]"),
-              kvRow("Grade Level & Section", `Grade ${input.gradeLevel}`),
-              kvRow("No. of Sessions", "5 Sessions (50 minutes each)"),
-              kvRow("References (books, websites, toolkits, etc.)", "MATATAG K-10 Curriculum Guide; DepEd Science Learning Materials; DepEd MATATAG Curriculum Resources; Division DBOW."),
+              kvMetaRow("Name of Lesson", lessonTitle),
+              kvMetaRow("Week", `${input.quarter} | ${input.week}`),
+              kvMetaRow("Designed by Teacher/s", input.teacherName || "[Teacher Name]"),
+              kvMetaRow("Grade Level & Section", `Grade ${input.gradeLevel}`),
+              kvMetaRow("No. of Sessions", "5 Sessions (50 minutes each)"),
+              kvMetaRow("References (books, websites, toolkits, etc.)", "MATATAG K-10 Curriculum Guide; DepEd Science Learning Materials; DepEd MATATAG Curriculum Resources; Division DBOW."),
             ],
           }),
 

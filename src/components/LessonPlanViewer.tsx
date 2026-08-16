@@ -71,7 +71,7 @@ const BANNER_FILL = "bg-[#D9D9D9]";
 function MetaRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <tr>
-      <td className={`${CELL_BORDER} p-2 w-1/3 font-semibold text-xs align-top`}>{label}</td>
+      <td className={`${CELL_BORDER} p-2 w-1/3 text-[10pt] align-top`}>{label}</td>
       <td className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>{children}</td>
     </tr>
   );
@@ -82,9 +82,9 @@ function BannerRow({ title, guidance }: { title: string; guidance?: string }) {
   return (
     <tr>
       <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 w-1/3 align-top`}>
-        <span className="text-sm font-bold">{title}</span>
+        <span className="text-[12pt] font-bold">{title}</span>
       </td>
-      <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 text-xs italic align-top`}>
+      <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 text-[10pt] italic align-top`}>
         {guidance}
       </td>
     </tr>
@@ -104,8 +104,8 @@ function SubRow({
   return (
     <tr>
       <td className={`${CELL_BORDER} p-2 w-1/3 align-top`}>
-        <p className="text-xs font-bold italic">{label}</p>
-        {instruction && <p className="text-[10px] italic mt-1 text-slate-700">{instruction}</p>}
+        <p className="text-[12pt] font-bold underline">{label}</p>
+        {instruction && <p className="text-[10pt] italic mt-1 text-slate-700">{instruction}</p>}
       </td>
       <td className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>{children}</td>
     </tr>
@@ -508,15 +508,15 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <h4 className="text-sm font-bold italic mb-1">Learning Competency:</h4>
+            <h4 className="text-[12pt] font-bold underline mb-1">Learning Competency:</h4>
             <p className="text-sm font-bold text-center whitespace-pre-wrap">{input?.competencies || plan.content.content}</p>
           </div>
           <div>
-            <h4 className="text-sm font-bold italic mb-1">Learning Objectives:</h4>
+            <h4 className="text-[12pt] font-bold underline mb-1">Learning Objectives:</h4>
             <p className="text-sm font-bold text-center whitespace-pre-wrap">{plan.objectives.objectives_content}</p>
           </div>
           <div>
-            <h4 className="text-sm font-bold italic mb-1">Learners&apos; Context:</h4>
+            <h4 className="text-[12pt] font-bold underline mb-1">Learners&apos; Context:</h4>
             <p className="text-sm whitespace-pre-wrap">{plan.objectives.content}</p>
           </div>
         </CardContent>
@@ -571,7 +571,7 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
           <ProcedureStep label="Extended Learning Opportunities" content={plan.reflection} />
           <Separator />
           <div>
-            <h4 className="text-sm font-bold italic mb-2">Reflections:</h4>
+            <h4 className="text-[12pt] font-bold underline mb-2">Reflections:</h4>
             <ol className="text-sm list-decimal list-inside space-y-2 text-muted-foreground">
               <li>Were the differentiated group activities effective in addressing the three reading levels? What evidence from learner responses supports this?</li>
               <li>Which part of the lesson (Engage, Explore, Elaborate, Evaluate) showed the highest learner engagement, and what instructional strategy contributed to this?</li>
