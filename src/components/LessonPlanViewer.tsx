@@ -107,21 +107,23 @@ function BannerRow({ title, guidance }: { title: string; guidance?: string }) {
   );
 }
 
-/** Subsection row: italic-bold label + instruction (left), content (right). */
+/** Subsection row: label + instruction (left), content (right). */
 function SubRow({
   label,
   instruction,
+  italicLabel,
   children,
 }: {
   label: string;
   instruction?: string;
+  italicLabel?: boolean;
   children: ReactNode;
 }) {
   return (
     <tr>
       <td className={`${CELL_BORDER} p-2 w-1/3 align-top`}>
-        <p className="text-[12pt] font-bold underline">{label}</p>
-        {instruction && <p className="text-[10pt] italic mt-1 text-slate-700">{instruction}</p>}
+        <p className={`text-[12pt] font-bold underline ${italicLabel ? "italic" : ""}`}>{label}</p>
+        {instruction && <p className="text-[10pt] italic whitespace-pre-wrap mt-1 text-slate-700">{instruction}</p>}
       </td>
       <td className={`${CELL_BORDER} p-2 text-xs whitespace-pre-wrap align-top`}>{children}</td>
     </tr>
@@ -414,7 +416,17 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
           </SubRow>
           <SubRow
             label="Flow:"
-            instruction="Describe the activities that you can implement in 1 or more sessions to meet the learning objectives."
+            italicLabel
+            instruction={`Describe the activities that you can implement in 1 or more sessions to meet the learning objectives.
+
+Apply the Learning Design Principles by thinking about how to:
+• make the objectives clear for the learners
+• guide learners before letting them try the task on their own
+• check the state of the learners’ well-being, understanding, and mastery over the lesson
+• connect today’s new concept with past competencies
+• encourage collaboration among learners
+• invite learners to reflect on why these matters to them
+• ensure inclusion for learners’ varied abilities, learning styles, and contexts.`}
           >
             <div className="space-y-2">
               <ProcedureStep label="• ENGAGE (5 mins) — Hook & Well-being" content={flow.engage} onEdit={(v) => onEdit?.("learning_experience.flow.engage", v)} />

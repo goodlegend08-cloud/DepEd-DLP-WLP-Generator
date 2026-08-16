@@ -135,6 +135,43 @@ function aiDeclarationLabelCell(): TableCell {
   });
 }
 
+/**
+ * Flow label cell with exact typography:
+ * - "Flow:": 12pt bold italic underlined
+ * - Guideline text: 10pt normal weight italic
+ */
+function flowLabelCell(): TableCell {
+  const guideline = `Describe the activities that you can implement in 1 or more sessions to meet the learning objectives.
+
+Apply the Learning Design Principles by thinking about how to:
+• make the objectives clear for the learners
+• guide learners before letting them try the task on their own
+• check the state of the learners’ well-being, understanding, and mastery over the lesson
+• connect today’s new concept with past competencies
+• encourage collaboration among learners
+• invite learners to reflect on why these matters to them
+• ensure inclusion for learners’ varied abilities, learning styles, and contexts.`;
+
+  return new TableCell({
+    borders: BORDER,
+    verticalAlign: VerticalAlign.TOP,
+    width: { size: 25, type: WidthType.PERCENTAGE },
+    children: [
+      new Paragraph({
+        spacing: { before: 40, after: 20 },
+        children: [new TextRun({ text: "Flow:", bold: true, italics: true, underline: { type: UnderlineType.SINGLE }, font: "Times New Roman", size: 24 })],
+      }),
+      ...guideline.split("\n").map(
+        (line) =>
+          new Paragraph({
+            spacing: { before: 10, after: 10 },
+            children: [new TextRun({ text: line, italics: true, font: "Times New Roman", size: 20 })],
+          })
+      ),
+    ],
+  });
+}
+
 /** Right column content cell (75% width). */
 function contentCell(text: string): TableCell {
   const safeText = text ?? "";
@@ -220,6 +257,11 @@ function aiDeclarationRow(value: string): TableRow {
 
 function kvRowCentered(label: string, value: string): TableRow {
   return new TableRow({ children: [labelCell(label), centeredBoldContentCell(value)] });
+}
+
+/** Flow row with its specialized label cell. */
+function flowRow(value: string): TableRow {
+  return new TableRow({ children: [flowLabelCell(), contentCell(value)] });
 }
 
 function fullRow(text: string): TableRow {
@@ -453,7 +495,7 @@ export async function buildDocx(
             rows: [
               sectionBannerRow("Learning Experience.", learning_experience.framework_guidance_note || "Each activity and interaction builds towards meaningful understanding and growth. Identify activities and interactions to help learners gain knowledge, skills, or understanding in a purposeful way."),
               kvRow("Pre Lesson:\nDescribe how you will help learners get ready for the lesson.", learning_experience.pre_lesson),
-              kvRow("Flow:\nDescribe the activities that you can implement in 1 or more sessions to meet the learning objectives. Apply the Learning Design Principles by thinking about how to: make the objectives clear for the learners; guide learners before letting them try the task on their own; check the state of the learners' well-being, understanding, and mastery over the lesson; connect today's new concept with past competencies; encourage collaboration among learners; invite learners to reflect on why these matters to them; ensure inclusion for learners' varied abilities, learning styles, and contexts.", [
+              flowRow([
                 `• ENGAGE (5 mins) — Hook & Well-being:\n${flow.engage}`,
                 "",
                 `• Explore & Explain / Modeling (I Do — 15 mins):\n${flow.explore_explain_modeling}`,
