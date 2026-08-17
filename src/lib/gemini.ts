@@ -17,7 +17,7 @@ const getGroqBackup = () =>
 const getGrokBackup = () =>
   makeClient(process.env.GROK_API_KEY, "https://api.x.ai/v1");
 
-const MODEL_NAME = "llama-3.3-70b-versatile";
+const MODEL_NAME = "openai/gpt-oss-20b";
 
 // Rate limiting: max 3 requests per minute per user
 const RATE_LIMIT = 3;
