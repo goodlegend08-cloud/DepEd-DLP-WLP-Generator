@@ -1,7 +1,9 @@
 import OpenAI from "openai";
 
 function makeClient(apiKey: string | undefined, baseURL: string): OpenAI {
-  return new OpenAI({ apiKey, baseURL });
+  // maxRetries: 0 disables the SDK's hidden retry/backoff so failover between
+  // providers happens fast instead of waiting on each failing provider.
+  return new OpenAI({ apiKey, baseURL, maxRetries: 0 });
 }
 
 // Primary Groq client. Created lazily so the module can be imported at build
@@ -89,15 +91,6 @@ export async function generateFromPayload(
     checkRateLimit(userId);
   }
 
-  const isRateLimitError = (error: unknown): boolean => {
-    const message = error instanceof Error ? error.message : String(error);
-    return (
-      message.includes("429") ||
-      message.includes("rate_limit") ||
-      message.includes("RESOURCE_EXHAUSTED")
-    );
-  };
-
   const providers: { name: string; client: OpenAI; model?: string }[] = [];
   if (process.env.CEREBRAS_API_KEY) {
     providers.push({
@@ -144,37 +137,26 @@ export async function generateFromPayload(
   let firstError: Error | null = null;
 
   for (const provider of providers) {
-    const maxRetries = 2;
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        const result = await provider.client.chat.completions.create({
-          model: provider.model || payload.model,
-          messages: payload.messages,
-          temperature: payload.temperature ?? 0.7,
-          top_p: 0.9,
-          max_tokens: 4096,
-        });
+    try {
+      const result = await provider.client.chat.completions.create({
+        model: provider.model || payload.model,
+        messages: payload.messages,
+        temperature: payload.temperature ?? 0.7,
+        top_p: 0.9,
+        max_tokens: 4096,
+      });
 
-        return {
-          content: result.choices[0].message.content ?? "",
-          provider: provider.name,
-          model: provider.model || payload.model,
-        };
-      } catch (error) {
-        lastError = error as Error;
-        if (!firstError) firstError = lastError;
-
-        // Transient rate limits: back off and retry on this provider.
-        if (isRateLimitError(error) && attempt < maxRetries - 1) {
-          const delay = Math.pow(2, attempt + 1) * 5000;
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          continue;
-        }
-
-        // Any other failure (TPM/quota caps, unknown model, auth, etc.):
-        // fall through to the next provider.
-        break;
-      }
+      return {
+        content: result.choices[0].message.content ?? "",
+        provider: provider.name,
+        model: provider.model || payload.model,
+      };
+    } catch (error) {
+      lastError = error as Error;
+      if (!firstError) firstError = lastError;
+      // Any failure (rate limit, TPM/quota, unknown model, auth, etc.) falls
+      // through to the next provider immediately — no backoff, so a broken
+      // provider never stalls generation.
     }
   }
 
