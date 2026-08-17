@@ -26,10 +26,6 @@ const getGemini = () =>
     "https://generativelanguage.googleapis.com/v1beta/openai/"
   );
 
-// Together AI provider. OpenAI-compatible endpoint.
-const getTogether = () =>
-  makeClient(process.env.TOGETHER_API_KEY, "https://api.together.xyz/v1");
-
 const MODEL_NAME = "llama-3.3-70b-versatile";
 
 // Rate limiting: max 3 requests per minute per user
@@ -146,17 +142,9 @@ export async function generateFromPayload(
       });
     }
   }
-  if (process.env.TOGETHER_API_KEY) {
-    providers.push({
-      name: "together",
-      client: getTogether(),
-      model:
-        process.env.TOGETHER_MODEL || "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-    });
-  }
   if (providers.length === 0) {
     throw new Error(
-      "No AI API key configured. Set GROQ_API_KEY (primary), GROQ_BACKUP_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY, or TOGETHER_API_KEY."
+      "No AI API key configured. Set GROQ_API_KEY (primary), GROQ_BACKUP_API_KEY, OPENROUTER_API_KEY, or GEMINI_API_KEY."
     );
   }
 
