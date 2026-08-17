@@ -17,6 +17,16 @@ export default function ForgotPasswordPage() {
   );
 }
 
+function toQuestionString(q: unknown): string {
+  if (typeof q === "string") return q;
+  if (q && typeof q === "object") {
+    const o = q as Record<string, unknown>;
+    const value = o.question ?? o.question_text ?? o.prompt;
+    if (typeof value === "string") return value;
+  }
+  return "";
+}
+
 function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [questions, setQuestions] = useState<string[]>([]);
@@ -48,7 +58,15 @@ function ForgotPasswordForm() {
         setLoading(false);
         return;
       }
-      setQuestions(json.questions);
+      const questionStrings = (json.questions as unknown[])
+        .map((q: unknown) => toQuestionString(q))
+        .filter((q: string) => q.length > 0);
+      if (questionStrings.length === 0) {
+        setError("No security questions found for this email. Please check the email you entered.");
+        setLoading(false);
+        return;
+      }
+      setQuestions(questionStrings);
     } catch {
       setError("Something went wrong. Please try again.");
     }
@@ -105,20 +123,23 @@ function ForgotPasswordForm() {
                 {error}
               </div>
             )}
-            {questions.map((q, index) => (
-              <div key={q} className="space-y-2">
-                <Label htmlFor={`answer-${index}`}>{q}</Label>
-                <Input
-                  id={`answer-${index}`}
-                  type="text"
-                  autoComplete="off"
-                  placeholder="Your answer"
-                  value={answers[q] ?? ""}
-                  onChange={(e) => setAnswers((prev) => ({ ...prev, [q]: e.target.value }))}
-                  required
-                />
-              </div>
-            ))}
+            {questions.map((q, index) => {
+              const question = toQuestionString(q);
+              return (
+                <div key={`${index}-${question}`} className="space-y-2">
+                  <Label htmlFor={`answer-${index}`}>{question}</Label>
+                  <Input
+                    id={`answer-${index}`}
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Your answer"
+                    value={answers[question] ?? ""}
+                    onChange={(e) => setAnswers((prev) => ({ ...prev, [question]: e.target.value }))}
+                    required
+                  />
+                </div>
+              );
+            })}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={loading}>
