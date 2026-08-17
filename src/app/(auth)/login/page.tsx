@@ -14,7 +14,6 @@ import { useI18n } from "@/lib/i18n";
 const ERROR_MESSAGES: Record<string, string> = {
   auth_callback_error: "Email confirmation failed. The link may have expired or already been used. Please try signing up again.",
   email_not_confirmed: "Please confirm your email before logging in. Check your inbox (and spam folder) for the confirmation link.",
-  recovery_link_expired: "This reset link is invalid or has expired. Please request a new one.",
 };
 
 export default function LoginPage() {

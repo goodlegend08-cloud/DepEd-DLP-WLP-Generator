@@ -53,12 +53,26 @@ export async function updateSession(request: NextRequest) {
   // Redirect logged-in users away from auth pages
   const isAuthRoute = pathname === "/login" ||
     pathname === "/signup" ||
-    pathname === "/forgot-password";
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password";
 
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
+  }
+
+  // /reset-password requires a reset state (email + token issued by the
+  // verify-answers step). Without it, unauthenticated users can't reach the
+  // password reset form. The token signature is verified by the reset API.
+  if (!user && pathname === "/reset-password") {
+    const email = request.nextUrl.searchParams.get("email");
+    const token = request.nextUrl.searchParams.get("token");
+    if (!email || !token) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/forgot-password";
+      return NextResponse.redirect(url);
+    }
   }
 
   // Security-question guard: authenticated users who haven't completed security

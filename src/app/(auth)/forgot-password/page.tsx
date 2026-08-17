@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n";
@@ -22,22 +21,10 @@ function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const searchParams = useSearchParams();
+  const router = useRouter();
   const { t } = useI18n();
-
-  useEffect(() => {
-    const errorParam = searchParams.get("error");
-    if (errorParam === "recovery_link_expired") {
-      queueMicrotask(() => {
-        setError("This reset link is invalid or has expired. Please request a new one.");
-      });
-    }
-  }, [searchParams]);
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,18 +55,9 @@ function ForgotPasswordForm() {
     setLoading(false);
   };
 
-  const handleReset = async (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
 
     const providedAnswers = questions.map((q) => ({ question: q, answer: answers[q] ?? "" }));
     if (providedAnswers.some((a) => !a.answer.trim())) {
@@ -90,10 +68,10 @@ function ForgotPasswordForm() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/security/forgot/reset", {
+      const res = await fetch("/api/security/forgot/verify-answers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, answers: providedAnswers, newPassword }),
+        body: JSON.stringify({ email, answers: providedAnswers }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -101,32 +79,13 @@ function ForgotPasswordForm() {
         setLoading(false);
         return;
       }
-      setSuccess(true);
+      // Answers verified: proceed to the password reset step with the short-lived token.
+      router.push(`/reset-password?email=${encodeURIComponent(email)}&token=${encodeURIComponent(json.token)}`);
     } catch {
       setError("Something went wrong. Please try again.");
     }
     setLoading(false);
   };
-
-  if (success) {
-    return (
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">
-            {t("passwordReset")}
-          </CardTitle>
-          <CardDescription>
-            {t("passwordResetSuccess")}
-          </CardDescription>
-        </CardHeader>
-        <CardFooter>
-          <Link href="/login" className="w-full">
-            <Button className="w-full">{t("login")}</Button>
-          </Link>
-        </CardFooter>
-      </Card>
-    );
-  }
 
   if (questions.length > 0) {
     return (
@@ -136,10 +95,10 @@ function ForgotPasswordForm() {
             {t("forgotPassword")}
           </CardTitle>
           <CardDescription>
-            Answer your security questions to reset your password.
+            Answer your security questions to verify your identity.
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleReset}>
+        <form onSubmit={handleVerify}>
           <CardContent className="space-y-4">
             {error && (
               <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
@@ -160,30 +119,10 @@ function ForgotPasswordForm() {
                 />
               </div>
             ))}
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">{t("newPassword")}</Label>
-              <PasswordInput
-                id="newPassword"
-                placeholder="••••••••"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
-              <PasswordInput
-                id="confirmPassword"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? t("loading") : t("resetPassword")}
+              {loading ? t("loading") : t("verifyAnswers")}
             </Button>
             <button
               type="button"
@@ -237,7 +176,7 @@ function ForgotPasswordForm() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? t("loading") : t("sendResetLink")}
+            {loading ? t("loading") : t("continue")}
           </Button>
           <p className="text-sm text-muted-foreground">
             {t("rememberPassword")}{" "}

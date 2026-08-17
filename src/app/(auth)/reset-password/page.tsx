@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
@@ -24,94 +23,21 @@ function ResetPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [validating, setValidating] = useState(true);
-  const [hasSession, setHasSession] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient();
   const { t } = useI18n();
 
-  useEffect(() => {
-    const handleAuth = async () => {
-      const code = searchParams.get("code");
-      const tokenHash = searchParams.get("token_hash");
-      const token = searchParams.get("token");
-      const type = searchParams.get("type");
-      const errorParam = searchParams.get("error");
-
-      if (errorParam) {
-        setError(
-          errorParam === "recovery_link_expired"
-            ? "This reset link is invalid or has expired. Please request a new one."
-            : "An error occurred. Please try again."
-        );
-        setValidating(false);
-        return;
-      }
-
-      // Handle PKCE code flow
-      if (code) {
-        const { error: authError } = await supabase.auth.exchangeCodeForSession(code);
-        if (authError) {
-          console.error("Code exchange error:", authError);
-          setError("Invalid or expired reset link. Please request a new one.");
-          setValidating(false);
-          return;
-        }
-        setHasSession(true);
-        setValidating(false);
-        return;
-      }
-
-      // Handle token_hash flow (recovery links from email templates)
-      if (tokenHash && type === "recovery") {
-        const { error: authError } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: "recovery",
-        });
-        if (authError) {
-          console.error("Token hash verification error:", authError);
-          setError("Invalid or expired reset link. Please request a new one.");
-          setValidating(false);
-          return;
-        }
-        setHasSession(true);
-        setValidating(false);
-        return;
-      }
-
-      // Handle older token flow (recovery type). Recovery links carry a
-      // hashed token that verifyOtp accepts as token_hash.
-      if (token && type === "recovery") {
-        const { error: authError } = await supabase.auth.verifyOtp({
-          token_hash: token,
-          type: "recovery",
-        });
-        if (authError) {
-          console.error("Token verification error:", authError);
-          setError("Invalid or expired reset link. Please request a new one.");
-          setValidating(false);
-          return;
-        }
-        setHasSession(true);
-        setValidating(false);
-        return;
-      }
-
-      // Check if user already has an active session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setHasSession(true);
-      }
-      setValidating(false);
-    };
-
-    handleAuth();
-  }, [searchParams, supabase]);
+  const email = searchParams.get("email") ?? "";
+  const token = searchParams.get("token") ?? "";
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!email || !token) {
+      setError("This reset link is invalid or has expired. Please request a new one.");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -125,39 +51,26 @@ function ResetPasswordForm() {
 
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.updateUser({
-      password,
-    });
-
-    if (authError) {
-      console.error("Update user error:", authError);
-      setError(authError.message);
-      setLoading(false);
-      return;
+    try {
+      const res = await fetch("/api/security/forgot/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, token, newPassword: password }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Unable to reset your password. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setSuccess(true);
+    } catch {
+      setError("Something went wrong. Please try again.");
     }
-
-    setSuccess(true);
     setLoading(false);
   };
 
-  if (validating) {
-    return (
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">
-            {t("loading")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-center">
-          <p className="text-sm text-muted-foreground">
-            {t("validatingResetLink")}
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error && !hasSession) {
+  if (!email || !token) {
     return (
       <Card>
         <CardHeader className="text-center">
@@ -167,10 +80,10 @@ function ResetPasswordForm() {
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
+            This reset link is invalid or has expired. Please request a new one.
           </div>
           <Link href="/forgot-password">
-            <Button variant="outline">{t("sendResetLink")}</Button>
+            <Button variant="outline">{t("continue")}</Button>
           </Link>
         </CardContent>
       </Card>
