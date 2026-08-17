@@ -480,31 +480,3 @@
 .auth-input {
   transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
-
-/* ============================================================
-   Auth background — ambient orbs & dot matrix
-   ============================================================ */
-.auth-orb {
-  animation: auth-orb-float 16s ease-in-out infinite alternate;
-}
-
-.auth-orb--alt {
-  animation-duration: 20s;
-  animation-delay: -6s;
-  animation-direction: alternate-reverse;
-}
-
-@keyframes auth-orb-float {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-
-  100% {
-    transform: translate(32px, -24px) scale(1.1);
-  }
-}
-
-.auth-dot-matrix {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='1.5' cy='1.5' r='1.5' fill='%2364748b'/%3E%3C/svg%3E");
-  background-size: 24px 24px;
-}
