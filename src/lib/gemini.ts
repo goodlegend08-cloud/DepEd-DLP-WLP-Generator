@@ -110,7 +110,7 @@ export async function generateFromPayload(
     providers.push({
       name: "grok-backup",
       client: getGrokBackup(),
-      model: process.env.GROK_MODEL || "grok-beta",
+      model: process.env.GROK_MODEL || "grok-4.3",
     });
   }
   if (process.env.GEMINI_API_KEY) {
