@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Loader } from "@/components/Loader";
 import { getSiteUrl } from "@/lib/site-url";
@@ -13,6 +12,11 @@ import {
   type SecurityQuestionRow,
 } from "@/components/security/SecurityQuestionsField";
 import { MIN_SECURITY_QUESTIONS } from "@/lib/security-questions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SignupPage() {
   const [step, setStep] = useState(1);
@@ -20,8 +24,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [securityRows, setSecurityRows] = useState<SecurityQuestionRow[]>([
     { question: "", answer: "" },
     { question: "", answer: "" },
@@ -120,149 +122,141 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="auth-card">
-        <span className="auth-singup">{t("signup")}</span>
-        <div className="auth-field-group">
-          <p className="auth-msg" style={{ color: "#000" }}>
-            Check your email
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">{t("signup")}</CardTitle>
+          <CardDescription>Check your email</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-center text-sm text-muted-foreground">
+          <p>
+            We sent a confirmation link to <strong className="text-foreground">{email}</strong>. Please check your inbox and verify your account.
           </p>
-          <p className="auth-msg" style={{ color: "#000", textTransform: "none", textAlign: "center" }}>
-            We sent a confirmation link to <strong>{email}</strong>. Please check your inbox and verify your account.
-          </p>
-          <p className="auth-msg" style={{ color: "#000", textTransform: "none", textAlign: "center" }}>
+          <p>
             After confirming your email, you&apos;ll be asked to set up your security questions before accessing the app.
           </p>
-          <Link href="/login" className="auth-link">
+        </CardContent>
+        <CardFooter>
+          <Button render={<Link href="/login" />} variant="outline" className="w-full">
             {t("login")}
-          </Link>
-        </div>
-      </div>
+          </Button>
+        </CardFooter>
+      </Card>
     );
   }
 
   return (
-    <div className={`auth-card ${step === 2 ? "auth-card--wide" : ""}`}>
-      <span className="auth-singup">{t("signup")}</span>
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl font-bold">{t("signup")}</CardTitle>
+        <CardDescription>
+          Create your account to start generating lesson plans
+        </CardDescription>
+      </CardHeader>
 
-      <div className="auth-row" style={{ marginTop: 0 }}>
-        <div className="flex items-center gap-2">
-          {[1, 2].map((s) => (
-            <div key={s} className="flex flex-1 flex-col items-center gap-1">
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
-                  step >= s
-                    ? "bg-black text-white"
-                    : "bg-white text-black ring-1 ring-black/30"
-                }`}
-              >
-                {s}
-              </div>
-              <span className="text-[10px] uppercase tracking-wider text-black/70">
-                {s === 1 ? t("accountDetails") : t("securityQuestions")}
-              </span>
+      {/* Step indicator */}
+      <div className="flex items-center justify-center gap-6 px-6 pb-2">
+        {[1, 2].map((s) => (
+          <div key={s} className="flex flex-col items-center gap-1">
+            <div
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+                step >= s
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground ring-1 ring-border"
+              }`}
+            >
+              {s}
             </div>
-          ))}
-        </div>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              {s === 1 ? t("accountDetails") : t("securityQuestions")}
+            </span>
+          </div>
+        ))}
       </div>
 
-      {error && <p className="auth-msg">{error}</p>}
+      {error && (
+        <div className="px-6">
+          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+        </div>
+      )}
 
       {step === 1 && (
-        <form className="auth-field-group" onSubmit={handleStep1}>
-          <div className="auth-inputBox">
-            <input
-              id="fullName"
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              autoComplete="name"
-            />
-            <span>{t("fullName")}</span>
-          </div>
-          <div className="auth-inputBox1">
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
-            <span>{t("email")}</span>
-          </div>
-          <div className="auth-inputBox">
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-            <span>{t("password")}</span>
-            <button
-              type="button"
-              className="auth-eye"
-              onClick={() => setShowPassword((prev) => !prev)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </button>
-          </div>
-          <div className="auth-inputBox1">
-            <input
-              id="confirmPassword"
-              type={showConfirm ? "text" : "password"}
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-            <span>{t("confirmPassword")}</span>
-            <button
-              type="button"
-              className="auth-eye"
-              onClick={() => setShowConfirm((prev) => !prev)}
-              aria-label={showConfirm ? "Hide password" : "Show password"}
-              tabIndex={-1}
-            >
-              {showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </button>
-          </div>
-          <button type="submit" className="auth-enter" style={{ marginBottom: 0 }}>
-            {t("continue")}
-          </button>
-          <p className="auth-msg" style={{ color: "#000", textTransform: "none" }}>
-            {t("alreadyHaveAccount")}{" "}
-            <Link href="/login" className="auth-link">
-              {t("login")}
-            </Link>
-          </p>
+        <form onSubmit={handleStep1}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">{t("fullName")}</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="Juan Dela Cruz"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                autoComplete="name"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">{t("email")}</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="teacher@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">{t("password")}</Label>
+              <PasswordInput
+                id="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
+              <PasswordInput
+                id="confirmPassword"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full">
+              {t("continue")}
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              {t("alreadyHaveAccount")}{" "}
+              <Link href="/login" className="text-primary underline">
+                {t("login")}
+              </Link>
+            </p>
+          </CardFooter>
         </form>
       )}
 
       {step === 2 && (
-        <form className="auth-field-group" onSubmit={handleSignup}>
-          <div className="w-full px-4">
-            <p className="auth-msg" style={{ color: "#000", textTransform: "none", marginBottom: "12px" }}>
+        <form onSubmit={handleSignup}>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
               Choose at least {MIN_SECURITY_QUESTIONS} questions you can remember. You&apos;ll need
               them to reset your password without email.
             </p>
             <SecurityQuestionsField value={securityRows} onChange={setSecurityRows} />
-          </div>
-          <div className="flex w-full items-center justify-center gap-3 px-4">
-            <button
-              type="button"
-              className="auth-enter"
-              style={{ marginBottom: 0 }}
-              onClick={() => setStep(1)}
-              disabled={loading}
-            >
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="button" variant="outline" className="w-full" onClick={() => setStep(1)} disabled={loading}>
               {t("back")}
-            </button>
-            <button type="submit" className="auth-enter" style={{ marginBottom: 0 }} disabled={loading}>
+            </Button>
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader size="sm" />
@@ -271,10 +265,10 @@ export default function SignupPage() {
               ) : (
                 t("signup")
               )}
-            </button>
-          </div>
+            </Button>
+          </CardFooter>
         </form>
       )}
-    </div>
+    </Card>
   );
 }
