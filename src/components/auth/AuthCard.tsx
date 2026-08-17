@@ -57,10 +57,36 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
   const [shakeKey, setShakeKey] = useState(0);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isHydrating, setIsHydrating] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
   const { t } = useI18n();
+
+  useEffect(() => {
+    let cancelled = false;
+    const checkSession = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (cancelled) return;
+
+      if (user) {
+        // Middleware normally blocks logged-in users from auth routes, but if a
+        // session becomes active after mount (e.g. callback navigation), bounce
+        // them to the dashboard instead of showing the auth forms.
+        router.replace("/dashboard");
+        router.refresh();
+        return;
+      }
+
+      setIsHydrating(false);
+    };
+    checkSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, router]);
 
   useEffect(() => {
     const errorParam = searchParams.get("error");
@@ -207,8 +233,33 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
 
   return (
     <motion.div layout className="w-full" transition={{ duration: 0.35, ease: "easeInOut" }}>
-      <div key={shakeKey} className={shakeKey > 0 ? "auth-shake" : "auth-motion-card"}>
-        <Card className="bg-white/80 shadow-xl backdrop-blur-md border border-slate-200/60 dark:bg-slate-900/80 dark:border-slate-800/60">
+      <AnimatePresence mode="wait" initial={false}>
+        {isHydrating ? (
+          <motion.div
+            key="auth-skeleton"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-full max-w-md p-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-xl animate-pulse space-y-6"
+          >
+            <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3 mx-auto" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-2/3 mx-auto" />
+            <div className="space-y-4 pt-4">
+              <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-lg w-full" />
+              <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-lg w-full" />
+              <div className="h-11 bg-slate-300 dark:bg-slate-700 rounded-lg w-full mt-6" />
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="auth-card"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.35 }}
+          >
+            <div key={shakeKey} className={shakeKey > 0 ? "auth-shake" : "auth-motion-card"}>
+              <Card className="bg-white/80 shadow-xl backdrop-blur-md border border-slate-200/60 dark:bg-slate-900/80 dark:border-slate-800/60">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={isSignUp ? "signup" : "login"}
@@ -478,9 +529,12 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                 </>
               )}
             </motion.div>
-          </AnimatePresence>
-        </Card>
-      </div>
+            </AnimatePresence>
+          </Card>
+          </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
