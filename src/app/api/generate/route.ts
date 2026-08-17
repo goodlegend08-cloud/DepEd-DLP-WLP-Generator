@@ -36,6 +36,33 @@ function normalizeJSON(rawResponse: string): string {
 }
 
 /**
+ * Parse the AI's raw response as JSON with a clear error (and a log of the
+ * response snippet) instead of a cryptic "Unexpected end of JSON input".
+ */
+function parseAIJSON(
+  raw: string,
+  provider?: string,
+  model?: string
+): unknown {
+  const cleaned = normalizeJSON(raw);
+  if (!cleaned) {
+    throw new Error(
+      `AI returned an empty response${provider ? ` from ${provider}/${model}` : ""}. Please try again.`
+    );
+  }
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    console.error(
+      `[ai-generate] JSON parse failed. provider=${provider} model=${model} snippet=${cleaned.slice(0, 500)}`
+    );
+    throw new Error(
+      `AI response was not valid JSON${provider ? ` (from ${provider}/${model})` : ""}. Please try again.`
+    );
+  }
+}
+
+/**
  * Flatten a structured daily-activities object into a readable text block.
  * Handles shapes the AI sometimes returns instead of the promised string,
  * e.g. { opening, activity1, activity2, activity3, closing }.
@@ -326,7 +353,7 @@ async function handleGeneralized(input: LessonPlanInput, userId: string) {
 
   const payload = buildGrokPayload(payloadData, userContent, { systemPrompt });
   const genResult = await generateFromPayload(payload, userId);
-  const parsed = JSON.parse(normalizeJSON(genResult.content));
+  const parsed = parseAIJSON(genResult.content, genResult.provider, genResult.model) as GeneratedDLPPlan;
 
   if (!parsed.header || !parsed.lesson_plan_meta || !parsed.intentions) {
     return NextResponse.json(
@@ -466,11 +493,10 @@ export async function POST(request: Request) {
 
     const genResult = await generateLessonPlan(systemPrompt, userPrompt, user.id);
 
-    // Parse JSON response - strip markdown code fences if present
-    const cleanedResponse = normalizeJSON(genResult.content);
-
     if (planType === "wlp") {
-      const weeklyPlan: WeeklyLessonPlan = normalizeWeeklyPlan(JSON.parse(cleanedResponse));
+      const weeklyPlan: WeeklyLessonPlan = normalizeWeeklyPlan(
+        parseAIJSON(genResult.content, genResult.provider, genResult.model) as Record<string, unknown>
+      );
 
       if (
         !weeklyPlan.monday ||
@@ -514,7 +540,7 @@ export async function POST(request: Request) {
         aiModel: genResult.model,
       });
     } else {
-      const parsed = JSON.parse(cleanedResponse);
+      const parsed = parseAIJSON(genResult.content, genResult.provider, genResult.model) as GeneratedDLPPlan;
 
       // Check if it's the new ILAW format (has header, lesson_plan_meta, intentions)
       if (parsed.header && parsed.lesson_plan_meta && parsed.intentions) {
@@ -597,7 +623,7 @@ export async function POST(request: Request) {
       }
 
       // Fallback: check for old format
-      const lessonPlan: GeneratedLessonPlan = parsed;
+      const lessonPlan: GeneratedLessonPlan = parsed as unknown as GeneratedLessonPlan;
 
       if (
         !lessonPlan.objectives ||
