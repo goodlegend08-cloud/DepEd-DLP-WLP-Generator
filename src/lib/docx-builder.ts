@@ -474,7 +474,7 @@ export async function buildDocx(
         properties: {
           page: {
             size: { width: 12240, height: 18720 }, // 8.5 x 13 in (Legal/Folio)
-            margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 },
+            margin: { top: 283, right: 720, bottom: 720, left: 720 },
           },
         },
         children: [
@@ -618,8 +618,8 @@ function centeredLine(text: string, size: number, bold: boolean): Paragraph {
 }
 
 /**
- * Official LPCAA DepEd header image as a centered ImageRun spanning the full
- * document content width (~600px). Falls back to the text letterhead when the
+ * Official LPCAA DepEd header image as a centered ImageRun sized to 20.32 x 4.2 cm
+ * (8.00 x 1.65 in / 768 x 158.7 px). Falls back to the text letterhead when the
  * image asset cannot be read at runtime.
  */
 function headerImageParagraph(): Paragraph {
@@ -644,7 +644,7 @@ function headerImageParagraph(): Paragraph {
         new ImageRun({
           type: "png",
           data,
-          transformation: { width: 600, height: 124 },
+          transformation: { width: 768, height: 158.7 },
         }),
       ],
     });
@@ -722,7 +722,7 @@ export async function buildWLPDocx(
         properties: {
           page: {
             size: { width: 12240, height: 18720 }, // 8.5 x 13 in (Legal/Folio)
-            margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 },
+            margin: { top: 283, right: 720, bottom: 720, left: 720 },
           },
         },
         children: [

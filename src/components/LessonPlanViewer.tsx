@@ -330,13 +330,13 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
     "Meaningful learning can also happen beyond the classroom – for both the learners and the teacher. Pause and reflect on what happened today.";
 
   return (
-    <div className="text-black font-serif">
+    <div className="text-black font-serif" style={{ padding: "0.5cm 1.27cm 1.27cm 1.27cm" }}>
       {/* Official LPCAA DepEd Header Image */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/assets/lpcaa header.png"
         alt="LPCAA DepEd Header"
-        className="w-full max-w-3xl mx-auto mb-4"
+        style={{ width: "20.32cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
       />
 
       {/* Lesson Plan Title */}
@@ -501,14 +501,14 @@ Apply the Learning Design Principles by thinking about how to:
 
 function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: LessonPlanInput }) {
   return (
-    <div className="text-black font-serif space-y-4">
+    <div className="text-black font-serif space-y-4" style={{ padding: "0.5cm 1.27cm 1.27cm 1.27cm" }}>
       {/* Header */}
       <div className="text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/assets/lpcaa header.png"
           alt="LPCAA DepEd Header"
-          className="w-full max-w-3xl mx-auto mb-4"
+          style={{ width: "20.32cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
         />
         <h2 className="text-lg font-bold mt-2">DAILY LESSON PLAN (DLP)</h2>
         <p className="text-sm font-semibold uppercase">{input?.learningArea || "SCIENCE"}</p>

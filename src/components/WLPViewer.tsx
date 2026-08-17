@@ -184,13 +184,13 @@ export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
     textFields.map((key) => [key, flattenActivities((plan as unknown as Record<string, unknown>)[key])])
   ) as Record<(typeof textFields)[number], string>;
   return (
-    <div className="text-black">
+    <div className="text-black" style={{ padding: "0.5cm 1.27cm 1.27cm 1.27cm" }}>
       {/* Official LPCAA DepEd Header Image */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/assets/lpcaa header.png"
         alt="LPCAA DepEd Header"
-        className="w-full max-w-3xl mx-auto mb-4"
+        style={{ width: "20.32cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
       />
 
       {/* Title */}
