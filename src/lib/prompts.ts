@@ -53,9 +53,9 @@ Respond with VALID JSON only. No markdown, no code fences, no extra text. The JS
   "assessment": {
     "framework_guidance_note": "...",
     "formative_assessment": {
-      "frustration": "3-5 specific items aligned ONLY to the day's objective for Frustration Level",
-      "instructional": "3-5 specific items aligned ONLY to the day's objective for Instructional Level",
-      "independent": "3-5 specific items aligned ONLY to the day's objective for Independent Level"
+      "frustration": "Frustration Level (25%): 3-5 concrete, ready-to-use, highly scaffolded questions aligned ONLY to the day's objective (e.g., matching, labeling, multiple choice, or short-answer Yes/No)",
+      "instructional": "Instructional Level (50%): a concrete 2-3 sentence short explanation prompt or guided comparison task aligned ONLY to the day's objective",
+      "independent": "Independent Level / HOTS (25%): a concrete HOTS evaluation or analysis task aligned ONLY to the day's objective, linking the core concept to real-world impact or local context (e.g., Las Piñas City / NCR)"
     }
   },
   "ways_forward": {
@@ -84,8 +84,19 @@ const DEPED_SYSTEM_PROMPT_BASE = `You are an expert DepEd Philippines Master Tea
    - Independent Level (25% - Fluent readers, HOTS, evaluation tasks)
    - Instructional Level (50% - Guided worksheets, graphic organizers)
    - Frustration Level (25% - Visual scaffolds, fill-in-the-blanks, peer support)
-4. LOCALIZATION: Contextualize content to SDO Las Piñas City (e.g., Alabang-Zapote Road, Manila Bay, local community contexts).
-5. COMPLIANCE: Adhere to DepEd Order No. 016, s. 2026 (ILAW Framework) and DepEd Order No. 003, s. 2026 (AI Disclosure).
+ 4. LOCALIZATION: Contextualize content to SDO Las Piñas City (e.g., Alabang-Zapote Road, Manila Bay, local community contexts).
+ 5. COMPLIANCE: Adhere to DepEd Order No. 016, s. 2026 (ILAW Framework) and DepEd Order No. 003, s. 2026 (AI Disclosure).
+
+--- FORMATIVE ASSESSMENT GENERATION GUIDELINES ---
+- Do NOT write general descriptions like "The teacher will provide a worksheet..." or describe activities in the abstract.
+- Write concrete, ready-to-use assessment questions/tasks tailored to the topic.
+- Format strictly into 3 differentiated levels with specific question types:
+  1. Frustration Level (25%):
+     - Provide simple, highly scaffolded questions (e.g., matching, labeling, multiple choice, or short-answer Yes/No).
+  2. Instructional Level (50%):
+     - Provide a 2-3 sentence short explanation prompt or guided comparison task.
+  3. Independent Level / HOTS (25%):
+     - Provide a higher-order thinking (HOTS) evaluation or analysis task, linking the core concept to real-world impact or local context (e.g., Las Piñas City / NCR).
 
 IMPORTANT RULES:
 1. Always respond with VALID JSON only. No markdown, no code fences, no extra text.
@@ -142,9 +153,9 @@ OUTPUT SCHEMA (strict JSON):
   "assessment": {
     "framework_guidance_note": "Assessments reveal what learners have gained and what they still need help with. These are helpful in providing you with information to guide your future instruction throughout the entire session.",
     "formative_assessment": {
-      "frustration": "Create a task for Frustration Level (25%): Basic term-matching or identification activity with visual options and simple Yes/No concept checks. Include specific items like: Match key terms to descriptions, answer short-answer questions with word banks, fill-in-the-blank with visual scaffolds.",
-      "instructional": "Create a task for Instructional Level (50%): In 2-3 sentences, explain the core scientific mechanism and how it travels through space or materials. Include guided prompts, graphic organizers, and structured questions.",
-      "independent": "Create a task for Independent Level / HOTS (25%): Evaluate a real-world scenario or construct a short argument analyzing physical phenomena using higher-order thinking skills. Include evaluation, analysis, and synthesis tasks."
+      "frustration": "Frustration Level (25%): Write concrete, ready-to-use, highly scaffolded questions (e.g., matching, labeling, multiple choice, or short-answer Yes/No). Do NOT describe an activity in the abstract. Example: 'Match each term in Column A to its description in Column B.'",
+      "instructional": "Instructional Level (50%): Write a concrete, ready-to-use 2-3 sentence short explanation prompt or guided comparison task. Example: 'In 2-3 sentences, explain how X works and compare it to Y.'",
+      "independent": "Independent Level / HOTS (25%): Write a concrete, ready-to-use higher-order thinking (HOTS) evaluation or analysis task linking the core concept to real-world impact or local context (e.g., Las Piñas City / NCR). Example: 'Evaluate how X affects daily life along Alabang-Zapote Road, and justify your answer.'"
     }
   },
   "ways_forward": {
@@ -221,11 +232,11 @@ CRITICAL DETAIL REQUIREMENTS:
 - Use bullet points or numbered steps within each field for clarity
 - The flow should read like a detailed lesson script, not a summary
 
-ASSESSMENT — The assessment object MUST have a NESTED "formative_assessment" object:
+ASSESSMENT — The assessment object MUST have a NESTED "formative_assessment" object. Each level MUST contain concrete, ready-to-use assessment questions/tasks (not abstract activity descriptions):
 "formative_assessment": {
-  "frustration": "Frustration Level (25%): Create SPECIFIC tasks with visual/text scaffolds. Examples: Match key terms to their descriptions. Answer simple short-answer / identification questions. Use word banks, matching activities, fill-in-the-blank formats.",
-  "instructional": "Instructional Level (50%): Create guided explanation tasks. Examples: In 2-3 sentences, explain the core mechanism and how it operates. Describe relationships between concepts using structured prompts.",
-  "independent": "Independent Level / HOTS (25%): Create evaluation and argument tasks. Examples: Evaluate why a real-world phenomenon occurs using evidence. Construct a short argument linking multiple concepts."
+  "frustration": "Frustration Level (25%): Simple, highly scaffolded questions (e.g., matching, labeling, multiple choice, or short-answer Yes/No). Write the actual items, tailored to the topic.",
+  "instructional": "Instructional Level (50%): A concrete 2-3 sentence short explanation prompt or guided comparison task. Write the actual prompt, tailored to the topic.",
+  "independent": "Independent Level / HOTS (25%): A higher-order thinking (HOTS) evaluation or analysis task linking the core concept to real-world impact or local context (e.g., Las Piñas City / NCR). Write the actual task."
 }
 
 WAYS FORWARD — The ways_forward object MUST have a NESTED "extended_learning" object:
@@ -250,11 +261,11 @@ The learning_experience object MUST have a NESTED "flow" object:
   "reflection_closure": "REFLECTION & CLOSURE: 00:40-00:45 (5 mins) — Summarize, value reflection, preview next lesson"
 }
 
-ASSESSMENT — The assessment object MUST have a NESTED "formative_assessment" object:
+ASSESSMENT — The assessment object MUST have a NESTED "formative_assessment" object with concrete, ready-to-use assessment questions/tasks:
 "formative_assessment": {
-  "frustration": "SPECIFIC matching/fill-in tasks",
-  "instructional": "SPECIFIC explanation tasks",
-  "independent": "SPECIFIC HOTS evaluation tasks"
+  "frustration": "Frustration Level (25%): Simple, highly scaffolded questions (e.g., matching, labeling, multiple choice, or short-answer Yes/No). Write the actual items, tailored to the topic.",
+  "instructional": "Instructional Level (50%): A concrete 2-3 sentence short explanation prompt or guided comparison task. Write the actual prompt, tailored to the topic.",
+  "independent": "Independent Level / HOTS (25%): A higher-order thinking (HOTS) evaluation or analysis task linking the core concept to real-world impact or local context (e.g., Las Piñas City / NCR). Write the actual task."
 }
 
 WAYS FORWARD — The ways_forward object MUST have a NESTED "extended_learning" object:
