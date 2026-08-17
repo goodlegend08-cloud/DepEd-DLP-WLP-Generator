@@ -118,7 +118,7 @@ export async function generateFromPayload(
     providers.push({
       name: "openrouter",
       client: getOpenRouter(),
-      model: process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free",
+      model: process.env.OPENROUTER_MODEL || "z-ai/glm-5.2:free",
     });
   }
   if (process.env.GEMINI_API_KEY) {
