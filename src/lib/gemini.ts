@@ -79,24 +79,6 @@ export async function generateFromPayload(
     checkRateLimit(userId);
   }
 
-  // TPM/quota errors (HTTP 413 "Request too large", "tokens per minute") are
-  // hard limits that retrying won't fix, so they fall through to the next
-  // provider immediately instead of backing off.
-  const isQuotaExceededError = (error: unknown): boolean => {
-    const message = error instanceof Error ? error.message : String(error);
-    const status =
-      typeof error === "object" && error !== null && "status" in error
-        ? (error as { status?: unknown }).status
-        : undefined;
-    return (
-      status === 413 ||
-      message.includes("413") ||
-      message.includes("Request too large") ||
-      message.includes("tokens per minute") ||
-      message.includes("(TPM)")
-    );
-  };
-
   const isRateLimitError = (error: unknown): boolean => {
     const message = error instanceof Error ? error.message : String(error);
     return (
@@ -117,7 +99,7 @@ export async function generateFromPayload(
     providers.push({
       name: "grok-backup",
       client: getGrokBackup(),
-      model: process.env.GROK_MODEL || "grok-beta",
+      model: process.env.GROK_MODEL || "grok-4.3",
     });
   }
   if (process.env.GEMINI_API_KEY) {
@@ -134,6 +116,7 @@ export async function generateFromPayload(
   }
 
   let lastError: Error | null = null;
+  let firstError: Error | null = null;
 
   for (const provider of providers) {
     const maxRetries = 2;
@@ -150,30 +133,24 @@ export async function generateFromPayload(
         return result.choices[0].message.content ?? "";
       } catch (error) {
         lastError = error as Error;
+        if (!firstError) firstError = lastError;
 
+        // Transient rate limits: back off and retry on this provider.
         if (isRateLimitError(error) && attempt < maxRetries - 1) {
           const delay = Math.pow(2, attempt + 1) * 5000;
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         }
 
-        // Hard TPM/quota cap on this provider: skip backoff and fall through
-        // to the next provider immediately.
-        if (isQuotaExceededError(error)) {
-          break;
-        }
-
-        // Non-retryable failure on this provider. Fall through to the next
-        // provider if this was a rate-limit (the primary may be at its cap).
-        if (isRateLimitError(error)) {
-          break;
-        }
-        throw lastError;
+        // Any other failure (TPM/quota caps, unknown model, auth, etc.):
+        // fall through to the next provider.
+        break;
       }
     }
   }
 
   throw (
+    firstError ||
     lastError ||
     new Error("Failed to generate lesson plan after retries on all providers")
   );
