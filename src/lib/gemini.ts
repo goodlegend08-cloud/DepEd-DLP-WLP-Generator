@@ -26,10 +26,6 @@ const getGemini = () =>
     "https://generativelanguage.googleapis.com/v1beta/openai/"
   );
 
-// Cerebras provider. OpenAI-compatible endpoint, no tokens-per-minute cap.
-const getCerebras = () =>
-  makeClient(process.env.CEREBRAS_API_KEY, "https://api.cerebras.ai/v1");
-
 const MODEL_NAME = "llama-3.3-70b-versatile";
 
 // Rate limiting: max 3 requests per minute per user
@@ -92,13 +88,6 @@ export async function generateFromPayload(
   }
 
   const providers: { name: string; client: OpenAI; model?: string }[] = [];
-  if (process.env.CEREBRAS_API_KEY) {
-    providers.push({
-      name: "cerebras",
-      client: getCerebras(),
-      model: process.env.CEREBRAS_MODEL || "gpt-oss-120b",
-    });
-  }
   if (process.env.GROQ_API_KEY) {
     providers.push({
       name: "groq",
@@ -129,7 +118,7 @@ export async function generateFromPayload(
   }
   if (providers.length === 0) {
     throw new Error(
-      "No AI API key configured. Set GROQ_API_KEY (primary), GROQ_BACKUP_API_KEY, GROK_API_KEY, GEMINI_API_KEY, or CEREBRAS_API_KEY."
+      "No AI API key configured. Set GROQ_API_KEY (primary), GROQ_BACKUP_API_KEY, GROK_API_KEY, or GEMINI_API_KEY."
     );
   }
 
