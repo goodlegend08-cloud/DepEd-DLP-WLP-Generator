@@ -181,29 +181,74 @@ Apply the Learning Design Principles by thinking about how to:
   });
 }
 
-/**
- * Parse inline formatting markers (`**bold**`, `<b>bold</b>`) in a single line
- * and return the equivalent TextRun list so bolding survives docx export.
- * Unmatched markers are kept literally.
- */
-function formatInlineText(line: string, allBold: boolean): TextRun[] {
+interface InlineStyle {
+  bold?: boolean;
+  italic?: boolean;
+}
+
+/** Normalize markdown emphasis markers into <b>/<i> HTML tags. */
+function normalizeInlineMarkup(text: string): string {
+  return text
+    .replace(/\*\*\*(.+?)\*\*\*/g, "<b><i>$1</i></b>")
+    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+    .replace(/(^|[^*])\*([^*]+?)\*(?!\*)/g, "$1<i>$2</i>")
+    .replace(/<strong>/gi, "<b>")
+    .replace(/<\/strong>/gi, "</b>")
+    .replace(/<em>/gi, "<i>")
+    .replace(/<\/em>/gi, "</i>");
+}
+
+/** Split a single line of (normalized) HTML markup into styled TextRuns. */
+function parseHtmlRuns(line: string, defaults: InlineStyle): TextRun[] {
   const runs: TextRun[] = [];
-  const re = /(\*\*[^*]+\*\*|<b>[^<]*<\/b>)/g;
+  const boldStack: boolean[] = [];
+  const italicStack: boolean[] = [];
+  let bold = !!defaults.bold;
+  let italic = !!defaults.italic;
+  const push = (text: string) => {
+    if (!text) return;
+    runs.push(new TextRun({ text, font: "Times New Roman", size: 18, bold, italics: italic }));
+  };
+  const re = /<(\/)?(b|strong|i|em)>/gi;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(line)) !== null) {
-    if (m.index > last) {
-      runs.push(new TextRun({ text: line.slice(last, m.index), font: "Times New Roman", size: 18, bold: allBold }));
+    if (m.index > last) push(line.slice(last, m.index));
+    const closing = !!m[1];
+    const tag = m[2].toLowerCase();
+    if (tag === "b" || tag === "strong") {
+      if (closing) {
+        boldStack.pop();
+        bold = boldStack.length ? boldStack[boldStack.length - 1] : !!defaults.bold;
+      } else {
+        boldStack.push(bold);
+        bold = true;
+      }
+    } else {
+      if (closing) {
+        italicStack.pop();
+        italic = italicStack.length ? italicStack[italicStack.length - 1] : !!defaults.italic;
+      } else {
+        italicStack.push(italic);
+        italic = true;
+      }
     }
-    const token = m[0];
-    const inner = token.startsWith("<b>") ? token.slice(3, -4) : token.slice(2, -2);
-    runs.push(new TextRun({ text: inner, font: "Times New Roman", size: 18, bold: true }));
-    last = m.index + token.length;
+    last = m.index + m[0].length;
   }
-  if (last < line.length) {
-    runs.push(new TextRun({ text: line.slice(last), font: "Times New Roman", size: 18, bold: allBold }));
-  }
-  return runs.length ? runs : [new TextRun({ text: line, font: "Times New Roman", size: 18, bold: allBold })];
+  if (last < line.length) push(line.slice(last));
+  if (runs.length === 0) push(line);
+  return runs;
+}
+
+/**
+ * Parse inline formatting markers (`**bold**`, `<b>bold</b>`, `<strong>`,
+ * `<i>italic</i>`, `<em>`, `*italic*`, `***bold italic***`) in a single line
+ * and return the equivalent TextRun list so the styling survives docx export.
+ * Unmatched markers are kept literally. `defaults` supplies the base style
+ * applied to unmarked text (e.g. all-bold centered cells).
+ */
+function formatInlineText(line: string, defaults: InlineStyle = {}): TextRun[] {
+  return parseHtmlRuns(normalizeInlineMarkup(line), defaults);
 }
 
 /** Right column content cell (75% width). */
@@ -218,7 +263,7 @@ function contentCell(text: string): TableCell {
       (line) =>
         new Paragraph({
           spacing: { before: 20, after: 20 },
-          children: formatInlineText(line, false),
+          children: formatInlineText(line),
         })
     ),
   });
@@ -237,7 +282,7 @@ function centeredBoldContentCell(text: string): TableCell {
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 20, after: 20 },
-          children: formatInlineText(line, true),
+          children: formatInlineText(line, { bold: true }),
         })
     ),
   });
@@ -255,7 +300,7 @@ function fullWidthContentCell(text: string): TableCell {
       (line) =>
         new Paragraph({
           spacing: { before: 20, after: 20 },
-          children: formatInlineText(line, false),
+          children: formatInlineText(line),
         })
     ),
   });
@@ -555,15 +600,15 @@ export async function buildDocx(
               sectionBannerRow("Learning Experience.", learning_experience.framework_guidance_note || "Each activity and interaction builds towards meaningful understanding and growth. Identify activities and interactions to help learners gain knowledge, skills, or understanding in a purposeful way."),
               kvRow("Pre Lesson:\nDescribe how you will help learners get ready for the lesson.", learning_experience.pre_lesson),
               flowRow([
-                `• ENGAGE (5 mins) — Hook & Well-being:\n${flow.engage}`,
+                `<b><i>• ENGAGE (5 mins) — Hook & Well-being:</i></b>\n${flow.engage}`,
                 "",
-                `• Explore & Explain / Modeling (I Do — 15 mins):\n${flow.explore_explain_modeling}`,
+                `<b><i>• Explore & Explain / Modeling (I Do — 15 mins):</i></b>\n${flow.explore_explain_modeling}`,
                 "",
-                `• Elaborate / Guided & Collaborative Practice (We Do — 10 mins):\n${flow.elaborate_guided_practice}`,
+                `<b><i>• Elaborate / Guided & Collaborative Practice (We Do — 10 mins):</i></b>\n${flow.elaborate_guided_practice}`,
                 "",
-                `• Evaluate / Independent Practice (You Do — 10 mins):\n${flow.evaluate_independent_practice}`,
+                `<b><i>• Evaluate / Independent Practice (You Do — 10 mins):</i></b>\n${flow.evaluate_independent_practice}`,
                 "",
-                `• Reflection & Closure (5 mins):\n${flow.reflection_closure}`,
+                `<b><i>• Reflection & Closure (5 mins):</i></b>\n${flow.reflection_closure}`,
               ].join("\n")),
               kvRow("Learning Resources:\nList down the learning resources that will help you reach your objectives. Ensure that they are available and inclusive. Including options and alternatives in case of emergencies", learning_experience.learning_resources),
               kvRow("Opportunities for Integration:\nWrite down any possibilities to meaningfully integrate another learning area, special topic, or technology. Write NA if none.", learning_experience.opportunities_for_integration),
@@ -578,13 +623,13 @@ export async function buildDocx(
             rows: [
               sectionBannerRow("Assessment.", assessment.framework_guidance_note || "Assessments reveal what learners have gained and what they still need help with. These are helpful in providing you with information to guide your future instruction throughout the entire session."),
               kvRow("Formative Assessment:\nCreate a task, activity or questions to evaluate learning and provide feedback. Provide ways for learners to ask for guidance and support.\nRemember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports)", [
-                "Targeted Assessment Tasks:",
+                `<b><i>Targeted Assessment Tasks:</i></b>`,
                 "",
-                `1. Frustration Level (25%): ${formative.frustration}`,
+                `<b><i>1. Frustration Level (25%):</i></b> ${formative.frustration}`,
                 "",
-                `2. Instructional Level (50%): ${formative.instructional}`,
+                `<b><i>2. Instructional Level (50%):</i></b> ${formative.instructional}`,
                 "",
-                `3. Independent Level / HOTS (25%): ${formative.independent}`,
+                `<b><i>3. Independent Level / HOTS (25%):</i></b> ${formative.independent}`,
               ].join("\n")),
             ],
           }),
@@ -597,9 +642,9 @@ export async function buildDocx(
             rows: [
               sectionBannerRow("Ways Forward.", ways_forward.framework_guidance_note || "Meaningful learning can also happen beyond the classroom – for both the learners and the teacher. Pause and reflect on what happened today."),
               kvRow("Extended learning opportunities:\nSuggest other learning experiences outside the classroom hours that learners may want to access or reinforce what they have learned, to spark their curiosity further, or that may provide them support in areas of difficulty.", [
-                `Advanced Readers (Independent Level — 25%): ${extended.advanced}`,
+                `<b><i>Advanced Readers (Independent Level — 25%):</i></b> ${extended.advanced}`,
                 "",
-                `Struggling Readers (Frustration Level — 25%): ${extended.struggling}`,
+                `<b><i>Struggling Readers (Frustration Level — 25%):</i></b> ${extended.struggling}`,
               ].join("\n")),
               kvRow("Reflections:\nThink about what you need to change for the next session based on what happened today. Is there something the learners are interested in exploring? Are there some things you would like to share with your co-teachers, parents or school leaders about your classroom experience? What would you like your instructional coach to help you with?", ways_forward.reflections),
             ],

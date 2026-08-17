@@ -149,28 +149,18 @@ function applyInlineBoldInXml(xml: string): string {
     const tMatch = run.match(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/);
     if (!tMatch) return run;
     const text = tMatch[1];
-    if (!/\*\*|<b>|<\/b>/.test(text)) return run;
+    if (!/\*\*|<b>|<\/b>|<i>|<\/i>|&lt;b&gt;|&lt;\/b&gt;|&lt;i&gt;|&lt;\/i&gt;/.test(text)) return run;
 
     const rPrMatch = run.match(/<w:rPr>[\s\S]*?<\/w:rPr>/);
     const rPr = rPrMatch ? rPrMatch[0] : "";
     const tOpen = run.match(/<w:t\b[^>]*>/)![0];
 
-    const segments: { t: string; bold: boolean }[] = [];
-    const re = /(\*\*[^*]+\*\*|<b>[^<]*<\/b>)/g;
-    let last = 0;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(text)) !== null) {
-      if (m.index > last) segments.push({ t: text.slice(last, m.index), bold: false });
-      const token = m[0];
-      segments.push({ t: token.startsWith("<b>") ? token.slice(3, -4) : token.slice(2, -2), bold: true });
-      last = m.index + token.length;
-    }
-    if (last < text.length) segments.push({ t: text.slice(last), bold: false });
-
+    // Text inside <w:t> is already XML-escaped, so do NOT re-escape segments.
+    const segments = splitInlineSegments(text);
     const newRuns = segments
       .map(
         (seg) =>
-          `<w:r>${rPr}${seg.bold ? "<w:b/><w:bCs/>" : ""}${tOpen}${escapeXml(seg.t)}</w:t></w:r>`
+          `<w:r>${rPr}${seg.bold ? "<w:b/><w:bCs/>" : ""}${seg.italic ? "<w:i/><w:iCs/>" : ""}${tOpen}${seg.t}</w:t></w:r>`
       )
       .join("");
     return newRuns || run;
@@ -281,28 +271,69 @@ function extractCellText(cellXml: string): string {
     .trim();
 }
 
-/** Split a line into inline runs based on **bold** / <b>bold</b> markers. */
-function inlineXmlRuns(line: string): string {
-  const re = /(\*\*[^*]+\*\*|<b>[^<]*<\/b>)/g;
-  const parts: string[] = [];
+/** Normalize markdown emphasis markers and escaped HTML tags to <b>/<i>. */
+function normalizeInlineMarkup(text: string): string {
+  return text
+    .replace(/&lt;(\/?)strong&gt;/gi, "<$1b>")
+    .replace(/&lt;(\/?)em&gt;/gi, "<$1i>")
+    .replace(/&lt;(\/?)b&gt;/gi, "<$1b>")
+    .replace(/&lt;(\/?)i&gt;/gi, "<$1i>")
+    .replace(/\*\*\*(.+?)\*\*\*/g, "<b><i>$1</i></b>")
+    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+    .replace(/(^|[^*])\*([^*]+?)\*(?!\*)/g, "$1<i>$2</i>")
+    .replace(/<strong>/gi, "<b>")
+    .replace(/<\/strong>/gi, "</b>")
+    .replace(/<em>/gi, "<i>")
+    .replace(/<\/em>/gi, "</i>");
+}
+
+/** Split a line (raw or already-escaped) into styled segments. */
+function splitInlineSegments(line: string): { t: string; bold: boolean; italic: boolean }[] {
+  const html = normalizeInlineMarkup(line);
+  const segments: { t: string; bold: boolean; italic: boolean }[] = [];
+  const boldStack: boolean[] = [];
+  const italicStack: boolean[] = [];
+  let bold = false;
+  let italic = false;
+  const re = /<(\/)?(b|i)>/gi;
   let last = 0;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(line)) !== null) {
-    if (m.index > last) {
-      parts.push(`<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(line.slice(last, m.index))}</w:t></w:r>`);
+  while ((m = re.exec(html)) !== null) {
+    if (m.index > last) segments.push({ t: html.slice(last, m.index), bold, italic });
+    const closing = !!m[1];
+    if (m[2].toLowerCase() === "b") {
+      if (closing) {
+        boldStack.pop();
+        bold = boldStack.length ? boldStack[boldStack.length - 1] : false;
+      } else {
+        boldStack.push(bold);
+        bold = true;
+      }
+    } else {
+      if (closing) {
+        italicStack.pop();
+        italic = italicStack.length ? italicStack[italicStack.length - 1] : false;
+      } else {
+        italicStack.push(italic);
+        italic = true;
+      }
     }
-    const token = m[0];
-    const inner = token.startsWith("<b>") ? token.slice(3, -4) : token.slice(2, -2);
-    parts.push(`<w:r><w:rPr><w:b/><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(inner)}</w:t></w:r>`);
-    last = m.index + token.length;
+    last = m.index + m[0].length;
   }
-  if (last < line.length) {
-    parts.push(`<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(line.slice(last))}</w:t></w:r>`);
-  }
-  if (parts.length === 0) {
-    return `<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r>`;
-  }
-  return parts.join("");
+  if (last < html.length) segments.push({ t: html.slice(last), bold, italic });
+  if (segments.length === 0) segments.push({ t: html, bold: false, italic: false });
+  return segments;
+}
+
+/** Split a line into inline runs based on **bold** / <b>bold</b> markers. */
+function inlineXmlRuns(line: string): string {
+  return splitInlineSegments(line)
+    .map((seg) => {
+      const props =
+        `${seg.bold ? "<w:b/>" : ""}${seg.italic ? "<w:i/>" : ""}<w:sz w:val="20"/>`;
+      return `<w:r><w:rPr>${props}</w:rPr><w:t xml:space="preserve">${escapeXml(seg.t)}</w:t></w:r>`;
+    })
+    .join("");
 }
 
 /** Replace a cell's text content with new text, preserving cell properties */
