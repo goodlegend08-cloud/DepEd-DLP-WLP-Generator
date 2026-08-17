@@ -17,9 +17,7 @@ const getGroqBackup = () =>
 const getGrokBackup = () =>
   makeClient(process.env.GROK_API_KEY, "https://api.x.ai/v1");
 
-// Groq model used for generation. Overridable via GROQ_MODEL; defaults to
-// qwen/qwen3.6-27b (replacement for the deprecated llama-3.3-70b-versatile).
-const MODEL_NAME = process.env.GROQ_MODEL || "qwen/qwen3.6-27b";
+const MODEL_NAME = "llama-3.3-70b-versatile";
 
 // Rate limiting: max 3 requests per minute per user
 const RATE_LIMIT = 3;
