@@ -131,8 +131,8 @@ export async function generateFromPayload(
         model: provider.model || payload.model,
         messages: payload.messages,
         temperature: payload.temperature ?? 0.7,
-        top_p: 0.9,
-        max_tokens: 4096,
+top_p: 0.9,
+          max_tokens: 8192,
       });
 
       return {

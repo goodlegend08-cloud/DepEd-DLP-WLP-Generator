@@ -36,6 +36,79 @@ function normalizeJSON(rawResponse: string): string {
 }
 
 /**
+ * Try to salvage an AI response that isn't clean JSON. Handles:
+ *  - commentary text wrapped around the JSON
+ *  - trailing commentary after a valid JSON object
+ *  - truncation (missing closing braces / unfinished last string)
+ */
+function repairJSON(text: string): string {
+  let s = text.trim();
+
+  // Cut off any trailing non-JSON commentary: keep everything up to the last
+  // closing brace/bracket.
+  const lastClose = Math.max(s.lastIndexOf("}"), s.lastIndexOf("]"));
+  if (lastClose > -1) {
+    s = s.slice(0, lastClose + 1);
+  }
+
+  // Remove a dangling trailing fragment so we only rebalance real structure.
+  s = s.replace(/,\s*$/, "");
+
+  // Rebalance braces/brackets and close an unterminated string.
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+  for (const ch of s) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{" || ch === "[") stack.push(ch);
+    else if (ch === "}" || ch === "]") stack.pop();
+  }
+  if (inString) s += '"';
+  while (stack.length) {
+    s += stack.pop() === "{" ? "}" : "]";
+  }
+  return s;
+}
+
+function parseJSONLadder(text: string): unknown | undefined {
+  // 1. Direct parse
+  try {
+    return JSON.parse(text);
+  } catch {
+    /* fall through */
+  }
+
+  // 2. Extract the JSON portion (first open to last close) to skip commentary
+  const start = text.search(/[[{]/);
+  if (start > -1) {
+    const end = Math.max(text.lastIndexOf("}"), text.lastIndexOf("]"));
+    if (end > start) {
+      try {
+        return JSON.parse(text.slice(start, end + 1));
+      } catch {
+        /* fall through */
+      }
+    }
+  }
+
+  // 3. Truncation repair
+  try {
+    return JSON.parse(repairJSON(text));
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Parse the AI's raw response as JSON with a clear error (and a log of the
  * response snippet) instead of a cryptic "Unexpected end of JSON input".
  */
@@ -50,9 +123,8 @@ function parseAIJSON(
       `AI returned an empty response${provider ? ` from ${provider}/${model}` : ""}. Please try again.`
     );
   }
-  try {
-    return JSON.parse(cleaned);
-  } catch {
+  const parsed = parseJSONLadder(cleaned);
+  if (parsed === undefined) {
     console.error(
       `[ai-generate] JSON parse failed. provider=${provider} model=${model} snippet=${cleaned.slice(0, 500)}`
     );
@@ -60,6 +132,7 @@ function parseAIJSON(
       `AI response was not valid JSON${provider ? ` (from ${provider}/${model})` : ""}. Please try again.`
     );
   }
+  return parsed;
 }
 
 /**
