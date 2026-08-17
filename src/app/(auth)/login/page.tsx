@@ -4,11 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -27,6 +23,7 @@ export default function LoginPage() {
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -68,61 +65,59 @@ function LoginForm() {
   };
 
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">
-          {t("login")}
-        </CardTitle>
-        <CardDescription>
-          DepEd Auto-DLP/DLL Generator
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleLogin}>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email">{t("email")}</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="teacher@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">{t("password")}</Label>
-              <Link href="/forgot-password" className="text-sm text-primary underline">
-                {t("forgotPassword")}
-              </Link>
-            </div>
-            <PasswordInput
-              id="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? t("loading") : t("login")}
-          </Button>
-          <p className="text-sm text-muted-foreground">
-            {t("noAccount")}{" "}
-            <Link href="/signup" className="text-primary underline">
-              {t("signup")}
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
+    <form className="auth-card" onSubmit={handleLogin}>
+      <span className="auth-singup">{t("login")}</span>
+
+      {error && <p className="auth-msg">{error}</p>}
+
+      <div className="auth-inputBox">
+        <input
+          id="email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+        />
+        <span>{t("email")}</span>
+      </div>
+
+      <div className="auth-inputBox">
+        <input
+          id="password"
+          type={show ? "text" : "password"}
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+        />
+        <span>{t("password")}</span>
+        <button
+          type="button"
+          className="auth-eye"
+          onClick={() => setShow((prev) => !prev)}
+          aria-label={show ? "Hide password" : "Show password"}
+          tabIndex={-1}
+        >
+          {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+        </button>
+      </div>
+
+      <button type="submit" className="auth-enter" disabled={loading}>
+        {loading ? t("loading") : t("login")}
+      </button>
+
+      <div className="auth-row">
+        <Link href="/forgot-password" className="auth-link">
+          {t("forgotPassword")}
+        </Link>
+        <span className="text-xs text-black/70">
+          {t("noAccount")}{" "}
+          <Link href="/signup" className="auth-link">
+            {t("signup")}
+          </Link>
+        </span>
+      </div>
+    </form>
   );
 }
