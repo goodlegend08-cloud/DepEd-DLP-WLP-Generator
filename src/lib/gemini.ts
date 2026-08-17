@@ -90,10 +90,18 @@ export async function generateFromPayload(
 
   const providers: { name: string; client: OpenAI; model?: string }[] = [];
   if (process.env.GROQ_API_KEY) {
-    providers.push({ name: "groq", client: getGroq() });
+    providers.push({
+      name: "groq",
+      client: getGroq(),
+      model: process.env.GROQ_MODEL || "groq/compound-mini",
+    });
   }
   if (process.env.GROQ_BACKUP_API_KEY) {
-    providers.push({ name: "groq-backup", client: getGroqBackup() });
+    providers.push({
+      name: "groq-backup",
+      client: getGroqBackup(),
+      model: process.env.GROQ_MODEL || "groq/compound-mini",
+    });
   }
   if (process.env.GROK_API_KEY) {
     providers.push({
