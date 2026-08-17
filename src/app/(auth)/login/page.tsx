@@ -29,6 +29,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [shakeKey, setShakeKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,6 +41,7 @@ function LoginForm() {
     if (errorParam) {
       queueMicrotask(() => {
         setError(ERROR_MESSAGES[errorParam] || "An error occurred. Please try again.");
+        setShakeKey((k) => k + 1);
       });
     }
   }, [searchParams]);
@@ -60,6 +62,7 @@ function LoginForm() {
           ? "Email not confirmed. Please check your inbox (and spam folder) for the confirmation link."
           : authError.message;
       setError(message);
+      setShakeKey((k) => k + 1);
       setLoading(false);
       return;
     }
@@ -69,66 +72,70 @@ function LoginForm() {
   };
 
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">{t("login")}</CardTitle>
-        <CardDescription>Welcome back to DepEd Auto-DLP/DLL</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleLogin}>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email">{t("email")}</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="teacher@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">{t("password")}</Label>
-            <PasswordInput
-              id="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader size="sm" />
-                {t("loading")}
-              </span>
-            ) : (
-              t("login")
+    <div key={shakeKey} className={shakeKey > 0 ? "auth-shake" : "auth-motion-card"}>
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">{t("login")}</CardTitle>
+          <CardDescription>Welcome back to DepEd Auto-DLP/DLL</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleLogin}>
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
             )}
-          </Button>
-          <div className="flex flex-col items-center space-y-2">
-            <Link href="/forgot-password" className="text-sm text-primary underline">
-              {t("forgotPassword")}
-            </Link>
-            <span className="text-sm text-muted-foreground">
-              {t("noAccount")}{" "}
-              <Link href="/signup" className="text-primary underline">
-                {t("signup")}
+            <div className="space-y-2">
+              <Label htmlFor="email">{t("email")}</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="teacher@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+                className="auth-input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">{t("password")}</Label>
+              <PasswordInput
+                id="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                className="auth-input"
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="auth-btn-motion w-full" disabled={loading}>
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader size="sm" />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("login")
+              )}
+            </Button>
+            <div className="flex flex-col items-center space-y-2">
+              <Link href="/forgot-password" className="text-sm text-primary underline">
+                {t("forgotPassword")}
               </Link>
-            </span>
-          </div>
-        </CardFooter>
-      </form>
-    </Card>
+              <span className="text-sm text-muted-foreground">
+                {t("noAccount")}{" "}
+                <Link href="/signup" className="text-primary underline">
+                  {t("signup")}
+                </Link>
+              </span>
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   );
 }

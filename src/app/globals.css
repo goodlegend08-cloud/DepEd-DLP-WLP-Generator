@@ -382,3 +382,101 @@
   left: 21px;
   top: 6px;
 }
+
+/* ============================================================
+   Auth forms — motion & micro-interactions
+   ============================================================ */
+
+/* Card entrance on page mount (matches framer-motion
+   initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}) */
+.auth-motion-card {
+  animation: auth-card-in 0.35s ease-out both;
+}
+
+@keyframes auth-card-in {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Multi-step transition (AnimatePresence mode="wait" equivalent).
+   Exit animates first, then the next step enters. */
+.auth-step-enter {
+  animation: auth-step-in 0.3s ease-out both;
+}
+
+.auth-step-leave {
+  animation: auth-step-out 0.15s ease-in both;
+}
+
+@keyframes auth-step-in {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes auth-step-out {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+/* Button micro-interactions (whileHover / whileTap equivalent) */
+.auth-btn-motion {
+  transition: transform 0.2s ease;
+}
+
+.auth-btn-motion:hover:not(:disabled) {
+  transform: scale(1.01);
+}
+
+.auth-btn-motion:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Horizontal shake on validation/login failure */
+.auth-shake {
+  animation: auth-shake 0.3s ease-in-out;
+}
+
+@keyframes auth-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-6px);
+  }
+
+  50% {
+    transform: translateX(6px);
+  }
+
+  75% {
+    transform: translateX(-4px);
+  }
+}
+
+/* Smooth input focus highlight rings */
+.auth-input {
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
