@@ -117,14 +117,65 @@ export async function fillTemplate(
   // Replace placeholders with values
   doc.render(values);
 
+  // Post-process document.xml so inline **bold** / <b>bold</b> markers that
+  // docxtemplater injected verbatim become real bold runs.
+  const zipOut = doc.getZip();
+  const docXml = zipOut.files["word/document.xml"]?.asText();
+  if (docXml) {
+    zipOut.file("word/document.xml", applyInlineBoldInXml(docXml));
+  }
+
   // Generate the filled document as buffer
-  const filledBuffer = doc.getZip().generate({
+  const filledBuffer = zipOut.generate({
     type: "nodebuffer",
     mimeType:
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   });
 
   return filledBuffer as Buffer;
+}
+
+/**
+ * Walk all <w:t> text nodes in a document.xml string and split any run whose
+ * text contains inline **bold** or <b>bold</b> markers into separate runs so
+ * the marked span carries a <w:b/> element. Runs are rebuilt preserving the
+ * original run properties plus <w:b/> on the bold segments.
+ */
+function applyInlineBoldInXml(xml: string): string {
+  // Each run: <w:r>...<w:t ...>text</w:t>...</w:r>
+  const runRe = /<w:r\b[^>]*>[\s\S]*?<\/w:r>/g;
+  let out = xml;
+  out = out.replace(runRe, (run) => {
+    const tMatch = run.match(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/);
+    if (!tMatch) return run;
+    const text = tMatch[1];
+    if (!/\*\*|<b>|<\/b>/.test(text)) return run;
+
+    const rPrMatch = run.match(/<w:rPr>[\s\S]*?<\/w:rPr>/);
+    const rPr = rPrMatch ? rPrMatch[0] : "";
+    const tOpen = run.match(/<w:t\b[^>]*>/)![0];
+
+    const segments: { t: string; bold: boolean }[] = [];
+    const re = /(\*\*[^*]+\*\*|<b>[^<]*<\/b>)/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) segments.push({ t: text.slice(last, m.index), bold: false });
+      const token = m[0];
+      segments.push({ t: token.startsWith("<b>") ? token.slice(3, -4) : token.slice(2, -2), bold: true });
+      last = m.index + token.length;
+    }
+    if (last < text.length) segments.push({ t: text.slice(last), bold: false });
+
+    const newRuns = segments
+      .map(
+        (seg) =>
+          `<w:r>${rPr}${seg.bold ? "<w:b/><w:bCs/>" : ""}${tOpen}${escapeXml(seg.t)}</w:t></w:r>`
+      )
+      .join("");
+    return newRuns || run;
+  });
+  return out;
 }
 
 /**
@@ -230,6 +281,30 @@ function extractCellText(cellXml: string): string {
     .trim();
 }
 
+/** Split a line into inline runs based on **bold** / <b>bold</b> markers. */
+function inlineXmlRuns(line: string): string {
+  const re = /(\*\*[^*]+\*\*|<b>[^<]*<\/b>)/g;
+  const parts: string[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(line)) !== null) {
+    if (m.index > last) {
+      parts.push(`<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(line.slice(last, m.index))}</w:t></w:r>`);
+    }
+    const token = m[0];
+    const inner = token.startsWith("<b>") ? token.slice(3, -4) : token.slice(2, -2);
+    parts.push(`<w:r><w:rPr><w:b/><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(inner)}</w:t></w:r>`);
+    last = m.index + token.length;
+  }
+  if (last < line.length) {
+    parts.push(`<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(line.slice(last))}</w:t></w:r>`);
+  }
+  if (parts.length === 0) {
+    return `<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r>`;
+  }
+  return parts.join("");
+}
+
 /** Replace a cell's text content with new text, preserving cell properties */
 function replaceCellContent(cellXml: string, newText: string): string {
   // Extract cell properties (borders, width, merged cells, etc.)
@@ -244,7 +319,7 @@ function replaceCellContent(cellXml: string, newText: string): string {
       if (line === "") {
         return `<w:p><w:r><w:t></w:t></w:r></w:p>`;
       }
-      return `<w:p><w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>${escapeXml(line)}</w:t></w:r></w:p>`;
+      return `<w:p>${inlineXmlRuns(line)}</w:p>`;
     })
     .join("");
 

@@ -181,6 +181,31 @@ Apply the Learning Design Principles by thinking about how to:
   });
 }
 
+/**
+ * Parse inline formatting markers (`**bold**`, `<b>bold</b>`) in a single line
+ * and return the equivalent TextRun list so bolding survives docx export.
+ * Unmatched markers are kept literally.
+ */
+function formatInlineText(line: string, allBold: boolean): TextRun[] {
+  const runs: TextRun[] = [];
+  const re = /(\*\*[^*]+\*\*|<b>[^<]*<\/b>)/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(line)) !== null) {
+    if (m.index > last) {
+      runs.push(new TextRun({ text: line.slice(last, m.index), font: "Times New Roman", size: 18, bold: allBold }));
+    }
+    const token = m[0];
+    const inner = token.startsWith("<b>") ? token.slice(3, -4) : token.slice(2, -2);
+    runs.push(new TextRun({ text: inner, font: "Times New Roman", size: 18, bold: true }));
+    last = m.index + token.length;
+  }
+  if (last < line.length) {
+    runs.push(new TextRun({ text: line.slice(last), font: "Times New Roman", size: 18, bold: allBold }));
+  }
+  return runs.length ? runs : [new TextRun({ text: line, font: "Times New Roman", size: 18, bold: allBold })];
+}
+
 /** Right column content cell (75% width). */
 function contentCell(text: string): TableCell {
   const safeText = text ?? "";
@@ -193,7 +218,7 @@ function contentCell(text: string): TableCell {
       (line) =>
         new Paragraph({
           spacing: { before: 20, after: 20 },
-          children: [new TextRun({ text: line, font: "Times New Roman", size: 18 })],
+          children: formatInlineText(line, false),
         })
     ),
   });
@@ -212,7 +237,7 @@ function centeredBoldContentCell(text: string): TableCell {
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 20, after: 20 },
-          children: [new TextRun({ text: line, bold: true, font: "Times New Roman", size: 18 })],
+          children: formatInlineText(line, true),
         })
     ),
   });
@@ -230,7 +255,7 @@ function fullWidthContentCell(text: string): TableCell {
       (line) =>
         new Paragraph({
           spacing: { before: 20, after: 20 },
-          children: [new TextRun({ text: line, font: "Times New Roman", size: 18 })],
+          children: formatInlineText(line, false),
         })
     ),
   });
