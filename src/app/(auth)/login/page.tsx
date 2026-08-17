@@ -4,9 +4,13 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Loader } from "@/components/Loader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ERROR_MESSAGES: Record<string, string> = {
   auth_callback_error: "Email confirmation failed. The link may have expired or already been used. Please try signing up again.",
@@ -24,7 +28,6 @@ export default function LoginPage() {
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -66,66 +69,66 @@ function LoginForm() {
   };
 
   return (
-    <form className="auth-card" onSubmit={handleLogin}>
-      <span className="auth-singup">{t("login")}</span>
-
-      {error && <p className="auth-msg">{error}</p>}
-
-      <div className="auth-inputBox">
-        <input
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-        />
-        <span>{t("email")}</span>
-      </div>
-
-      <div className="auth-inputBox">
-        <input
-          id="password"
-          type={show ? "text" : "password"}
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-        />
-        <span>{t("password")}</span>
-        <button
-          type="button"
-          className="auth-eye"
-          onClick={() => setShow((prev) => !prev)}
-          aria-label={show ? "Hide password" : "Show password"}
-          tabIndex={-1}
-        >
-          {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-        </button>
-      </div>
-
-      <button type="submit" className="auth-enter" disabled={loading}>
-        {loading ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader size="sm" />
-            {t("loading")}
-          </span>
-        ) : (
-          t("login")
-        )}
-      </button>
-
-      <div className="auth-row">
-        <Link href="/forgot-password" className="auth-link">
-          {t("forgotPassword")}
-        </Link>
-        <span className="text-xs text-black/70">
-          {t("noAccount")}{" "}
-          <Link href="/signup" className="auth-link">
-            {t("signup")}
-          </Link>
-        </span>
-      </div>
-    </form>
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl font-bold">{t("login")}</CardTitle>
+        <CardDescription>Welcome back to DepEd Auto-DLP/DLL</CardDescription>
+      </CardHeader>
+      <form onSubmit={handleLogin}>
+        <CardContent className="space-y-4">
+          {error && (
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="email">{t("email")}</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="teacher@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">{t("password")}</Label>
+            <PasswordInput
+              id="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-4">
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader size="sm" />
+                {t("loading")}
+              </span>
+            ) : (
+              t("login")
+            )}
+          </Button>
+          <div className="flex flex-col items-center space-y-2">
+            <Link href="/forgot-password" className="text-sm text-primary underline">
+              {t("forgotPassword")}
+            </Link>
+            <span className="text-sm text-muted-foreground">
+              {t("noAccount")}{" "}
+              <Link href="/signup" className="text-primary underline">
+                {t("signup")}
+              </Link>
+            </span>
+          </div>
+        </CardFooter>
+      </form>
+    </Card>
   );
 }
