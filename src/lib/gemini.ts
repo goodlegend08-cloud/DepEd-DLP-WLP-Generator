@@ -175,9 +175,23 @@ export async function generateFromPayload(
         max_tokens: 8192,
       });
 
+      const content = result.choices[0].message.content ?? "";
+      if (!content.trim()) {
+        // Some models (e.g. reasoning models) can return 200 with no content
+        // if they burn their token budget on "thinking". Treat as failure and
+        // fall through to the next provider.
+        const emptyError = new Error(
+          "Provider returned an empty response (tokens consumed on reasoning?)"
+        );
+        lastError = emptyError;
+        if (!firstError) firstError = emptyError;
+        onStatus?.({ provider: provider.name, model, status: "failed", error: emptyError.message });
+        continue;
+      }
+
       onStatus?.({ provider: provider.name, model, status: "succeeded" });
       return {
-        content: result.choices[0].message.content ?? "",
+        content,
         provider: provider.name,
         model,
       };

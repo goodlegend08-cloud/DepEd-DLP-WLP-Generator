@@ -1033,35 +1033,45 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                 {aiStatus.map((s, i) => (
                   <li
                     key={i}
-                    className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                    className="flex flex-col gap-0.5 rounded-md border px-3 py-2 text-sm"
                   >
-                    <span
-                      className={
-                        s.status === "failed"
-                          ? "text-red-500"
-                          : s.status === "succeeded"
-                            ? "text-green-600"
-                            : "text-primary"
-                      }
-                    >
-                      {s.status === "failed" ? (
-                        <X className="h-4 w-4" />
-                      ) : s.status === "succeeded" ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Loader size="sm" />
-                      )}
-                    </span>
-                    <span className="flex-1 truncate font-medium">
-                      {s.provider}/{s.model}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {s.status === "trying"
-                        ? t("aiStatusTrying")
-                        : s.status === "failed"
-                          ? t("aiStatusFailed")
-                          : t("aiStatusReady")}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={
+                          s.status === "failed"
+                            ? "text-red-500"
+                            : s.status === "succeeded"
+                              ? "text-green-600"
+                              : "text-primary"
+                        }
+                      >
+                        {s.status === "failed" ? (
+                          <X className="h-4 w-4" />
+                        ) : s.status === "succeeded" ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Loader size="sm" />
+                        )}
+                      </span>
+                      <span className="flex-1 truncate font-medium">
+                        {s.provider}/{s.model}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {s.status === "trying"
+                          ? t("aiStatusTrying")
+                          : s.status === "failed"
+                            ? t("aiStatusFailed")
+                            : t("aiStatusReady")}
+                      </span>
+                    </div>
+                    {s.status === "failed" && s.error && (
+                      <p
+                        className="truncate pl-6 text-xs text-muted-foreground"
+                        title={s.error}
+                      >
+                        {s.error.length > 90 ? s.error.slice(0, 90) + "…" : s.error}
+                      </p>
+                    )}
                   </li>
                 ))}
               </ul>
