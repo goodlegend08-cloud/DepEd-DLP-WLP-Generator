@@ -17,6 +17,13 @@ const getGroqBackup = () =>
 const getGrokBackup = () =>
   makeClient(process.env.GROK_API_KEY, "https://api.x.ai/v1");
 
+// Gemini (Google) provider. Uses Google's OpenAI-compatible endpoint.
+const getGemini = () =>
+  makeClient(
+    process.env.GEMINI_API_KEY,
+    "https://generativelanguage.googleapis.com/v1beta/openai/"
+  );
+
 const MODEL_NAME = "openai/gpt-oss-20b";
 
 // Rate limiting: max 3 requests per minute per user
@@ -95,9 +102,16 @@ export async function generateFromPayload(
       model: process.env.GROK_MODEL || "grok-beta",
     });
   }
+  if (process.env.GEMINI_API_KEY) {
+    providers.push({
+      name: "gemini",
+      client: getGemini(),
+      model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
+    });
+  }
   if (providers.length === 0) {
     throw new Error(
-      "No AI API key configured. Set GROQ_API_KEY (primary), GROQ_BACKUP_API_KEY, or GROK_API_KEY."
+      "No AI API key configured. Set GROQ_API_KEY (primary), GROQ_BACKUP_API_KEY, GROK_API_KEY, or GEMINI_API_KEY."
     );
   }
 
