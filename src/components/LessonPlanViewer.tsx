@@ -330,21 +330,22 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
     "Meaningful learning can also happen beyond the classroom – for both the learners and the teacher. Pause and reflect on what happened today.";
 
   return (
-    <div className="text-black font-serif" style={{ padding: "0.5cm 1.27cm 1.27cm 1.27cm" }}>
-      {/* Official LPCAA DepEd Header Image */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/assets/lpcaa header.png"
-        alt="LPCAA DepEd Header"
-        style={{ width: "19.21cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
-      />
+    <div className="w-full overflow-x-auto">
+      <div className="text-black font-serif min-w-[680px]" style={{ padding: "0.5cm 1.27cm 1.27cm 1.27cm" }}>
+        {/* Official LPCAA DepEd Header Image */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/lpcaa header.png"
+          alt="LPCAA DepEd Header"
+          style={{ width: "19.21cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
+        />
 
-      {/* Lesson Plan Title */}
-      <div className="text-center py-2">
-        <h3 className="text-base font-bold uppercase tracking-wide">
-          LESSON PLAN IN {lesson_plan_meta.learning_area} GRADE {lesson_plan_meta.grade_level}
-        </h3>
-      </div>
+        {/* Lesson Plan Title */}
+        <div className="text-center py-2">
+          <h3 className="text-base font-bold uppercase tracking-wide">
+            LESSON PLAN IN {lesson_plan_meta.learning_area} GRADE {lesson_plan_meta.grade_level}
+          </h3>
+        </div>
 
       {/* Metadata Table */}
       <table className="w-full border-collapse border border-black text-sm">
@@ -497,13 +498,15 @@ Apply the Learning Design Principles by thinking about how to:
         checked={checked}
         noted={noted}
       />
+      </div>
     </div>
   );
 }
 
 function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: LessonPlanInput }) {
   return (
-    <div className="text-black font-serif space-y-4" style={{ padding: "0.5cm 1.27cm 1.27cm 1.27cm" }}>
+    <div className="w-full overflow-x-auto">
+      <div className="text-black font-serif min-w-[680px] space-y-4" style={{ padding: "0.5cm 1.27cm 1.27cm 1.27cm" }}>
       {/* Header */}
       <div className="text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -624,6 +627,7 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
           />
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

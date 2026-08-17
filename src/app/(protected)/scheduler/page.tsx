@@ -284,13 +284,13 @@ export default function DBOWSchedulerPage() {
               {holidays.map((h, idx) => (
                 <div key={idx} className="flex items-center gap-2 rounded-lg border p-2">
                   <Input
-                    className="h-9 w-40"
+                    className="h-9 w-32 shrink-0 sm:w-40"
                     value={isoToReadable(h.date)}
                     placeholder="e.g., November 01, 2026"
                     onChange={(e) => updateHoliday(idx, { date: readableToIso(e.target.value) })}
                   />
                   <Input
-                    className="h-9 flex-1"
+                    className="h-9 min-w-0 flex-1"
                     placeholder="Name (optional)"
                     value={h.name}
                     onChange={(e) => updateHoliday(idx, { name: e.target.value })}
@@ -355,7 +355,7 @@ export default function DBOWSchedulerPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b">
                   <th className="px-3 py-2 text-left font-medium">Term</th>

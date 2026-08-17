@@ -595,12 +595,12 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
 
           <Card>
             <CardContent className="pt-6">
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                 <Button
                   type="button"
                   variant={planType === "dlp" ? "default" : "outline"}
                   onClick={() => { setPlanType("dlp"); setValue("planType", "dlp"); }}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   Daily Lesson Plan (DLP)
                 </Button>
@@ -608,7 +608,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                   type="button"
                   variant={planType === "wlp" ? "default" : "outline"}
                   onClick={() => { setPlanType("wlp"); setValue("planType", "wlp"); }}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   Weekly Lesson Plan (WLP)
                 </Button>
@@ -639,12 +639,12 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
             </div>
           </details>
 
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
             <Button
               type="button"
               size="lg"
               onClick={goNext}
-              className="flex-1 sm:flex-none"
+              className="w-full sm:w-auto"
             >
               Next: Choose Topic
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -723,13 +723,13 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2">
-            <Button type="button" variant="outline" size="lg" onClick={goBack}>
+          <div className="flex flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <Button type="button" variant="outline" size="lg" onClick={goBack} className="w-full sm:w-auto">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <div className="flex items-center gap-2 flex-1 sm:flex-none justify-end">
-              <Button type="button" variant="ghost" onClick={() => setCurrentStep(2)}>
+            <div className="flex flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center sm:gap-2 sm:justify-end">
+              <Button type="button" variant="ghost" onClick={() => setCurrentStep(2)} className="w-full sm:w-auto">
                 Skip — I don&apos;t have a DBOW
               </Button>
               <Button
@@ -737,7 +737,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                 size="lg"
                 onClick={goNext}
                 disabled={planType === "dlp" ? !selectedDBOW : selectedWeekEntries.length === 0}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto"
               >
                 Next: Lesson Information
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -759,7 +759,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
 
           <Card>
             <CardContent className="space-y-4 pt-6">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
                 <div className="space-y-2">
                   <Label>{t("gradeLevel")}</Label>
                   <Select
@@ -861,7 +861,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                 )}
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
                 <div className="space-y-2">
                   <Label>Teacher Name</Label>
                   <Input
@@ -896,7 +896,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                   <p className="text-xs text-muted-foreground">
                     Auto-filled from the selected DBOW week — edit any day as needed.
                   </p>
-                  <div className="grid gap-2 md:grid-cols-5">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
                     {(
                       [
                         ["monday", "Monday"],
@@ -934,12 +934,12 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
             </CardContent>
           </Card>
 
-          <div className="flex items-center justify-between gap-2">
-            <Button type="button" variant="outline" size="lg" onClick={goBack}>
+          <div className="flex flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <Button type="button" variant="outline" size="lg" onClick={goBack} className="w-full sm:w-auto">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <Button type="submit" size="lg" className="flex-1 sm:flex-none" disabled={loading}>
+            <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={loading}>
               {loading ? (
                 <>
                   <Loader size="sm" className="mr-2" />

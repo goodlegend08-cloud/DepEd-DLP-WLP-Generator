@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100`}
+        className={`${geistSans.variable} ${geistMono.variable} relative min-h-screen w-full overflow-x-hidden bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100`}
       >
         {/* Background Ambient Orbs */}
         <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -38,7 +38,7 @@ export default function RootLayout({
         </div>
 
         {/* Main App Content */}
-        <div className="relative z-10 flex min-h-screen flex-col">
+        <div className="relative z-10 flex min-h-screen w-full flex-col">
           <I18nProvider>{children}</I18nProvider>
         </div>
       </body>
