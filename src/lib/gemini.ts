@@ -150,7 +150,7 @@ export async function generateFromPayload(
       name: "together",
       client: getTogether(),
       model:
-        process.env.TOGETHER_MODEL || "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        process.env.TOGETHER_MODEL || "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
     });
   }
   if (process.env.FIREWORKS_API_KEY) {
