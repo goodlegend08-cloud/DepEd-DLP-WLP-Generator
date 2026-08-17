@@ -116,6 +116,24 @@ export async function generateFromPayload(
       model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
     });
   }
+  // Extra Gemini keys as backups — rotate through them when quota runs out.
+  const geminiBackups: { env: string; name: string }[] = [
+    { env: "GEMINI_API_KEY_2", name: "gemini-2" },
+    { env: "GEMINI_API_KEY_3", name: "gemini-3" },
+    { env: "GEMINI_API_KEY_4", name: "gemini-4" },
+  ];
+  for (const backup of geminiBackups) {
+    if (process.env[backup.env]) {
+      providers.push({
+        name: backup.name,
+        client: makeClient(
+          process.env[backup.env],
+          "https://generativelanguage.googleapis.com/v1beta/openai/"
+        ),
+        model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
+      });
+    }
+  }
   if (providers.length === 0) {
     throw new Error(
       "No AI API key configured. Set GROQ_API_KEY (primary), GROQ_BACKUP_API_KEY, GROK_API_KEY, or GEMINI_API_KEY."
@@ -131,8 +149,8 @@ export async function generateFromPayload(
         model: provider.model || payload.model,
         messages: payload.messages,
         temperature: payload.temperature ?? 0.7,
-top_p: 0.9,
-          max_tokens: 8192,
+        top_p: 0.9,
+        max_tokens: 8192,
       });
 
       return {
