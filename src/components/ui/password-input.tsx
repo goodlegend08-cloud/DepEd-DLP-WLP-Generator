@@ -4,14 +4,27 @@ import { Eye, EyeOff } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
-function PasswordInput({ className, ...props }: React.ComponentProps<"input">) {
+function PasswordInput({
+  className,
+  inputClassName,
+  leadingIcon,
+  ...props
+}: React.ComponentProps<"input"> & {
+  leadingIcon?: React.ReactNode;
+  inputClassName?: string;
+}) {
   const [show, setShow] = React.useState(false)
 
   return (
     <div className={cn("relative", className)}>
+      {leadingIcon && (
+        <span className="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-center text-slate-400">
+          {leadingIcon}
+        </span>
+      )}
       <Input
         type={show ? "text" : "password"}
-        className="pr-9"
+        className={cn("pr-9", leadingIcon && "pl-10", inputClassName)}
         {...props}
       />
       <button

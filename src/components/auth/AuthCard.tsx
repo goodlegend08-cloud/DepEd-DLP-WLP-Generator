@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { BookOpen, Mail, Lock, User } from "lucide-react";
 
 const ERROR_MESSAGES: Record<string, string> = {
   auth_callback_error:
@@ -24,6 +25,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   email_not_confirmed:
     "Please confirm your email before logging in. Check your inbox (and spam folder) for the confirmation link.",
 };
+
+const AUTH_INPUT_CLASS =
+  "rounded-xl border-slate-200 shadow-sm transition-all focus-visible:border-slate-900 focus-visible:ring-2 focus-visible:ring-slate-900/10 dark:border-slate-800 dark:focus-visible:border-slate-100";
+
+const ACTION_BUTTON_CLASS =
+  "bg-slate-900 text-white font-medium py-2.5 rounded-xl shadow-md hover:bg-slate-800 hover:shadow-lg transition-all";
 
 type AuthMode = "login" | "signup";
 
@@ -274,8 +281,15 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                 success ? (
                   <div>
                     <CardHeader className="text-center">
-                      <CardTitle className="text-2xl font-bold">{t("signup")}</CardTitle>
-                      <CardDescription>Check your email</CardDescription>
+                      <div className="mb-3 flex justify-center">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
+                          <BookOpen className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <CardTitle className="text-2xl font-bold font-sans">{t("signup")}</CardTitle>
+                      <CardDescription className="text-sm font-normal leading-tight text-slate-500 dark:text-slate-400">
+                        Check your email
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3 text-center text-sm text-muted-foreground">
                       <p>
@@ -292,7 +306,7 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                       <Button
                         type="button"
                         variant="outline"
-                        className="auth-btn-motion w-full"
+                        className={`auth-btn-motion w-full ${ACTION_BUTTON_CLASS}`}
                         onClick={() => {
                           setIsSignUp(false);
                           setError(null);
@@ -306,8 +320,13 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                 ) : (
                   <>
                     <CardHeader className="text-center">
-                      <CardTitle className="text-2xl font-bold">{t("signup")}</CardTitle>
-                      <CardDescription>
+                      <div className="mb-3 flex justify-center">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
+                          <BookOpen className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <CardTitle className="text-2xl font-bold font-sans">{t("signup")}</CardTitle>
+                      <CardDescription className="text-sm font-normal leading-tight text-slate-500 dark:text-slate-400">
                         Create your account to start generating lesson plans
                       </CardDescription>
                     </CardHeader>
@@ -348,29 +367,35 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                         <CardContent className="space-y-4">
                           <div className="space-y-2">
                             <Label htmlFor="fullName">{t("fullName")}</Label>
-                            <Input
-                              id="fullName"
-                              type="text"
-                              placeholder="Juan Dela Cruz"
-                              value={fullName}
-                              onChange={(e) => setFullName(e.target.value)}
-                              autoComplete="name"
-                              required
-                              className="auth-input"
-                            />
+                            <div className="relative">
+                              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                              <Input
+                                id="fullName"
+                                type="text"
+                                placeholder="Juan Dela Cruz"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                autoComplete="name"
+                                required
+                                className={`pl-10 ${AUTH_INPUT_CLASS}`}
+                              />
+                            </div>
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="email">{t("email")}</Label>
-                            <Input
-                              id="email"
-                              type="email"
-                              placeholder="teacher@example.com"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              autoComplete="email"
-                              required
-                              className="auth-input"
-                            />
+                            <div className="relative">
+                              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                              <Input
+                                id="email"
+                                type="email"
+                                placeholder="teacher@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                autoComplete="email"
+                                required
+                                className={`pl-10 ${AUTH_INPUT_CLASS}`}
+                              />
+                            </div>
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="password">{t("password")}</Label>
@@ -381,7 +406,9 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                               onChange={(e) => setPassword(e.target.value)}
                               autoComplete="new-password"
                               required
+                              leadingIcon={<Lock className="h-4 w-4" />}
                               className="auth-input"
+                              inputClassName={AUTH_INPUT_CLASS}
                             />
                           </div>
                           <div className="space-y-2">
@@ -393,20 +420,25 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                               onChange={(e) => setConfirmPassword(e.target.value)}
                               autoComplete="new-password"
                               required
+                              leadingIcon={<Lock className="h-4 w-4" />}
                               className="auth-input"
+                              inputClassName={AUTH_INPUT_CLASS}
                             />
                           </div>
                         </CardContent>
                         <CardFooter className="flex flex-col space-y-4">
-                          <Button type="submit" className="auth-btn-motion w-full">
+                          <Button
+                            type="submit"
+                            className={`auth-btn-motion w-full ${ACTION_BUTTON_CLASS}`}
+                          >
                             {t("continue")}
                           </Button>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs text-slate-600">
                             {t("alreadyHaveAccount")}{" "}
                             <button
                               type="button"
                               onClick={handleToggle}
-                              className="text-primary underline"
+                              className="font-medium text-slate-600 underline-offset-4 transition-colors hover:text-slate-900 hover:underline"
                             >
                               {t("login")}
                             </button>
@@ -437,7 +469,7 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                           >
                             {t("back")}
                           </Button>
-                          <Button type="submit" className="auth-btn-motion w-full" disabled={loading}>
+                          <Button type="submit" className={`auth-btn-motion w-full ${ACTION_BUTTON_CLASS}`} disabled={loading}>
                             {loading ? (
                               <span className="flex items-center justify-center gap-2">
                                 <Loader size="sm" />
@@ -455,8 +487,15 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
               ) : (
                 <>
                   <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-bold">{t("login")}</CardTitle>
-                    <CardDescription>Welcome back to DepEd Auto-DLP/DLL</CardDescription>
+                    <div className="mb-3 flex justify-center">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
+                        <BookOpen className="h-5 w-5" />
+                      </div>
+                    </div>
+                    <CardTitle className="text-2xl font-bold font-sans">{t("login")}</CardTitle>
+                    <CardDescription className="text-sm font-normal leading-tight text-slate-500 dark:text-slate-400">
+                      Welcome back to DepEd Auto-DLP/DLL
+                    </CardDescription>
                   </CardHeader>
                   <form onSubmit={handleLogin}>
                     <CardContent className="space-y-4">
@@ -467,16 +506,19 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                       )}
                       <div className="space-y-2">
                         <Label htmlFor="login-email">{t("email")}</Label>
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="teacher@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          autoComplete="email"
-                          required
-                          className="auth-input"
-                        />
+                        <div className="relative">
+                          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <Input
+                            id="login-email"
+                            type="email"
+                            placeholder="teacher@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            autoComplete="email"
+                            required
+                            className={`pl-10 ${AUTH_INPUT_CLASS}`}
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="login-password">{t("password")}</Label>
@@ -487,14 +529,16 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                           onChange={(e) => setPassword(e.target.value)}
                           autoComplete="current-password"
                           required
+                          leadingIcon={<Lock className="h-4 w-4" />}
                           className="auth-input"
+                          inputClassName={AUTH_INPUT_CLASS}
                         />
                       </div>
                     </CardContent>
                     <CardFooter className="flex flex-col space-y-4">
                       <Button
                         type="submit"
-                        className="auth-btn-motion w-full"
+                        className={`auth-btn-motion w-full ${ACTION_BUTTON_CLASS}`}
                         disabled={loading}
                       >
                         {loading ? (
@@ -509,16 +553,16 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                       <div className="flex flex-col items-center space-y-2">
                         <a
                           href="/forgot-password"
-                          className="text-sm text-primary underline"
+                          className="text-xs font-medium text-slate-600 underline-offset-4 transition-colors hover:text-slate-900 hover:underline"
                         >
                           {t("forgotPassword")}
                         </a>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-xs text-slate-600">
                           {t("noAccount")}{" "}
                           <button
                             type="button"
                             onClick={handleToggle}
-                            className="text-primary underline"
+                            className="font-medium text-slate-600 underline-offset-4 transition-colors hover:text-slate-900 hover:underline"
                           >
                             {t("signup")}
                           </button>
