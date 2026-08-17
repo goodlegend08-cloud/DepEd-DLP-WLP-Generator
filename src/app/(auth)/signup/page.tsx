@@ -138,7 +138,7 @@ export default function SignupPage() {
   if (success) {
     return (
       <div className="auth-motion-card">
-        <Card>
+        <Card className="bg-white/80 shadow-xl backdrop-blur-md border border-slate-200/60 dark:bg-slate-900/80 dark:border-slate-800/60">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">{t("signup")}</CardTitle>
             <CardDescription>Check your email</CardDescription>
@@ -163,7 +163,7 @@ export default function SignupPage() {
 
   return (
     <div key={shakeKey} className={shakeKey > 0 ? "auth-shake" : "auth-motion-card"}>
-      <Card>
+      <Card className="bg-white/80 shadow-xl backdrop-blur-md border border-slate-200/60 dark:bg-slate-900/80 dark:border-slate-800/60">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">{t("signup")}</CardTitle>
           <CardDescription>
