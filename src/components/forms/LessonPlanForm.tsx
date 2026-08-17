@@ -67,6 +67,46 @@ function saveCachedTeacherName(name: string) {
     // localStorage may be unavailable; persistence is a nice-to-have
   }
 }
+
+const SCHOOL_NAME_KEY = "school-name-cached";
+
+function loadCachedSchoolName(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(SCHOOL_NAME_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function saveCachedSchoolName(name: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SCHOOL_NAME_KEY, name);
+  } catch {
+    // localStorage may be unavailable; persistence is a nice-to-have
+  }
+}
+
+const SECTION_KEY = "default_section";
+
+function loadCachedSection(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(SECTION_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function saveCachedSection(section: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SECTION_KEY, section);
+  } catch {
+    // localStorage may be unavailable; persistence is a nice-to-have
+  }
+}
 const STEPS = [
   { title: "Plan Type", description: "DLP or WLP" },
   { title: "Topic", description: "Choose from DBOW" },
@@ -128,6 +168,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
         planType: z.enum(["dlp", "wlp"]),
         teacherName: z.string().optional(),
         schoolName: z.string().optional(),
+        section: z.string().optional(),
         dayNumber: z.string().optional(),
         calendarDate: z.string().optional(),
         startDate: z.string().optional(),
@@ -155,6 +196,38 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
       saveCachedTeacherName(teacherName.trim());
     }
   }, [teacherName]);
+
+  // Pre-fill school name from saved default (or the school default), then persist edits
+  useEffect(() => {
+    const saved = loadCachedSchoolName();
+    if (saved) {
+      setValue("schoolName", saved, { shouldDirty: false });
+    } else {
+      setValue("schoolName", "LAS PIÑAS CAA NATIONAL HIGH SCHOOL", { shouldDirty: false });
+    }
+  }, [setValue]);
+
+  const schoolName = watch("schoolName");
+  useEffect(() => {
+    if (schoolName && schoolName.trim()) {
+      saveCachedSchoolName(schoolName.trim());
+    }
+  }, [schoolName]);
+
+  // Pre-fill section from saved default, then persist edits
+  useEffect(() => {
+    const saved = loadCachedSection();
+    if (saved) {
+      setValue("section", saved, { shouldDirty: false });
+    }
+  }, [setValue]);
+
+  const section = watch("section");
+  useEffect(() => {
+    if (section && section.trim()) {
+      saveCachedSection(section.trim());
+    }
+  }, [section]);
 
   // Auto-fill form when DBOW entry is selected
   const handleTemplateSelect = useCallback(
@@ -707,6 +780,15 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                 </div>
 
                 <div className="space-y-2">
+                  <Label>Section</Label>
+                  <Input
+                    {...register("section")}
+                    placeholder="e.g., Grade 9 - Ruby or Section 1"
+                  />
+                  <p className="text-xs text-muted-foreground">Saved as your default section — edit anytime</p>
+                </div>
+
+                <div className="space-y-2">
                   <Label>{t("learningArea")}</Label>
                   <Select
                     value={watch("learningArea") ?? ""}
@@ -793,8 +875,8 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                   <Input
                     {...register("schoolName")}
                     placeholder="e.g., LAS PIÑAS CAA NATIONAL HIGH SCHOOL"
-                    defaultValue="LAS PIÑAS CAA NATIONAL HIGH SCHOOL"
                   />
+                  <p className="text-xs text-muted-foreground">Saved as your default school name — edit anytime</p>
                 </div>
               </div>
 

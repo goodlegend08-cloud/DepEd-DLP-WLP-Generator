@@ -36,6 +36,7 @@ export interface LessonPlanInput {
   planType: PlanType;
   teacherName?: string;
   schoolName?: string;
+  section?: string;
   dayNumber?: string;
   calendarDate?: string;
   startDate?: string;

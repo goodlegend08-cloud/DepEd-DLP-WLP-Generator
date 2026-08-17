@@ -265,6 +265,13 @@ function applyDeterministicMeta(
   else if (has(fallback.week)) meta.week_number = fallback.week;
   if (has(input.dayNumber)) meta.day_number = normalizeDay(input.dayNumber!);
   else if (has(fallback.day)) meta.day_number = fallback.day;
+
+  // Form overrides: teacher name and section always win so the lesson-details
+  // grid matches what the teacher entered in Step 3.
+  if (has(input.teacherName)) meta.teacher_name = input.teacherName!.trim();
+  if (has(input.section)) {
+    meta.grade_and_section = `${input.gradeLevel || meta.grade_level} – ${input.section!.trim()}`;
+  }
 }
 
 /**
@@ -297,7 +304,9 @@ async function handleGeneralized(input: LessonPlanInput, userId: string) {
     calculatedWeek: targetWeek,
     dayNumber: dayLabel,
     teacherName: input.teacherName || "[Teacher Name]",
-    gradeAndSection: `${input.gradeLevel} – ${input.subjectDescription || "Section"}`,
+    gradeAndSection: input.section
+      ? `${input.gradeLevel} – ${input.section}`
+      : `${input.gradeLevel} – ${input.subjectDescription || "Section"}`,
     schoolDivision: input.schoolName || "SDO LAS PIÑAS CITY",
     subjectGrade: `${input.learningArea} ${input.gradeLevel}`,
     contentDomain: resolvedRow?.contentArea || input.subjectDescription || "",

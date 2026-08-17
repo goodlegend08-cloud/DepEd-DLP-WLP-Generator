@@ -815,7 +815,7 @@ export async function buildWLPDocx(
               kvMetaRow("Name of Lesson", lessonTitle),
               kvMetaRow("Week", `${input.quarter} | ${input.week}`),
               kvMetaRow("Designed by Teacher/s", input.teacherName || "[Teacher Name]"),
-              kvMetaRow("Grade Level & Section", `Grade ${input.gradeLevel}`),
+              kvMetaRow("Grade Level & Section", input.section ? `${input.gradeLevel} – ${input.section}` : `Grade ${input.gradeLevel}`),
               kvMetaRow("No. of Sessions", "5 Sessions (50 minutes each)"),
               kvMetaRow("References (books, websites, toolkits, etc.)", "MATATAG K-10 Curriculum Guide; DepEd Science Learning Materials; DepEd MATATAG Curriculum Resources; Division DBOW."),
             ],

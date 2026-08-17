@@ -212,7 +212,7 @@ export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
             {input?.teacherName || "[Teacher Name]"}
           </MetaRow>
           <MetaRow label="Designed for which Grade Level and Section">
-            Grade {input?.gradeLevel || ""}
+            {input?.section ? `Grade ${input.gradeLevel || ""} – ${input.section}` : `Grade ${input?.gradeLevel || ""}`}
           </MetaRow>
           <MetaRow label="No. of Sessions">
             5 Sessions (50 minutes each)
