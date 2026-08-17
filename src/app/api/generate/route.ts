@@ -325,8 +325,8 @@ async function handleGeneralized(input: LessonPlanInput, userId: string) {
     `DBOW Context:\n${(dbowRawTextForPrompt(input)).substring(0, 4000)}`;
 
   const payload = buildGrokPayload(payloadData, userContent, { systemPrompt });
-  const rawResponse = await generateFromPayload(payload, userId);
-  const parsed = JSON.parse(normalizeJSON(rawResponse));
+  const genResult = await generateFromPayload(payload, userId);
+  const parsed = JSON.parse(normalizeJSON(genResult.content));
 
   if (!parsed.header || !parsed.lesson_plan_meta || !parsed.intentions) {
     return NextResponse.json(
@@ -383,7 +383,12 @@ async function handleGeneralized(input: LessonPlanInput, userId: string) {
     ((dlpPlan.ways_forward as unknown as Record<string, unknown>).reflection?.toString() as string | undefined) ||
     DEFAULT_REFLEXIONS;
 
-  return NextResponse.json({ lessonPlan: dlpPlan, planType: "dlp" });
+  return NextResponse.json({
+    lessonPlan: dlpPlan,
+    planType: "dlp",
+    aiProvider: genResult.provider,
+    aiModel: genResult.model,
+  });
 }
 
 const DEFAULT_REFLEXIONS = `For the next session, I will allot more time to the guided practice phase so that learners at the Frustration Level can complete the scaffolded tasks with sufficient support. The learners showed strong interest in exploring real-world applications of today's concept in their own homes, so I plan to start the next session with a brief sharing of their home observations. I would like to share with my co-teachers and school leaders how the differentiated group activities effectively engaged learners at all reading levels, and I hope my instructional coach can help me refine my questioning strategies to deepen HOTS responses from the Independent Level group.`;
@@ -459,10 +464,10 @@ export async function POST(request: Request) {
       });
     }
 
-    const rawResponse = await generateLessonPlan(systemPrompt, userPrompt, user.id);
+    const genResult = await generateLessonPlan(systemPrompt, userPrompt, user.id);
 
     // Parse JSON response - strip markdown code fences if present
-    const cleanedResponse = normalizeJSON(rawResponse);
+    const cleanedResponse = normalizeJSON(genResult.content);
 
     if (planType === "wlp") {
       const weeklyPlan: WeeklyLessonPlan = normalizeWeeklyPlan(JSON.parse(cleanedResponse));
@@ -502,7 +507,12 @@ export async function POST(request: Request) {
         }
       }
 
-      return NextResponse.json({ lessonPlan: weeklyPlan, planType: "wlp" });
+      return NextResponse.json({
+        lessonPlan: weeklyPlan,
+        planType: "wlp",
+        aiProvider: genResult.provider,
+        aiModel: genResult.model,
+      });
     } else {
       const parsed = JSON.parse(cleanedResponse);
 
@@ -578,7 +588,12 @@ export async function POST(request: Request) {
           ((dlpPlan.ways_forward as unknown as Record<string, unknown>).reflection?.toString() as string | undefined) ||
           DEFAULT_REFLEXIONS;
 
-        return NextResponse.json({ lessonPlan: dlpPlan, planType: "dlp" });
+        return NextResponse.json({
+          lessonPlan: dlpPlan,
+          planType: "dlp",
+          aiProvider: genResult.provider,
+          aiModel: genResult.model,
+        });
       }
 
       // Fallback: check for old format
@@ -598,7 +613,12 @@ export async function POST(request: Request) {
         );
       }
 
-      return NextResponse.json({ lessonPlan, planType: "dlp" });
+      return NextResponse.json({
+        lessonPlan,
+        planType: "dlp",
+        aiProvider: genResult.provider,
+        aiModel: genResult.model,
+      });
     }
   } catch (error) {
     console.error("Generate error:", error);

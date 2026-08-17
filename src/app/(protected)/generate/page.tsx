@@ -22,12 +22,14 @@ export default function GeneratePage() {
   const [templateDownloading, setTemplateDownloading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [aiInfo, setAiInfo] = useState<{ provider?: string; model?: string } | null>(null);
   const { t } = useI18n();
 
-  const handleGenerated = (plan: GeneratedLessonPlan | GeneratedDLPPlan | WeeklyLessonPlan, input: LessonPlanInput) => {
+  const handleGenerated = (plan: GeneratedLessonPlan | GeneratedDLPPlan | WeeklyLessonPlan, input: LessonPlanInput, generatedMeta?: { provider?: string; model?: string }) => {
     setGeneratedPlan(plan);
     setCurrentInput(input);
     setCurrentPlanType(input.planType || "dlp");
+    setAiInfo(generatedMeta || null);
     setSaved(false);
   };
 
@@ -229,7 +231,7 @@ export default function GeneratePage() {
           </div>
         )}
 
-        <div className="flex justify-center gap-2 pt-4">
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-4">
           <Button variant="outline" onClick={handleSave} disabled={saving || saved}>
             {saving ? <Loader size="sm" /> : <Save className="mr-2 h-4 w-4" />}
             {saved ? t("saved") : saving ? t("loading") : t("savePlan")}
@@ -238,6 +240,11 @@ export default function GeneratePage() {
             {downloading ? <Loader size="sm" /> : <Download className="mr-2 h-4 w-4" />}
             {downloading ? t("loading") : t("downloadDocx")}
           </Button>
+          {aiInfo && (
+            <span className="print:hidden text-xs text-muted-foreground">
+              Generated with {aiInfo.model || aiInfo.provider}
+            </span>
+          )}
         </div>
 
         {/* Template download button (visible when plan is ILAW format and a template is selected) */}

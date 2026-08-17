@@ -45,7 +45,11 @@ const LEARNING_AREAS = [
 ];
 
 interface LessonPlanFormProps {
-  onGenerated: (plan: GeneratedLessonPlan | GeneratedDLPPlan | WeeklyLessonPlan, input: LessonPlanInput) => void;
+  onGenerated: (
+    plan: GeneratedLessonPlan | GeneratedDLPPlan | WeeklyLessonPlan,
+    input: LessonPlanInput,
+    generatedMeta?: { provider?: string; model?: string }
+  ) => void;
   onTemplateSelect?: (template: TemplateMeta | null) => void;
 }
 
@@ -512,7 +516,10 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
       }
 
       const result = await response.json();
-      onGenerated(result.lessonPlan, data);
+      onGenerated(result.lessonPlan, data, {
+        provider: result.aiProvider,
+        model: result.aiModel,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {

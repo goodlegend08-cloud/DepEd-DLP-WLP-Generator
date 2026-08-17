@@ -67,6 +67,12 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface GenerationResult {
+  content: string;
+  provider: string;
+  model: string;
+}
+
 export async function generateFromPayload(
   payload: {
     model: string;
@@ -74,7 +80,7 @@ export async function generateFromPayload(
     messages: ChatMessage[];
   },
   userId?: string
-): Promise<string> {
+): Promise<GenerationResult> {
   if (userId) {
     checkRateLimit(userId);
   }
@@ -138,7 +144,11 @@ export async function generateFromPayload(
           max_tokens: 4096,
         });
 
-        return result.choices[0].message.content ?? "";
+        return {
+          content: result.choices[0].message.content ?? "",
+          provider: provider.name,
+          model: provider.model || payload.model,
+        };
       } catch (error) {
         lastError = error as Error;
         if (!firstError) firstError = lastError;
@@ -168,7 +178,7 @@ export async function generateLessonPlan(
   systemPrompt: string,
   userPrompt: string,
   userId?: string
-): Promise<string> {
+): Promise<GenerationResult> {
   return generateFromPayload(
     {
       model: MODEL_NAME,
