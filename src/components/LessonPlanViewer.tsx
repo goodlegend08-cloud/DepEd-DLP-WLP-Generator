@@ -250,19 +250,19 @@ function SignatureBlock({
   noted: { name: string; title: string }[];
 }) {
   return (
-    <div className="mt-8 space-y-6">
+    <div className="mt-8">
       {/* Prepared */}
       <div>
         <p className="font-bold">Prepared:</p>
-        <div className="mt-2 flex">
+        <div className="mt-6 flex">
           <SignatureColumn name={preparedName.toUpperCase()} title={preparedTitle} />
         </div>
       </div>
 
       {/* Checked & Reviewed (3-column spacing, no gridlines) */}
-      <div>
+      <div className="mt-10">
         <p className="font-bold">Checked &amp; Reviewed:</p>
-        <div className="mt-2 flex">
+        <div className="mt-6 flex">
           {checked.map((s, i) => (
             <SignatureColumn key={i} name={s.name} title={s.title} />
           ))}
@@ -270,9 +270,9 @@ function SignatureBlock({
       </div>
 
       {/* Noted (2-column spacing, no gridlines) */}
-      <div>
+      <div className="mt-10">
         <p className="font-bold">Noted:</p>
-        <div className="mt-2 flex">
+        <div className="mt-6 flex">
           {noted.map((s, i) => (
             <SignatureColumn key={i} name={s.name} title={s.title} />
           ))}

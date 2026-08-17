@@ -293,11 +293,11 @@ export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
       </table>
 
       {/* Signatories — clean unbordered paragraph text after the tables */}
-      <div className="mt-8 space-y-6">
+      <div className="mt-8">
         {/* Prepared */}
         <div>
           <p className="font-bold">Prepared:</p>
-          <div className="mt-2 flex">
+          <div className="mt-6 flex">
             <div className="flex-1 text-center">
               <p className="text-[12pt] font-bold uppercase">{input?.teacherName || "JOSE ROMMEL L. GARCIA"}</p>
               <div className="mx-auto my-1 border-b-2 border-black w-52" />
@@ -307,9 +307,9 @@ export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
         </div>
 
         {/* Checked & Reviewed (3-column spacing, no gridlines) */}
-        <div>
+        <div className="mt-10">
           <p className="font-bold">Checked &amp; Reviewed:</p>
-          <div className="mt-2 flex">
+          <div className="mt-6 flex">
             <div className="flex-1 text-center">
               <p className="text-[12pt] font-bold uppercase">TRIXIA A. PALMOS</p>
               <div className="mx-auto my-1 border-b-2 border-black w-52" />
@@ -329,9 +329,9 @@ export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
         </div>
 
         {/* Noted (2-column spacing, no gridlines) */}
-        <div>
+        <div className="mt-10">
           <p className="font-bold">Noted:</p>
-          <div className="mt-2 flex">
+          <div className="mt-6 flex">
             <div className="flex-1 text-center">
               <p className="text-[12pt] font-bold uppercase">MILDRED T. TUBLE</p>
               <div className="mx-auto my-1 border-b-2 border-black w-52" />

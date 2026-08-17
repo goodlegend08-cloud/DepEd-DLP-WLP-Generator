@@ -329,7 +329,7 @@ function signatureRuleParagraph(): Paragraph {
 function signatureNameParagraph(name: string): Paragraph {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
-    spacing: { before: 80, after: 0 },
+    spacing: { before: 240, after: 0 },
     children: [new TextRun({ text: name.toUpperCase(), bold: true, font: "Times New Roman", size: 24 })],
   });
 }
@@ -344,9 +344,9 @@ function signatureTitleParagraph(title: string): Paragraph {
 }
 
 /** Left-aligned signature section label ("Prepared:", "Checked & Reviewed:", "Noted:"). */
-function signatureLabelParagraph(label: string): Paragraph {
+function signatureLabelParagraph(label: string, before = 200, after = 60): Paragraph {
   return new Paragraph({
-    spacing: { before: 200, after: 60 },
+    spacing: { before, after },
     children: [new TextRun({ text: label, bold: true, font: "Times New Roman", size: 18 })],
   });
 }
@@ -406,9 +406,9 @@ function signatureBlock(
     signatureNameParagraph(prepared.name),
     signatureRuleParagraph(),
     signatureTitleParagraph(prepared.title),
-    signatureLabelParagraph("Checked & Reviewed:"),
+    signatureLabelParagraph("Checked & Reviewed:", 360, 240),
     ...signatureColumns(checked, 3),
-    signatureLabelParagraph("Noted:"),
+    signatureLabelParagraph("Noted:", 360, 240),
     ...signatureColumns(noted, 2),
   ];
 }
