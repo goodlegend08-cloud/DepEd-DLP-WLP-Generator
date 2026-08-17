@@ -17,14 +17,7 @@ const getGroqBackup = () =>
 const getGrokBackup = () =>
   makeClient(process.env.GROK_API_KEY, "https://api.x.ai/v1");
 
-// Gemini (Google) provider. Uses Google's OpenAI-compatible endpoint.
-const getGemini = () =>
-  makeClient(
-    process.env.GEMINI_API_KEY,
-    "https://generativelanguage.googleapis.com/v1beta/openai/"
-  );
-
-const MODEL_NAME = "openai/gpt-oss-20b";
+const MODEL_NAME = "llama-3.3-70b-versatile";
 
 // Rate limiting: max 3 requests per minute per user
 const RATE_LIMIT = 3;
@@ -79,24 +72,6 @@ export async function generateFromPayload(
     checkRateLimit(userId);
   }
 
-  // TPM/quota errors (HTTP 413 "Request too large", "tokens per minute") are
-  // hard limits that retrying won't fix, so they fall through to the next
-  // provider immediately instead of backing off.
-  const isQuotaExceededError = (error: unknown): boolean => {
-    const message = error instanceof Error ? error.message : String(error);
-    const status =
-      typeof error === "object" && error !== null && "status" in error
-        ? (error as { status?: unknown }).status
-        : undefined;
-    return (
-      status === 413 ||
-      message.includes("413") ||
-      message.includes("Request too large") ||
-      message.includes("tokens per minute") ||
-      message.includes("(TPM)")
-    );
-  };
-
   const isRateLimitError = (error: unknown): boolean => {
     const message = error instanceof Error ? error.message : String(error);
     return (
@@ -120,16 +95,9 @@ export async function generateFromPayload(
       model: process.env.GROK_MODEL || "grok-beta",
     });
   }
-  if (process.env.GEMINI_API_KEY) {
-    providers.push({
-      name: "gemini",
-      client: getGemini(),
-      model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
-    });
-  }
   if (providers.length === 0) {
     throw new Error(
-      "No AI API key configured. Set GROQ_API_KEY (primary), GROQ_BACKUP_API_KEY, GROK_API_KEY, or GEMINI_API_KEY."
+      "No AI API key configured. Set GROQ_API_KEY (primary), GROQ_BACKUP_API_KEY, or GROK_API_KEY."
     );
   }
 
@@ -155,12 +123,6 @@ export async function generateFromPayload(
           const delay = Math.pow(2, attempt + 1) * 5000;
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
-        }
-
-        // Hard TPM/quota cap on this provider: skip backoff and fall through
-        // to the next provider immediately.
-        if (isQuotaExceededError(error)) {
-          break;
         }
 
         // Non-retryable failure on this provider. Fall through to the next

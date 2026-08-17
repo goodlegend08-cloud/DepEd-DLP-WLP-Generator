@@ -200,12 +200,13 @@ export default function GeneratePage() {
   if (generatedPlan) {
     return (
       <div className="max-w-4xl mx-auto space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => setGeneratedPlan(null)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Form
           </Button>
-          <div className="flex flex-wrap gap-2">            <Button variant="outline" onClick={handleSave} disabled={saving || saved}>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleSave} disabled={saving || saved}>
               {saving ? <Loader size="sm" /> : <Save className="mr-2 h-4 w-4" />}
               {saved ? t("saved") : saving ? t("loading") : t("savePlan")}
             </Button>
@@ -228,7 +229,7 @@ export default function GeneratePage() {
           </div>
         )}
 
-        <div className="flex flex-col justify-center gap-2 pt-4 sm:flex-row">
+        <div className="flex justify-center gap-2 pt-4">
           <Button variant="outline" onClick={handleSave} disabled={saving || saved}>
             {saving ? <Loader size="sm" /> : <Save className="mr-2 h-4 w-4" />}
             {saved ? t("saved") : saving ? t("loading") : t("savePlan")}

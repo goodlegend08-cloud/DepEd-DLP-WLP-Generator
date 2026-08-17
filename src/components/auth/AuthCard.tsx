@@ -27,7 +27,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 const AUTH_INPUT_CLASS =
-  "h-10 sm:h-11 text-xs sm:text-sm rounded-xl border-slate-200 shadow-sm transition-all focus-visible:border-slate-900 focus-visible:ring-2 focus-visible:ring-slate-900/10 dark:border-slate-800 dark:focus-visible:border-slate-100";
+  "rounded-xl border-slate-200 shadow-sm transition-all focus-visible:border-slate-900 focus-visible:ring-2 focus-visible:ring-slate-900/10 dark:border-slate-800 dark:focus-visible:border-slate-100";
 
 const ACTION_BUTTON_CLASS =
   "bg-slate-900 text-white font-medium py-2.5 rounded-xl shadow-md hover:bg-slate-800 hover:shadow-lg transition-all";
@@ -248,7 +248,7 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="w-full max-w-[400px] p-4 sm:p-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-xl animate-pulse space-y-6"
+            className="w-full max-w-md p-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-xl animate-pulse space-y-6"
           >
             <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3 mx-auto" />
             <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-2/3 mx-auto" />
@@ -332,11 +332,11 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                     </CardHeader>
 
                     {/* Step indicator */}
-                    <div className="flex flex-wrap items-center justify-center gap-1.5 px-3 pb-2 sm:gap-4 sm:px-6">
+                    <div className="flex items-center justify-center gap-6 px-6 pb-2">
                       {[1, 2].map((s) => (
                         <div key={s} className="flex flex-col items-center gap-1">
                           <div
-                            className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium sm:h-8 sm:w-8 sm:text-sm ${
+                            className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
                               step >= s
                                 ? "bg-primary text-primary-foreground"
                                 : "bg-muted text-muted-foreground ring-1 ring-border"
