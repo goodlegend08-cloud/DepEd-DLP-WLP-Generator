@@ -139,7 +139,7 @@ When prompted with a topic, generate ONE complete standalone Daily Lesson Plan f
 
 /**
  * Build the recommended Grok/OpenAI-compatible chat payload.
- * `model` defaults to GROK_MODEL env or "grok-4.3".
+ * `model` defaults to GROQ_MODEL env or "grok-beta".
  */
 export function buildGrokPayload(
   data: DynamicLessonPlanData,
@@ -150,7 +150,7 @@ export function buildGrokPayload(
   temperature: number;
   messages: { role: "system" | "user"; content: string }[];
 } {
-  const model = options.model ?? process.env.GROK_MODEL ?? "grok-4.3";
+  const model = options.model ?? process.env.GROQ_MODEL ?? "grok-beta";
   const temperature = options.temperature ?? 0.3;
   const systemContent = options.systemPrompt ?? buildDynamicSystemPrompt(data);
 
