@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Upload, FileText, Trash2, Check } from "lucide-react";
+import { Upload, FileText, Trash2, Check } from "lucide-react";
+import { Loader } from "@/components/Loader";
 import type { TemplateMeta } from "@/lib/template-processor";
 
 interface TemplateUploadProps {
@@ -149,7 +150,7 @@ export function TemplateUpload({
           >
             {uploading ? (
               <>
-                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Uploading...
               </>
             ) : (
@@ -173,7 +174,7 @@ export function TemplateUpload({
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader size="sm" />
             </div>
           ) : templates.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">

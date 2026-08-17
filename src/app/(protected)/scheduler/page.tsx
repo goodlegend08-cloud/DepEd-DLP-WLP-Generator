@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2, CalendarDays } from "lucide-react";
+import { Plus, Trash2, CalendarDays } from "lucide-react";
+import { Loader } from "@/components/Loader";
 import type { ScheduleRow } from "@/lib/dbow-scheduler";
 import { parseDateInput, formatLongDate, toISODate } from "@/lib/date-engine";
 
@@ -324,7 +325,7 @@ export default function DBOWSchedulerPage() {
             <Button type="button" size="lg" onClick={handleGenerate} disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Generating...
                 </>
               ) : (

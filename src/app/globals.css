@@ -299,3 +299,86 @@
 .auth-eye:hover {
   opacity: 0.6;
 }
+
+/* ============================================================
+   Loader — Uiverse.io "dial" animation (by mrhyddenn)
+   Uses currentColor so it adapts to light/dark backgrounds.
+   ============================================================ */
+.loader {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid;
+  width: 30px;
+  height: 30px;
+  color: inherit;
+}
+
+.loader::after {
+  position: absolute;
+  width: 0px;
+  height: 10px;
+  display: block;
+  border-left: 1px solid;
+  content: '';
+  left: 14px;
+  border-radius: 1px;
+  top: 4px;
+  animation-duration: 1s;
+}
+
+.loader::before {
+  position: absolute;
+  width: 0px;
+  height: 10px;
+  display: block;
+  border-left: 1px solid;
+  content: '';
+  left: 14px;
+  border-radius: 1px;
+  top: 4px;
+  animation-duration: 40s;
+}
+
+.loader::before,
+.loader::after {
+  transform-origin: bottom;
+  animation-name: dial;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+@keyframes dial {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loader--sm {
+  width: 16px;
+  height: 16px;
+}
+
+.loader--sm::before,
+.loader--sm::after {
+  height: 6px;
+  left: 7px;
+  top: 2px;
+}
+
+.loader--lg {
+  width: 44px;
+  height: 44px;
+}
+
+.loader--lg::before,
+.loader--lg::after {
+  height: 15px;
+  left: 21px;
+  top: 6px;
+}

@@ -10,6 +10,7 @@ import { Download, Save, ArrowLeft, FileText } from "lucide-react";
 import { planToPlaceholderValues } from "@/lib/plan-to-placeholders";
 import type { TemplateMeta } from "@/lib/template-processor";
 import type { LessonPlanInput, GeneratedLessonPlan, GeneratedDLPPlan, WeeklyLessonPlan, PlanType } from "@/types/lesson-plan";
+import { Loader } from "@/components/Loader";
 
 export default function GeneratePage() {
   const [generatedPlan, setGeneratedPlan] = useState<GeneratedLessonPlan | GeneratedDLPPlan | WeeklyLessonPlan | null>(null);
@@ -206,11 +207,11 @@ export default function GeneratePage() {
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleSave} disabled={saving || saved}>
-              <Save className="mr-2 h-4 w-4" />
+              {saving ? <Loader size="sm" /> : <Save className="mr-2 h-4 w-4" />}
               {saved ? t("saved") : saving ? t("loading") : t("savePlan")}
             </Button>
             <Button onClick={handleDownload} disabled={downloading}>
-              <Download className="mr-2 h-4 w-4" />
+              {downloading ? <Loader size="sm" /> : <Download className="mr-2 h-4 w-4" />}
               {downloading ? t("loading") : t("downloadDocx")}
             </Button>
           </div>
@@ -230,11 +231,11 @@ export default function GeneratePage() {
 
         <div className="flex justify-center gap-2 pt-4">
           <Button variant="outline" onClick={handleSave} disabled={saving || saved}>
-            <Save className="mr-2 h-4 w-4" />
+            {saving ? <Loader size="sm" /> : <Save className="mr-2 h-4 w-4" />}
             {saved ? t("saved") : saving ? t("loading") : t("savePlan")}
           </Button>
           <Button onClick={handleDownload} disabled={downloading}>
-            <Download className="mr-2 h-4 w-4" />
+            {downloading ? <Loader size="sm" /> : <Download className="mr-2 h-4 w-4" />}
             {downloading ? t("loading") : t("downloadDocx")}
           </Button>
         </div>
@@ -249,7 +250,7 @@ export default function GeneratePage() {
               className="w-full max-w-md"
             >
               <FileText className="mr-2 h-4 w-4" />
-              {templateDownloading ? "Filling template..." : `Download using Template: ${selectedTemplate.name}`}
+              {templateDownloading ? <span className="flex items-center gap-2"><Loader size="sm" />Filling template...</span> : `Download using Template: ${selectedTemplate.name}`}
             </Button>
           </div>
         )}

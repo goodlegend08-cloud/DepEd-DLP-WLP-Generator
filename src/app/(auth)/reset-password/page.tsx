@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { Loader } from "@/components/Loader";
 
 export default function ResetPasswordPage() {
   return (
@@ -149,7 +150,14 @@ function ResetPasswordForm() {
           </button>
         </div>
         <button type="submit" className="auth-enter" style={{ marginBottom: 0 }} disabled={loading}>
-          {loading ? t("loading") : t("resetPassword")}
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader size="sm" />
+              {t("loading")}
+            </span>
+          ) : (
+            t("resetPassword")
+          )}
         </button>
       </form>
 

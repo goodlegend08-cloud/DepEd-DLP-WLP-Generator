@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { LessonPlanViewer } from "@/components/LessonPlanViewer";
 import { WLPViewer } from "@/components/WLPViewer";
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/Loader";
 import {
   Dialog,
   DialogContent,
@@ -157,7 +158,7 @@ export default function PlanDetailPage() {
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleDownload} disabled={downloading}>
-            <Download className="mr-2 h-4 w-4" />
+            {downloading ? <Loader size="sm" /> : <Download className="mr-2 h-4 w-4" />}
             {downloading ? t("loading") : t("downloadDocx")}
           </Button>
           <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
@@ -175,7 +176,7 @@ export default function PlanDetailPage() {
 
       <div className="flex justify-center gap-2 pt-4 pb-8">
         <Button variant="outline" onClick={handleDownload} disabled={downloading}>
-          <Download className="mr-2 h-4 w-4" />
+          {downloading ? <Loader size="sm" /> : <Download className="mr-2 h-4 w-4" />}
           {downloading ? t("loading") : t("downloadDocx")}
         </Button>
       </div>
@@ -193,7 +194,7 @@ export default function PlanDetailPage() {
               {t("cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? t("loading") : t("confirm")}
+              {deleting ? <span className="flex items-center gap-2"><Loader size="sm" />{t("loading")}</span> : t("confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

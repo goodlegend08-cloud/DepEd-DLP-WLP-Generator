@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { Loader } from "@/components/Loader";
 
 const ERROR_MESSAGES: Record<string, string> = {
   auth_callback_error: "Email confirmation failed. The link may have expired or already been used. Please try signing up again.",
@@ -104,7 +105,14 @@ function LoginForm() {
       </div>
 
       <button type="submit" className="auth-enter" disabled={loading}>
-        {loading ? t("loading") : t("login")}
+        {loading ? (
+          <span className="flex items-center justify-center gap-2">
+            <Loader size="sm" />
+            {t("loading")}
+          </span>
+        ) : (
+          t("login")
+        )}
       </button>
 
       <div className="auth-row">

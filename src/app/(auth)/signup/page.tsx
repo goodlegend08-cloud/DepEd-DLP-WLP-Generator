@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { Loader } from "@/components/Loader";
 import { getSiteUrl } from "@/lib/site-url";
 import {
   SecurityQuestionsField,
@@ -262,7 +263,14 @@ export default function SignupPage() {
               {t("back")}
             </button>
             <button type="submit" className="auth-enter" style={{ marginBottom: 0 }} disabled={loading}>
-              {loading ? t("loading") : t("signup")}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader size="sm" />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("signup")
+              )}
             </button>
           </div>
         </form>

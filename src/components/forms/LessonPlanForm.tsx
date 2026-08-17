@@ -17,9 +17,10 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Check, ArrowLeft, ArrowRight } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight } from "lucide-react";
 import { DBOWUpload } from "@/components/DBOWUpload";
 import { TemplateUpload } from "@/components/TemplateUpload";
+import { Loader } from "@/components/Loader";
 import type { DBOWEntry, DBOWData, DBOWMetadata } from "@/components/DBOWUpload";
 import type { TemplateMeta } from "@/lib/template-processor";
 import { computeDateForSequentialDay, computeDayNumberForDate, parseDateInput, formatLongDate, toISODate } from "@/lib/date-engine";
@@ -941,7 +942,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
             <Button type="submit" size="lg" className="flex-1 sm:flex-none" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   {t("generating")}
                 </>
               ) : planType === "wlp" ? (

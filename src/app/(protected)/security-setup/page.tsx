@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader } from "@/components/Loader";
 import {
   SecurityQuestionsField,
   type SecurityQuestionRow,
@@ -86,11 +87,9 @@ function SecuritySetupForm() {
 
   if (checking) {
     return (
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Loading...</CardTitle>
-        </CardHeader>
-      </Card>
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader size="lg" />
+      </div>
     );
   }
 

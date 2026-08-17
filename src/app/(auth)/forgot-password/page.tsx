@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import { Loader } from "@/components/Loader";
 
 export default function ForgotPasswordPage() {
   return (
@@ -125,7 +126,14 @@ function ForgotPasswordForm() {
             );
           })}
           <button type="submit" className="auth-enter" style={{ marginBottom: 0 }} disabled={loading}>
-            {loading ? t("loading") : t("verifyAnswers")}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader size="sm" />
+                {t("loading")}
+              </span>
+            ) : (
+              t("verifyAnswers")
+            )}
           </button>
         </form>
 
@@ -175,7 +183,14 @@ function ForgotPasswordForm() {
           without a reset email.
         </p>
         <button type="submit" className="auth-enter" style={{ marginBottom: 0 }} disabled={loading}>
-          {loading ? t("loading") : t("continue")}
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader size="sm" />
+              {t("loading")}
+            </span>
+          ) : (
+            t("continue")
+          )}
         </button>
       </form>
 

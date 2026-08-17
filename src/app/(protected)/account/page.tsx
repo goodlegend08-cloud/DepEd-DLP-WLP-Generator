@@ -13,6 +13,7 @@ import {
 import { MIN_SECURITY_QUESTIONS } from "@/lib/security-questions";
 import { ShieldCheck, Lock } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { Loader } from "@/components/Loader";
 
 export default function AccountPage() {
   return (
@@ -124,11 +125,9 @@ function AccountForm() {
 
   if (!user) {
     return (
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Loading...</CardTitle>
-        </CardHeader>
-      </Card>
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader size="lg" />
+      </div>
     );
   }
 
