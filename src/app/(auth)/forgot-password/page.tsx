@@ -3,10 +3,6 @@
 import { useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n";
 
 export default function ForgotPasswordPage() {
@@ -107,106 +103,90 @@ function ForgotPasswordForm() {
 
   if (questions.length > 0) {
     return (
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">
-            {t("forgotPassword")}
-          </CardTitle>
-          <CardDescription>
-            Answer your security questions to verify your identity.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleVerify}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
+      <div className="auth-card">
+        <span className="auth-singup">{t("forgotPassword")}</span>
+
+        <form className="auth-field-group" onSubmit={handleVerify}>
+          {error && <p className="auth-msg">{error}</p>}
+          {questions.map((q, index) => {
+            const question = toQuestionString(q);
+            return (
+              <div key={`${index}-${question}`} className="auth-inputBox1">
+                <input
+                  id={`answer-${index}`}
+                  type="text"
+                  autoComplete="off"
+                  required
+                  value={answers[question] ?? ""}
+                  onChange={(e) => setAnswers((prev) => ({ ...prev, [question]: e.target.value }))}
+                />
+                <span>{question}</span>
               </div>
-            )}
-            {questions.map((q, index) => {
-              const question = toQuestionString(q);
-              return (
-                <div key={`${index}-${question}`} className="space-y-2">
-                  <Label htmlFor={`answer-${index}`}>{question}</Label>
-                  <Input
-                    id={`answer-${index}`}
-                    type="text"
-                    autoComplete="off"
-                    placeholder="Your answer"
-                    value={answers[question] ?? ""}
-                    onChange={(e) => setAnswers((prev) => ({ ...prev, [question]: e.target.value }))}
-                    required
-                  />
-                </div>
-              );
-            })}
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? t("loading") : t("verifyAnswers")}
-            </Button>
-            <button
-              type="button"
-              onClick={() => {
-                setQuestions([]);
-                setAnswers({});
-                setError(null);
-              }}
-              className="text-sm text-muted-foreground underline"
-            >
-              Back
-            </button>
-          </CardFooter>
+            );
+          })}
+          <button type="submit" className="auth-enter" style={{ marginBottom: 0 }} disabled={loading}>
+            {loading ? t("loading") : t("verifyAnswers")}
+          </button>
         </form>
-      </Card>
+
+        <div className="auth-row">
+          <button
+            type="button"
+            onClick={() => {
+              setQuestions([]);
+              setAnswers({});
+              setError(null);
+            }}
+            className="auth-link"
+          >
+            Back
+          </button>
+          <span className="text-xs text-black/70">
+            {t("rememberPassword")}{" "}
+            <Link href="/login" className="auth-link">
+              {t("login")}
+            </Link>
+          </span>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">
-          {t("forgotPassword")}
-        </CardTitle>
-        <CardDescription>
-          {t("forgotPasswordDesc")}
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleLookup}>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email">{t("email")}</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="teacher@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Enter your email. We&apos;ll show your security questions so you can reset your password
-            without a reset email.
-          </p>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? t("loading") : t("continue")}
-          </Button>
-          <p className="text-sm text-muted-foreground">
-            {t("rememberPassword")}{" "}
-            <Link href="/login" className="text-primary underline">
-              {t("login")}
-            </Link>
-          </p>
-        </CardFooter>
+    <div className="auth-card">
+      <span className="auth-singup">{t("forgotPassword")}</span>
+
+      {error && <p className="auth-msg">{error}</p>}
+
+      <form className="auth-field-group" onSubmit={handleLookup}>
+        <div className="auth-inputBox1">
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+          <span>{t("email")}</span>
+        </div>
+        <p className="auth-msg" style={{ color: "#000", textTransform: "none", textAlign: "center", maxWidth: "220px" }}>
+          Enter your email. We&apos;ll show your security questions so you can reset your password
+          without a reset email.
+        </p>
+        <button type="submit" className="auth-enter" style={{ marginBottom: 0 }} disabled={loading}>
+          {loading ? t("loading") : t("continue")}
+        </button>
       </form>
-    </Card>
+
+      <div className="auth-row">
+        <span className="text-xs text-black/70">
+          {t("rememberPassword")}{" "}
+          <Link href="/login" className="auth-link">
+            {t("login")}
+          </Link>
+        </span>
+      </div>
+    </div>
   );
 }
