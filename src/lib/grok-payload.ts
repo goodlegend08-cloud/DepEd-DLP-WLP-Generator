@@ -100,7 +100,8 @@ Always generate the exact signatory block at the very bottom:
 **Checked & Reviewed:**
 **TRIXIA A. PALMOS** — Master Teacher II - Science
 **CARMELITA G. YAP** — SCIENCE Coordinator
-**JEANETTE J. RUGA, Ph.D.** — Assistant School Principal II / Officer-in-Charge
+**JEANETTE J. RUGA, Ph.D.** — Assistant School Principal II
+Officer-in-Charge
 
 **Noted:**
 **MILDRED T. TUBLE** — Public Schools District Supervisor – Cluster I

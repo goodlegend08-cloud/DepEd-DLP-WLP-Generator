@@ -323,7 +323,8 @@ export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
             <div className="flex-1 text-center">
               <p className="text-[12pt] font-bold uppercase">Jeanette J. Ruga, Ph.D.</p>
               <div className="mx-auto my-1 border-b-2 border-black w-52" />
-              <p className="text-[11pt] italic">Assistant school Principal II / Officer – in – Charge</p>
+              <p className="text-[11pt] italic leading-tight whitespace-pre-wrap">Assistant School Principal II
+Officer-in-Charge</p>
             </div>
           </div>
         </div>

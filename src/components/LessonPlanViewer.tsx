@@ -212,7 +212,7 @@ function ProcedureStep({ label, content, onEdit }: { label: string; content: str
 const DEFAULT_CHECKED = [
   { name: "TRIXIA A. PALMOS", title: "Master Teacher II - Science" },
   { name: "CARMELITA G. YAP", title: "SCIENCE Coordinator" },
-  { name: "Jeanette J. Ruga, Ph.D.", title: "Assistant school Principal II / Officer – in – Charge" },
+  { name: "Jeanette J. Ruga, Ph.D.", title: "Assistant School Principal II\nOfficer-in-Charge" },
 ];
 const DEFAULT_NOTED = [
   { name: "MILDRED T. TUBLE", title: "Public Schools District Supervisor – Cluster I" },
@@ -229,7 +229,7 @@ function SignatureColumn({ name, title }: { name: string; title: string }) {
     <div className="flex-1 text-center">
       <p className="text-[12pt] font-bold uppercase">{name}</p>
       <SignatureRule />
-      <p className="text-[11pt] italic whitespace-pre-wrap">{title}</p>
+      <p className="text-[11pt] italic leading-tight whitespace-pre-wrap">{title}</p>
     </div>
   );
 }

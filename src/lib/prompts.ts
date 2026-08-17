@@ -171,7 +171,7 @@ OUTPUT SCHEMA (strict JSON):
       },
       {
         "name": "Jeanette J. Ruga, Ph.D.",
-        "title": "Assistant School Principal II / Officer-in-Charge"
+        "title": "Assistant School Principal II\nOfficer-in-Charge"
       }
     ],
     "noted_by": [

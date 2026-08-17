@@ -14,6 +14,7 @@ import {
   VerticalAlign,
   TabStopType,
   UnderlineType,
+  LineRuleType,
 } from "docx";
 import type { ITableCellBorders } from "docx";
 import fs from "fs";
@@ -37,7 +38,7 @@ const BANNER_FILL = "D9D9D9";
 const DEFAULT_CHECKED = [
   { name: "TRIXIA A. PALMOS", title: "Master Teacher II - Science" },
   { name: "CARMELITA G. YAP", title: "SCIENCE Coordinator" },
-  { name: "Jeanette J. Ruga, Ph.D.", title: "Assistant school Principal II / Officer – in – Charge" },
+  { name: "Jeanette J. Ruga, Ph.D.", title: "Assistant School Principal II\nOfficer-in-Charge" },
 ];
 const DEFAULT_NOTED = [
   { name: "MILDRED T. TUBLE", title: "Public Schools District Supervisor – Cluster I" },
@@ -372,13 +373,15 @@ function signatureColumns(
   const buildRow = (cells: string[], bold: boolean, italics: boolean, size: number): Paragraph =>
     new Paragraph({
       tabStops,
-      spacing: { before: 20, after: 20 },
-      children: [
-        ...cells.flatMap((cell) => [
+      spacing: { before: 20, after: 20, line: 240, lineRule: LineRuleType.AUTO },
+      children: cells.flatMap((cell) => {
+        const lines = cell.split("\n");
+        return lines.flatMap((line, i) => [
+          ...(i > 0 ? [new TextRun({ break: 1, font: "Times New Roman", size })] : []),
           new TextRun({ text: "\t", font: "Times New Roman", size }),
-          new TextRun({ text: cell, bold, italics, font: "Times New Roman", size }),
-        ]),
-      ],
+          new TextRun({ text: line, bold, italics, font: "Times New Roman", size }),
+        ]);
+      }),
     });
 
   return [
