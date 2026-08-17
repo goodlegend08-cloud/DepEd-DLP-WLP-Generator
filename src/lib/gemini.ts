@@ -99,6 +99,13 @@ export async function generateFromPayload(
   };
 
   const providers: { name: string; client: OpenAI; model?: string }[] = [];
+  if (process.env.CEREBRAS_API_KEY) {
+    providers.push({
+      name: "cerebras",
+      client: getCerebras(),
+      model: process.env.CEREBRAS_MODEL || "gpt-oss-120b",
+    });
+  }
   if (process.env.GROQ_API_KEY) {
     providers.push({
       name: "groq",
@@ -125,13 +132,6 @@ export async function generateFromPayload(
       name: "gemini",
       client: getGemini(),
       model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
-    });
-  }
-  if (process.env.CEREBRAS_API_KEY) {
-    providers.push({
-      name: "cerebras",
-      client: getCerebras(),
-      model: process.env.CEREBRAS_MODEL || "gpt-oss-120b",
     });
   }
   if (providers.length === 0) {
