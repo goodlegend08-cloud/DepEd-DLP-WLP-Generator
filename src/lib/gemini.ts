@@ -79,6 +79,24 @@ export async function generateFromPayload(
     checkRateLimit(userId);
   }
 
+  // TPM/quota errors (HTTP 413 "Request too large", "tokens per minute") are
+  // hard limits that retrying won't fix, so they fall through to the next
+  // provider immediately instead of backing off.
+  const isQuotaExceededError = (error: unknown): boolean => {
+    const message = error instanceof Error ? error.message : String(error);
+    const status =
+      typeof error === "object" && error !== null && "status" in error
+        ? (error as { status?: unknown }).status
+        : undefined;
+    return (
+      status === 413 ||
+      message.includes("413") ||
+      message.includes("Request too large") ||
+      message.includes("tokens per minute") ||
+      message.includes("(TPM)")
+    );
+  };
+
   const isRateLimitError = (error: unknown): boolean => {
     const message = error instanceof Error ? error.message : String(error);
     return (
@@ -137,6 +155,12 @@ export async function generateFromPayload(
           const delay = Math.pow(2, attempt + 1) * 5000;
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
+        }
+
+        // Hard TPM/quota cap on this provider: skip backoff and fall through
+        // to the next provider immediately.
+        if (isQuotaExceededError(error)) {
+          break;
         }
 
         // Non-retryable failure on this provider. Fall through to the next
