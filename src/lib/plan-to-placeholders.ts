@@ -70,8 +70,10 @@ export function planToPlaceholderValues(plan: GeneratedDLPPlan): Record<string, 
 
   return {
     CALENDAR_DATE: lesson_plan_meta.calendar_date || "",
-    WEEK_NUMBER: lesson_plan_meta.week_number || "",
-    DAY_NUMBER: lesson_plan_meta.day_number || "",
+    // Strip the redundant "Week"/"Day" prefix so templates with a baked-in
+    // "Week: {{WEEK_NUMBER}}" label render "Week: 9" instead of "Week: Week 9".
+    WEEK_NUMBER: (lesson_plan_meta.week_number || "").replace(/^week\s*/i, ""),
+    DAY_NUMBER: (lesson_plan_meta.day_number || "").replace(/^day\s*/i, ""),
     TEACHER_NAME: lesson_plan_meta.teacher_name || "",
     GRADE_AND_SECTION: lesson_plan_meta.grade_and_section || "",
     LEARNING_AREA: lesson_plan_meta.learning_area || "",

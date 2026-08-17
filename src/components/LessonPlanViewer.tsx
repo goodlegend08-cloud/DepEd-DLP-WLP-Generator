@@ -79,15 +79,15 @@ function MetaRow({ label, children }: { label: ReactNode; children: ReactNode })
 
 /**
  * Declaration of AI Use label with exact inline typography:
- * - "Declaration of AI Use": 12pt bold regular
- * - "(Cite how AI was used in the formulation of the lesson plan.)": 8pt normal italic
+ * - "Declaration of AI Use": 10pt regular (not bold), underlined
+ * - "(Cite how AI was used in the formulation of the lesson plan.)": 10pt italic
  * - "See DO 3 s.2026 Annex A": 8pt bold italic
  */
 function AiDeclarationLabel() {
   return (
     <div className="space-y-1">
-      <p className="text-[12pt] font-bold">Declaration of AI Use</p>
-      <p className="text-[8pt] italic">(Cite how AI was used in the formulation of the lesson plan.)</p>
+      <p className="text-[10pt] font-normal underline">Declaration of AI Use</p>
+      <p className="text-[10pt] italic">(Cite how AI was used in the formulation of the lesson plan.)</p>
       <p className="text-[8pt] font-bold italic">See DO 3 s.2026 Annex A</p>
     </div>
   );
@@ -354,9 +354,11 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
           </MetaRow>
           <MetaRow label="Date, Week, Day">
             <EditableText value={lesson_plan_meta.calendar_date} onEdit={(v) => onEdit?.("lesson_plan_meta.calendar_date", v)} />{" | "}
-            <span className="font-semibold">Week:</span>{" "}
+            {!/^week\b/i.test(lesson_plan_meta.week_number) && <span className="font-semibold">Week:</span>}
+            {!/^week\b/i.test(lesson_plan_meta.week_number) && " "}
             <EditableText value={lesson_plan_meta.week_number} onEdit={(v) => onEdit?.("lesson_plan_meta.week_number", v)} />{" | "}
-            <span className="font-semibold">Day:</span>{" "}
+            {!/^day\b/i.test(lesson_plan_meta.day_number) && <span className="font-semibold">Day:</span>}
+            {!/^day\b/i.test(lesson_plan_meta.day_number) && " "}
             <EditableText value={lesson_plan_meta.day_number} onEdit={(v) => onEdit?.("lesson_plan_meta.day_number", v)} />
           </MetaRow>
           <MetaRow label="Designed by teacher/s">

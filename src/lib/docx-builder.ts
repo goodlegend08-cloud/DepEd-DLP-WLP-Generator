@@ -118,8 +118,8 @@ function metaLabelCell(label: string): TableCell {
 
 /**
  * Declaration of AI Use label cell with exact inline typography:
- * - "Declaration of AI Use": 12pt bold regular
- * - "(Cite how AI was used in the formulation of the lesson plan.)": 8pt normal italic
+ * - "Declaration of AI Use": 10pt regular (not bold), underlined
+ * - "(Cite how AI was used in the formulation of the lesson plan.)": 10pt italic
  * - "See DO 3 s.2026 Annex A": 8pt bold italic
  */
 function aiDeclarationLabelCell(): TableCell {
@@ -130,11 +130,11 @@ function aiDeclarationLabelCell(): TableCell {
     children: [
       new Paragraph({
         spacing: { before: 40, after: 20 },
-        children: [new TextRun({ text: "Declaration of AI Use", bold: true, font: "Times New Roman", size: 24 })],
+        children: [new TextRun({ text: "Declaration of AI Use", bold: false, underline: { type: UnderlineType.SINGLE }, font: "Times New Roman", size: 20 })],
       }),
       new Paragraph({
         spacing: { before: 20, after: 20 },
-        children: [new TextRun({ text: "(Cite how AI was used in the formulation of the lesson plan.)", italics: true, font: "Times New Roman", size: 16 })],
+        children: [new TextRun({ text: "(Cite how AI was used in the formulation of the lesson plan.)", italics: true, font: "Times New Roman", size: 20 })],
       }),
       new Paragraph({
         spacing: { before: 20, after: 40 },
@@ -327,6 +327,18 @@ function kvRow(label: string, value: string): TableRow {
 /** Metadata table row: 10pt regular label (not bold) + content. */
 function kvMetaRow(label: string, value: string): TableRow {
   return new TableRow({ children: [metaLabelCell(label), contentCell(value)] });
+}
+
+/**
+ * Format a labeled value, stripping a redundant prefix. Handles values that
+ * already include their label (e.g. "Week 9", "Day 45") so output stays
+ * "Week 9" / "Day 45" instead of "Week: Week 9" / "Day: Day 45".
+ */
+function labeledValue(value: string, label: string): string {
+  const v = (value || "").trim();
+  if (!v) return "";
+  const prefix = new RegExp(`^${label}\\b`, "i");
+  return prefix.test(v) ? v : `${label}: ${v}`;
 }
 
 /** Declaration of AI Use row with its special label cell. */
@@ -567,7 +579,7 @@ export async function buildDocx(
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               kvMetaRow("Name of Lesson", lessonTitle),
-              kvMetaRow("Date, Week, Day", `${lesson_plan_meta.calendar_date} | Week: ${lesson_plan_meta.week_number} | Day: ${lesson_plan_meta.day_number}`),
+              kvMetaRow("Date, Week, Day", `${lesson_plan_meta.calendar_date} | ${labeledValue(lesson_plan_meta.week_number, "Week")} | ${labeledValue(lesson_plan_meta.day_number, "Day")}`),
               kvMetaRow("Designed by teacher/s", lesson_plan_meta.teacher_name),
               kvMetaRow("Designed for which Grade Level and Section", lesson_plan_meta.grade_and_section),
               kvMetaRow("No. of Sessions", lesson_plan_meta.sessions),
