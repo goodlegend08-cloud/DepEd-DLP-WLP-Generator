@@ -79,13 +79,21 @@ export interface GenerationResult {
   model: string;
 }
 
+export interface ProviderStatus {
+  provider: string;
+  model: string;
+  status: "trying" | "failed" | "succeeded";
+  error?: string;
+}
+
 export async function generateFromPayload(
   payload: {
     model: string;
     temperature?: number;
     messages: ChatMessage[];
   },
-  userId?: string
+  userId?: string,
+  onStatus?: (status: ProviderStatus) => void
 ): Promise<GenerationResult> {
   if (userId) {
     checkRateLimit(userId);
@@ -156,23 +164,32 @@ export async function generateFromPayload(
   let firstError: Error | null = null;
 
   for (const provider of providers) {
+    const model = provider.model || payload.model;
     try {
+      onStatus?.({ provider: provider.name, model, status: "trying" });
       const result = await provider.client.chat.completions.create({
-        model: provider.model || payload.model,
+        model,
         messages: payload.messages,
         temperature: payload.temperature ?? 0.7,
         top_p: 0.9,
         max_tokens: 8192,
       });
 
+      onStatus?.({ provider: provider.name, model, status: "succeeded" });
       return {
         content: result.choices[0].message.content ?? "",
         provider: provider.name,
-        model: provider.model || payload.model,
+        model,
       };
     } catch (error) {
       lastError = error as Error;
       if (!firstError) firstError = lastError;
+      onStatus?.({
+        provider: provider.name,
+        model,
+        status: "failed",
+        error: lastError.message,
+      });
       // Any failure (rate limit, TPM/quota, unknown model, auth, etc.) falls
       // through to the next provider immediately — no backoff, so a broken
       // provider never stalls generation.
@@ -189,7 +206,8 @@ export async function generateFromPayload(
 export async function generateLessonPlan(
   systemPrompt: string,
   userPrompt: string,
-  userId?: string
+  userId?: string,
+  onStatus?: (status: ProviderStatus) => void
 ): Promise<GenerationResult> {
   return generateFromPayload(
     {
@@ -200,6 +218,7 @@ export async function generateLessonPlan(
         { role: "user", content: userPrompt },
       ],
     },
-    userId
+    userId,
+    onStatus
   );
 }

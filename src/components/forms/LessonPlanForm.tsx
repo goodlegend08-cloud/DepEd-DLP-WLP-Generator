@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, ArrowLeft, ArrowRight } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight, X } from "lucide-react";
 import { DBOWUpload } from "@/components/DBOWUpload";
 import { TemplateUpload } from "@/components/TemplateUpload";
 import { Loader } from "@/components/Loader";
@@ -134,6 +134,9 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<
+    { provider?: string; model?: string; status?: string; error?: string }[]
+  >([]);
   const [selectedDBOW, setSelectedDBOW] = useState<DBOWEntry | null>(null);
   const [selectedWeekEntries, setSelectedWeekEntries] = useState<DBOWEntry[]>([]);
   const [weekDates, setWeekDates] = useState<WeekDates>({
@@ -479,6 +482,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
   const onSubmit = async (data: LessonPlanInput) => {
     setLoading(true);
     setError(null);
+    setAiStatus([]);
 
     // Add planType, DBOW entry, template, and start date to the payload
     const isWeek = planType === "wlp";
@@ -515,11 +519,62 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
         throw new Error(errData.error || "Failed to generate lesson plan");
       }
 
-      const result = await response.json();
-      onGenerated(result.lessonPlan, data, {
-        provider: result.aiProvider,
-        model: result.aiModel,
-      });
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Streaming not supported by this browser");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let planResult: {
+        lessonPlan?: unknown;
+        aiProvider?: string;
+        aiModel?: string;
+      } | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          let evt: {
+            type?: string;
+            error?: string;
+            lessonPlan?: unknown;
+            aiProvider?: string;
+            aiModel?: string;
+            provider?: string;
+            model?: string;
+            status?: string;
+          };
+          try {
+            evt = JSON.parse(trimmed);
+          } catch {
+            continue;
+          }
+          if (evt.type === "provider") {
+            setAiStatus((prev) => [...prev, evt]);
+          } else if (evt.type === "result") {
+            planResult = evt;
+          } else if (evt.type === "error") {
+            throw new Error(evt.error || "Failed to generate lesson plan");
+          }
+        }
+      }
+
+      if (!planResult?.lessonPlan) {
+        throw new Error("No lesson plan was generated");
+      }
+      onGenerated(
+        planResult.lessonPlan as GeneratedLessonPlan | GeneratedDLPPlan | WeeklyLessonPlan,
+        data,
+        {
+          provider: planResult.aiProvider,
+          model: planResult.aiModel,
+        }
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
@@ -958,6 +1013,59 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                 t("generatePlan")
               )}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl border bg-card p-6 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <Loader size="md" />
+              <div>
+                <p className="font-semibold">{t("generating")}</p>
+                <p className="text-sm text-muted-foreground">{t("aiStatusTitle")}</p>
+              </div>
+            </div>
+
+            {aiStatus.length > 0 && (
+              <ul className="mt-5 space-y-2">
+                {aiStatus.map((s, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                  >
+                    <span
+                      className={
+                        s.status === "failed"
+                          ? "text-red-500"
+                          : s.status === "succeeded"
+                            ? "text-green-600"
+                            : "text-primary"
+                      }
+                    >
+                      {s.status === "failed" ? (
+                        <X className="h-4 w-4" />
+                      ) : s.status === "succeeded" ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Loader size="sm" />
+                      )}
+                    </span>
+                    <span className="flex-1 truncate font-medium">
+                      {s.provider}/{s.model}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {s.status === "trying"
+                        ? t("aiStatusTrying")
+                        : s.status === "failed"
+                          ? t("aiStatusFailed")
+                          : t("aiStatusReady")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       )}

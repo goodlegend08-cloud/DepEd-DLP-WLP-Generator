@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { generateLessonPlan, generateFromPayload } from "@/lib/gemini";
+import { generateLessonPlan, generateFromPayload, type ProviderStatus } from "@/lib/gemini";
 import { buildSystemPrompt, buildUserPrompt, buildWLPSystemPrompt, buildWLPUserPrompt, ILAW_JSON_OUTPUT_CONTRACT } from "@/lib/prompts";
 import { buildDynamicSystemPrompt, buildGrokPayload, buildUserInstruction, matchDBOWRowByDayNumber } from "@/lib/grok-payload";
 import { computeDateForSequentialDay, computeDayNumberForDate, parseDateInput, formatLongDate } from "@/lib/date-engine";
@@ -9,6 +8,16 @@ import { loadTemplatesMeta, extractTemplateStructure, TEMPLATES_DIR } from "@/li
 import path from "path";
 import fs from "fs/promises";
 import type { LessonPlanInput, GeneratedLessonPlan, GeneratedDLPPlan, WeeklyLessonPlan, PlanType, DBOWEntryPayload, DLPLessonPlanMeta } from "@/types/lesson-plan";
+
+/**
+ * Streams progress to the client as newline-delimited JSON:
+ *   {"type":"provider","provider":"groq","model":"...","status":"trying"}
+ *   {"type":"result","lessonPlan":{...},"planType":"dlp",...}
+ *   {"type":"error","error":"..."}
+ */
+type Emit = (
+  event: { type: "provider" | "result" | "error" } & Record<string, unknown>
+) => void;
 
 function parseWeekNumber(weekRange?: string): number | null {
   if (!weekRange) return null;
@@ -378,7 +387,12 @@ function applyDeterministicMeta(
  * Generalized pipeline (Date Engine + Dynamic Grok prompt + uploaded template layout).
  * Used when the user has selected a DBOW entry AND a .docx template.
  */
-async function handleGeneralized(input: LessonPlanInput, userId: string) {
+async function handleGeneralized(
+  input: LessonPlanInput,
+  userId: string,
+  emit: Emit,
+  onStatus: (status: ProviderStatus) => void
+) {
   const { templateId } = input;
   const { targetDate, targetWeek, dayLabel, derivedDate, resolvedRow } = resolveDBOWDate(input);
 
@@ -425,14 +439,12 @@ async function handleGeneralized(input: LessonPlanInput, userId: string) {
     `DBOW Context:\n${(dbowRawTextForPrompt(input)).substring(0, 4000)}`;
 
   const payload = buildGrokPayload(payloadData, userContent, { systemPrompt });
-  const genResult = await generateFromPayload(payload, userId);
+  const genResult = await generateFromPayload(payload, userId, onStatus);
   const parsed = parseAIJSON(genResult.content, genResult.provider, genResult.model) as GeneratedDLPPlan;
 
   if (!parsed.header || !parsed.lesson_plan_meta || !parsed.intentions) {
-    return NextResponse.json(
-      { error: "Invalid DLP response structure from AI" },
-      { status: 500 }
-    );
+    emit({ type: "error", error: "Invalid DLP response structure from AI" });
+    return;
   }
 
   const dlpPlan: GeneratedDLPPlan = parsed;
@@ -483,7 +495,8 @@ async function handleGeneralized(input: LessonPlanInput, userId: string) {
     ((dlpPlan.ways_forward as unknown as Record<string, unknown>).reflection?.toString() as string | undefined) ||
     DEFAULT_REFLEXIONS;
 
-  return NextResponse.json({
+  return emit({
+    type: "result",
     lessonPlan: dlpPlan,
     planType: "dlp",
     aiProvider: genResult.provider,
@@ -499,120 +512,145 @@ function dbowRawTextForPrompt(input: LessonPlanInput): string {
 }
 
 export async function POST(request: Request) {
-  try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const encoder = new TextEncoder();
+  // Holder object so TypeScript doesn't narrow the controller to `never`
+  // inside the closures below.
+  const state: { controller: ReadableStreamDefaultController<Uint8Array> | null } = {
+    controller: null,
+  };
 
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const stream = new ReadableStream<Uint8Array>({
+    start(c) {
+      state.controller = c;
+    },
+  });
+
+  const emit: Emit = (event) => {
+    try {
+      state.controller?.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+    } catch {
+      // Stream may already be closed; ignore.
     }
+  };
+  const onStatus = (status: ProviderStatus) =>
+    emit({ type: "provider", ...status });
 
-    const input: LessonPlanInput = await request.json();
+  (async () => {
+    try {
+      const supabase = await createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    // Validate required fields
-    if (!input.gradeLevel || !input.learningArea || !input.quarter || !input.week) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Generalized path: DBOW entry + uploaded template + start date
-    if (input.dbowEntry && input.templateId) {
-      return handleGeneralized(input, user.id);
-    }
-
-    const planType: PlanType = input.planType || "dlp";
-
-    let systemPrompt: string;
-    let userPrompt: string;
-
-    if (planType === "wlp") {
-      systemPrompt = buildWLPSystemPrompt(
-        input.curriculumType,
-        input.teachingMethod,
-        input.teachingMethodCustom
-      );
-      userPrompt = buildWLPUserPrompt({
-        gradeLevel: input.gradeLevel,
-        learningArea: input.learningArea,
-        quarter: input.quarter,
-        week: input.week,
-        subjectDescription: input.subjectDescription,
-        competencies: input.competencies,
-        coiTags: input.coiTags,
-        weekDates: input.weekDates,
-      });
-    } else {
-      systemPrompt = buildSystemPrompt(
-        input.curriculumType,
-        input.teachingMethod,
-        input.teachingMethodCustom
-      );
-      userPrompt = buildUserPrompt({
-        gradeLevel: input.gradeLevel,
-        learningArea: input.learningArea,
-        quarter: input.quarter,
-        week: input.week,
-        subjectDescription: input.subjectDescription,
-        competencies: input.competencies,
-        coiTags: input.coiTags,
-        teacherName: input.teacherName,
-        schoolName: input.schoolName,
-        dayNumber: input.dayNumber,
-        calendarDate: input.calendarDate,
-      });
-    }
-
-    const genResult = await generateLessonPlan(systemPrompt, userPrompt, user.id);
-
-    if (planType === "wlp") {
-      const weeklyPlan: WeeklyLessonPlan = normalizeWeeklyPlan(
-        parseAIJSON(genResult.content, genResult.provider, genResult.model) as Record<string, unknown>
-      );
-
-      if (
-        !weeklyPlan.monday ||
-        !weeklyPlan.tuesday ||
-        !weeklyPlan.wednesday ||
-        !weeklyPlan.thursday ||
-        !weeklyPlan.friday ||
-        !weeklyPlan.weeklyObjectives
-      ) {
-        return NextResponse.json(
-          { error: "Invalid WLP response structure from AI" },
-          { status: 500 }
-        );
+      if (authError || !user) {
+        emit({ type: "error", error: "Unauthorized" });
+        return;
       }
 
-      // Deterministic date override: inject the official week dates (if
-      // provided) so the AI's invented dates are corrected.
-      const wd = input.weekDates;
-      const dayMap: { key: "monday" | "tuesday" | "wednesday" | "thursday" | "friday"; slot: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" }[] = [
-        { key: "monday", slot: "monday" },
-        { key: "tuesday", slot: "tuesday" },
-        { key: "wednesday", slot: "wednesday" },
-        { key: "thursday", slot: "thursday" },
-        { key: "friday", slot: "friday" },
-      ];
-      if (wd) {
-        for (const { key, slot } of dayMap) {
-          const dateStr = wd[key];
-          if (!dateStr) continue;
-          const parsedDate = parseDateInput(dateStr);
-          if (parsedDate) {
-            weeklyPlan[slot].date = formatLongDate(parsedDate);
+      const input: LessonPlanInput = await request.json();
+
+      // Validate required fields
+      if (!input.gradeLevel || !input.learningArea || !input.quarter || !input.week) {
+        emit({ type: "error", error: "Missing required fields" });
+        return;
+      }
+
+      // Generalized path: DBOW entry + uploaded template + start date
+      if (input.dbowEntry && input.templateId) {
+        await handleGeneralized(input, user.id, emit, onStatus);
+        return;
+      }
+
+      const planType: PlanType = input.planType || "dlp";
+
+      let systemPrompt: string;
+      let userPrompt: string;
+
+      if (planType === "wlp") {
+        systemPrompt = buildWLPSystemPrompt(
+          input.curriculumType,
+          input.teachingMethod,
+          input.teachingMethodCustom
+        );
+        userPrompt = buildWLPUserPrompt({
+          gradeLevel: input.gradeLevel,
+          learningArea: input.learningArea,
+          quarter: input.quarter,
+          week: input.week,
+          subjectDescription: input.subjectDescription,
+          competencies: input.competencies,
+          coiTags: input.coiTags,
+          weekDates: input.weekDates,
+        });
+      } else {
+        systemPrompt = buildSystemPrompt(
+          input.curriculumType,
+          input.teachingMethod,
+          input.teachingMethodCustom
+        );
+        userPrompt = buildUserPrompt({
+          gradeLevel: input.gradeLevel,
+          learningArea: input.learningArea,
+          quarter: input.quarter,
+          week: input.week,
+          subjectDescription: input.subjectDescription,
+          competencies: input.competencies,
+          coiTags: input.coiTags,
+          teacherName: input.teacherName,
+          schoolName: input.schoolName,
+          dayNumber: input.dayNumber,
+          calendarDate: input.calendarDate,
+        });
+      }
+
+      const genResult = await generateLessonPlan(systemPrompt, userPrompt, user.id, onStatus);
+
+      if (planType === "wlp") {
+        const weeklyPlan: WeeklyLessonPlan = normalizeWeeklyPlan(
+          parseAIJSON(genResult.content, genResult.provider, genResult.model) as Record<string, unknown>
+        );
+
+        if (
+          !weeklyPlan.monday ||
+          !weeklyPlan.tuesday ||
+          !weeklyPlan.wednesday ||
+          !weeklyPlan.thursday ||
+          !weeklyPlan.friday ||
+          !weeklyPlan.weeklyObjectives
+        ) {
+          emit({ type: "error", error: "Invalid WLP response structure from AI" });
+          return;
+        }
+
+        // Deterministic date override: inject the official week dates (if
+        // provided) so the AI's invented dates are corrected.
+        const wd = input.weekDates;
+        const dayMap: { key: "monday" | "tuesday" | "wednesday" | "thursday" | "friday"; slot: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" }[] = [
+          { key: "monday", slot: "monday" },
+          { key: "tuesday", slot: "tuesday" },
+          { key: "wednesday", slot: "wednesday" },
+          { key: "thursday", slot: "thursday" },
+          { key: "friday", slot: "friday" },
+        ];
+        if (wd) {
+          for (const { key, slot } of dayMap) {
+            const dateStr = wd[key];
+            if (!dateStr) continue;
+            const parsedDate = parseDateInput(dateStr);
+            if (parsedDate) {
+              weeklyPlan[slot].date = formatLongDate(parsedDate);
+            }
           }
         }
+
+        emit({
+          type: "result",
+          lessonPlan: weeklyPlan,
+          planType: "wlp",
+          aiProvider: genResult.provider,
+          aiModel: genResult.model,
+        });
+        return;
       }
 
-      return NextResponse.json({
-        lessonPlan: weeklyPlan,
-        planType: "wlp",
-        aiProvider: genResult.provider,
-        aiModel: genResult.model,
-      });
-    } else {
       const parsed = parseAIJSON(genResult.content, genResult.provider, genResult.model) as GeneratedDLPPlan;
 
       // Check if it's the new ILAW format (has header, lesson_plan_meta, intentions)
@@ -638,10 +676,8 @@ export async function POST(request: Request) {
           !dlpPlan.ways_forward ||
           !dlpPlan.signatories
         ) {
-          return NextResponse.json(
-            { error: "Invalid DLP response structure from AI" },
-            { status: 500 }
-          );
+          emit({ type: "error", error: "Invalid DLP response structure from AI" });
+          return;
         }
 
         // Force the EXACT DBOW unit competency and day objective into the
@@ -687,12 +723,14 @@ export async function POST(request: Request) {
           ((dlpPlan.ways_forward as unknown as Record<string, unknown>).reflection?.toString() as string | undefined) ||
           DEFAULT_REFLEXIONS;
 
-        return NextResponse.json({
+        emit({
+          type: "result",
           lessonPlan: dlpPlan,
           planType: "dlp",
           aiProvider: genResult.provider,
           aiModel: genResult.model,
         });
+        return;
       }
 
       // Fallback: check for old format
@@ -706,24 +744,32 @@ export async function POST(request: Request) {
         !lessonPlan.remarks ||
         !lessonPlan.reflection
       ) {
-        return NextResponse.json(
-          { error: "Invalid DLP response structure from AI" },
-          { status: 500 }
-        );
+        emit({ type: "error", error: "Invalid DLP response structure from AI" });
+        return;
       }
 
-      return NextResponse.json({
+      emit({
+        type: "result",
         lessonPlan,
         planType: "dlp",
         aiProvider: genResult.provider,
         aiModel: genResult.model,
       });
+    } catch (error) {
+      console.error("Generate error:", error);
+      emit({
+        type: "error",
+        error: error instanceof Error ? error.message : "Failed to generate lesson plan",
+      });
+    } finally {
+      state.controller?.close();
     }
-  } catch (error) {
-    console.error("Generate error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to generate lesson plan" },
-      { status: 500 }
-    );
-  }
+  })();
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson",
+      "Cache-Control": "no-cache, no-transform",
+    },
+  });
 }

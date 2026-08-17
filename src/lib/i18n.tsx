@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 
 type Language = "en" | "fil";
 
@@ -37,6 +37,10 @@ const translations = {
     coiTagsPlaceholder: "e.g., CO1, CO2, RPMS Indicator 1.1",
     generatePlan: "Generate Plan",
     generating: "Generating...",
+    aiStatusTitle: "Trying AI providers in order:",
+    aiStatusTrying: "Working...",
+    aiStatusFailed: "Failed",
+    aiStatusReady: "Ready",
 
     // Sections
     objectives: "I. Objectives (Layunin)",
@@ -122,6 +126,10 @@ const translations = {
     coiTagsPlaceholder: "hal., CO1, CO2, RPMS Indicator 1.1",
     generatePlan: "Lumikha ng Plan",
     generating: "Ginagawa...",
+    aiStatusTitle: "Sinusubukan ang AI providers sa pagkakasunod-sunod:",
+    aiStatusTrying: "Gumagawa...",
+    aiStatusFailed: "Bigo",
+    aiStatusReady: "Handa",
 
     // Sections
     objectives: "I. Layunin",
@@ -188,14 +196,11 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>("en");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("language") as Language | null;
-    if (saved && (saved === "en" || saved === "fil")) {
-      setLanguage(saved);
-    }
-  }, []);
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved =
+      typeof window !== "undefined" ? localStorage.getItem("language") : null;
+    return saved === "en" || saved === "fil" ? saved : "en";
+  });
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
