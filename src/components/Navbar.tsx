@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BookOpen, LogOut, User, Settings } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { APP_VERSION } from "@/lib/version";
 
 export function Navbar() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -67,6 +68,9 @@ export function Navbar() {
           <BookOpen className="h-5 w-5" />
           <span className="hidden sm:inline">DepEd Auto-DLP/DLL</span>
           <span className="sm:hidden">DLP</span>
+          <span className="hidden rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline">
+            {APP_VERSION}
+          </span>
         </Link>
 
         {user && (
