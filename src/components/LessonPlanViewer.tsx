@@ -336,7 +336,7 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
       <img
         src="/assets/lpcaa header.png"
         alt="LPCAA DepEd Header"
-        style={{ width: "20.32cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
+        style={{ width: "19.21cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
       />
 
       {/* Lesson Plan Title */}
@@ -508,7 +508,7 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
         <img
           src="/assets/lpcaa header.png"
           alt="LPCAA DepEd Header"
-          style={{ width: "20.32cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
+          style={{ width: "19.21cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
         />
         <h2 className="text-lg font-bold mt-2">DAILY LESSON PLAN (DLP)</h2>
         <p className="text-sm font-semibold uppercase">{input?.learningArea || "SCIENCE"}</p>

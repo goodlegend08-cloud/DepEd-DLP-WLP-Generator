@@ -618,8 +618,8 @@ function centeredLine(text: string, size: number, bold: boolean): Paragraph {
 }
 
 /**
- * Official LPCAA DepEd header image as a centered ImageRun sized to 20.32 x 4.2 cm
- * (8.00 x 1.65 in / 768 x 158.7 px). Falls back to the text letterhead when the
+ * Official LPCAA DepEd header image as a centered ImageRun sized to 19.21 x 4.2 cm
+ * (7.56 x 1.65 in / 726 x 158.7 px). Falls back to the text letterhead when the
  * image asset cannot be read at runtime.
  */
 function headerImageParagraph(): Paragraph {
@@ -644,7 +644,7 @@ function headerImageParagraph(): Paragraph {
         new ImageRun({
           type: "png",
           data,
-          transformation: { width: 768, height: 158.7 },
+          transformation: { width: 726, height: 158.7 },
         }),
       ],
     });

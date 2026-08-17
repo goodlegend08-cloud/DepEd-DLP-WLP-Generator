@@ -190,7 +190,7 @@ export function WLPViewer({ plan, input, onEdit }: WLPViewerProps) {
       <img
         src="/assets/lpcaa header.png"
         alt="LPCAA DepEd Header"
-        style={{ width: "20.32cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
+        style={{ width: "19.21cm", height: "4.2cm", display: "block", margin: "0 auto 12px auto" }}
       />
 
       {/* Title */}
