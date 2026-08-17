@@ -12,9 +12,9 @@ import {
   BorderStyle,
   ShadingType,
   VerticalAlign,
-  TabStopType,
   UnderlineType,
   LineRuleType,
+  TableLayoutType,
 } from "docx";
 import type { ITableCellBorders } from "docx";
 import fs from "fs";
@@ -29,6 +29,14 @@ const BORDER: ITableCellBorders = {
   bottom: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
   left: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
   right: { style: BorderStyle.SINGLE, size: 8, color: "000000" },
+};
+
+/** No-gridline cell borders (used for the signature columns). */
+const NO_BORDER: ITableCellBorders = {
+  top: { style: BorderStyle.NONE, size: 0, color: "auto" },
+  bottom: { style: BorderStyle.NONE, size: 0, color: "auto" },
+  left: { style: BorderStyle.NONE, size: 0, color: "auto" },
+  right: { style: BorderStyle.NONE, size: 0, color: "auto" },
 };
 
 /** Light-gray section banner fill (#D9D9D9). */
@@ -353,49 +361,60 @@ function signatureLabelParagraph(label: string, before = 200, after = 60): Parag
 }
 
 /**
- * Render signature names/titles as horizontal columns using center-aligned tab
- * stops — no table, no gridlines. Produces N columns spread evenly across the
- * text width (usable width = 12240 - 2*1080 twips margins = 10080 twips).
+ * Render signature names/titles as a borderless table with explicit column
+ * widths (33.33% for 3 columns, 50% for 2) and center-aligned cells so long
+ * titles like "Assistant School Principal II / Officer-in-Charge" stay inside
+ * their column and never overflow back into column 1.
  */
 function signatureColumns(
   signatories: { name: string; title: string }[],
   columns: number
-): Paragraph[] {
-  const usable = 12240 - 1080 - 1080; // 8.5 x 13 in width minus left/right margins
-  const tabStops = Array.from({ length: columns }, (_, i) => ({
-    type: TabStopType.CENTER,
-    position: Math.round(((i + 0.5) * usable) / columns),
-  }));
-
-  const names = signatories.slice(0, columns).map((s) => s.name.toUpperCase());
-  const titles = signatories.slice(0, columns).map((s) => s.title);
-
-  const buildRow = (cells: string[], bold: boolean, italics: boolean, size: number): Paragraph =>
-    new Paragraph({
-      tabStops,
-      spacing: { before: 20, after: 20, line: 240, lineRule: LineRuleType.AUTO },
-      children: cells.flatMap((cell) => {
-        const lines = cell.split("\n");
-        return lines.flatMap((line, i) => [
-          ...(i > 0 ? [new TextRun({ break: 1, font: "Times New Roman", size })] : []),
-          new TextRun({ text: "\t", font: "Times New Roman", size }),
-          new TextRun({ text: line, bold, italics, font: "Times New Roman", size }),
-        ]);
-      }),
+): Table {
+  const cellWidth = 100 / columns;
+  const cells = signatories.slice(0, columns).map((s) => {
+    const lines = s.title.split("\n");
+    return new TableCell({
+      borders: NO_BORDER,
+      verticalAlign: VerticalAlign.TOP,
+      width: { size: cellWidth, type: WidthType.PERCENTAGE },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 20, after: 0 },
+          children: [new TextRun({ text: s.name.toUpperCase(), bold: true, font: "Times New Roman", size: 24 })],
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 20, after: 20 },
+          children: [new TextRun({ text: SIGNATURE_RULE, font: "Times New Roman", size: 18 })],
+        }),
+        ...lines.map(
+          (line) =>
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 0, after: 0, line: 240, lineRule: LineRuleType.AUTO },
+              children: [new TextRun({ text: line, italics: true, font: "Times New Roman", size: 22 })],
+            })
+        ),
+      ],
     });
+  });
 
-  return [
-    buildRow(names, true, false, 24),
-    new Paragraph({
-      tabStops,
-      spacing: { before: 20, after: 20 },
-      children: Array.from({ length: columns }).flatMap(() => [
-        new TextRun({ text: "\t", font: "Times New Roman", size: 18 }),
-        new TextRun({ text: SIGNATURE_RULE, font: "Times New Roman", size: 18 }),
-      ]),
-    }),
-    buildRow(titles, false, true, 22),
-  ];
+  return new Table({
+    layout: TableLayoutType.FIXED,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        cantSplit: true,
+        children: cells,
+      }),
+    ],
+  });
+}
+
+/** Blank paragraph used as a vertical enter-space between signature sections. */
+function signatureBlankParagraph(before: number): Paragraph {
+  return new Paragraph({ spacing: { before, after: 0 }, children: [] });
 }
 
 /** Full signature block: "Prepared:" + "Checked & Reviewed:" + "Noted:". */
@@ -403,16 +422,20 @@ function signatureBlock(
   prepared: { name: string; title: string },
   checked: { name: string; title: string }[],
   noted: { name: string; title: string }[]
-): Paragraph[] {
+): (Paragraph | Table)[] {
   return [
-    signatureLabelParagraph("Prepared:"),
+    signatureLabelParagraph("Prepared:", 360, 60),
     signatureNameParagraph(prepared.name),
     signatureRuleParagraph(),
     signatureTitleParagraph(prepared.title),
-    signatureLabelParagraph("Checked & Reviewed:", 360, 240),
-    ...signatureColumns(checked, 3),
-    signatureLabelParagraph("Noted:", 360, 240),
-    ...signatureColumns(noted, 2),
+    signatureBlankParagraph(240),
+    signatureLabelParagraph("Checked & Reviewed:", 360, 0),
+    signatureBlankParagraph(240),
+    signatureColumns(checked, 3),
+    signatureBlankParagraph(240),
+    signatureLabelParagraph("Noted:", 360, 0),
+    signatureBlankParagraph(240),
+    signatureColumns(noted, 2),
   ];
 }
 
