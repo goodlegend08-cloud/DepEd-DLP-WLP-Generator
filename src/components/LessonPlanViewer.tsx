@@ -98,7 +98,7 @@ function BannerRow({ title, guidance }: { title: string; guidance?: string }) {
   return (
     <tr>
       <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 w-1/3 align-top`}>
-        <span className="text-[12pt] font-bold italic">{title}</span>
+        <span className="text-[12pt] font-bold">{title}</span>
       </td>
       <td className={`${CELL_BORDER} ${BANNER_FILL} p-2 text-[10pt] italic align-top`}>
         {guidance}
@@ -528,7 +528,7 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
       <Card>
         <CardHeader className="p-0">
           <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
-            <CardTitle className="text-base font-bold italic text-slate-900">Intentions.</CardTitle>
+            <CardTitle className="text-base font-bold text-slate-900">Intentions.</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -551,7 +551,7 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
       <Card>
         <CardHeader className="p-0">
           <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
-            <CardTitle className="text-base font-bold italic text-slate-900">Learning Experience.</CardTitle>
+            <CardTitle className="text-base font-bold text-slate-900">Learning Experience.</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -577,7 +577,7 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
       <Card>
         <CardHeader className="p-0">
           <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
-            <CardTitle className="text-base font-bold italic text-slate-900">Assessment.</CardTitle>
+            <CardTitle className="text-base font-bold text-slate-900">Assessment.</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -589,7 +589,7 @@ function LegacyViewer({ plan, input }: { plan: GeneratedLessonPlan; input?: Less
       <Card>
         <CardHeader className="p-0">
           <div className={`${BANNER_FILL} px-4 py-2 rounded-t`}>
-            <CardTitle className="text-base font-bold italic text-slate-900">Ways Forward.</CardTitle>
+            <CardTitle className="text-base font-bold text-slate-900">Ways Forward.</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">

@@ -66,7 +66,7 @@ function splitLabel(label: string): { header: string; instruction: string } {
   return { header: label.slice(0, idx), instruction: label.slice(idx + 1) };
 }
 
-/** Banner cell (left bold italic title / right italic guidance), light-gray fill. */
+/** Banner cell (left bold regular title / right italic guidance), light-gray fill. */
 function bannerCell(text: string, italic: boolean): TableCell {
   return new TableCell({
     borders: BORDER,
@@ -75,7 +75,7 @@ function bannerCell(text: string, italic: boolean): TableCell {
     children: [
       new Paragraph({
         spacing: { before: 40, after: 40 },
-        children: [new TextRun({ text, bold: !italic, italics: true, font: "Times New Roman", size: italic ? 20 : 24 })],
+        children: [new TextRun({ text, bold: !italic, italics: italic, font: "Times New Roman", size: italic ? 20 : 24 })],
       }),
     ],
   });
