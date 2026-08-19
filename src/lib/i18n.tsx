@@ -46,6 +46,10 @@ const translations = {
     generationFailed: "Generation Failed",
     generationFailedDesc: "The AI providers were unable to generate a plan. Please try again.",
     attempt: "Attempt",
+    leaveConfirmTitle: "Leave generated plan?",
+    leaveConfirmMessage: "Your generated lesson plan has not been saved yet. Are you sure you want to leave?",
+    stay: "Stay",
+    leave: "Leave",
 
     // Sections
     objectives: "I. Objectives (Layunin)",
@@ -140,6 +144,10 @@ const translations = {
     generationFailed: "Nabigo ang Paggawa",
     generationFailedDesc: "Hindi nakagawa ang mga AI provider ng plan. Subukan muli.",
     attempt: "Pagtangka",
+    leaveConfirmTitle: "Umalis sa nabuong plan?",
+    leaveConfirmMessage: "Ang iyong nabuong lesson plan ay hindi pa na-save. Sigurado ka bang gusto mong umalis?",
+    stay: "Manatili",
+    leave: "Umalis",
 
     // Sections
     objectives: "I. Layunin",

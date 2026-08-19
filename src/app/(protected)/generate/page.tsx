@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LessonPlanForm } from "@/components/forms/LessonPlanForm";
 import { LessonPlanViewer } from "@/components/LessonPlanViewer";
 import { WLPViewer } from "@/components/WLPViewer";
+import { LeaveGuard } from "@/components/LeaveGuard";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { Download, Save, ArrowLeft, FileText } from "lucide-react";
@@ -23,6 +24,7 @@ export default function GeneratePage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [aiInfo, setAiInfo] = useState<{ provider?: string; model?: string } | null>(null);
+  const [exitSignal, setExitSignal] = useState(0);
   const { t } = useI18n();
 
   const handleGenerated = (plan: GeneratedLessonPlan | GeneratedDLPPlan | WeeklyLessonPlan, input: LessonPlanInput, generatedMeta?: { provider?: string; model?: string }) => {
@@ -202,8 +204,13 @@ export default function GeneratePage() {
   if (generatedPlan) {
     return (
       <div className="max-w-4xl mx-auto space-y-4">
+        <LeaveGuard
+          enabled={!!generatedPlan}
+          exitSignal={exitSignal}
+          onConfirmExit={() => setGeneratedPlan(null)}
+        />
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => setGeneratedPlan(null)}>
+          <Button variant="ghost" onClick={() => setExitSignal((n) => n + 1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Form
           </Button>
