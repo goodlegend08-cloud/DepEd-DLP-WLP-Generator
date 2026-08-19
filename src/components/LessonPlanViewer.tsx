@@ -470,12 +470,27 @@ Remember to provide appropriate accommodation so all learners can demonstrate th
                 <ProcedureStep label="Item 3 (Trend / Process / Direction)" content={stripTicketLabel(formative.item_3 || "", "item")} onEdit={(v) => onEdit?.("assessment.formative_assessment.item_3", v)} />
                 <ProcedureStep label="Item 4 (Underlying Mechanism / Physical Process)" content={stripTicketLabel(formative.item_4 || "", "item")} onEdit={(v) => onEdit?.("assessment.formative_assessment.item_4", v)} />
                 <ProcedureStep label="Item 5 (Concluding Outcome / System Behavior)" content={stripTicketLabel(formative.item_5 || "", "item")} onEdit={(v) => onEdit?.("assessment.formative_assessment.item_5", v)} />
-                <p className="font-bold italic mt-2">Answer Key:</p>
-                <ProcedureStep label="Answer Key — Item 1" content={stripTicketLabel(formative.answer_key_1 || "", "answer")} onEdit={(v) => onEdit?.("assessment.formative_assessment.answer_key_1", v)} />
-                <ProcedureStep label="Answer Key — Item 2" content={stripTicketLabel(formative.answer_key_2 || "", "answer")} onEdit={(v) => onEdit?.("assessment.formative_assessment.answer_key_2", v)} />
-                <ProcedureStep label="Answer Key — Item 3" content={stripTicketLabel(formative.answer_key_3 || "", "answer")} onEdit={(v) => onEdit?.("assessment.formative_assessment.answer_key_3", v)} />
-                <ProcedureStep label="Answer Key — Item 4" content={stripTicketLabel(formative.answer_key_4 || "", "answer")} onEdit={(v) => onEdit?.("assessment.formative_assessment.answer_key_4", v)} />
-                <ProcedureStep label="Answer Key — Item 5" content={stripTicketLabel(formative.answer_key_5 || "", "answer")} onEdit={(v) => onEdit?.("assessment.formative_assessment.answer_key_5", v)} />
+                <p className="font-bold italic mt-2">Answer Key</p>
+                {[
+                  [formative.answer_key_1, "answer_key_1"],
+                  [formative.answer_key_2, "answer_key_2"],
+                  [formative.answer_key_3, "answer_key_3"],
+                  [formative.answer_key_4, "answer_key_4"],
+                  [formative.answer_key_5, "answer_key_5"],
+                ].map(([answer, key], idx) =>
+                  answer ? (
+                    <div key={key} className="mb-1 flex gap-1 text-xs">
+                      <span className="shrink-0 font-semibold">{idx + 1}.</span>
+                      <div className="min-w-0 flex-1 whitespace-pre-wrap">
+                        <EditableText
+                          value={stripTicketLabel(answer || "", "answer")}
+                          onEdit={(v) => onEdit?.(`assessment.formative_assessment.${key}`, v)}
+                          className="whitespace-pre-wrap"
+                        />
+                      </div>
+                    </div>
+                  ) : null
+                )}
               </div>
             ) : (
               <div className="space-y-2">
