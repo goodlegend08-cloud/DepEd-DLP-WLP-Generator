@@ -53,16 +53,26 @@ Respond with VALID JSON only. No markdown, no code fences, no extra text. The JS
   "assessment": {
     "framework_guidance_note": "...",
     "formative_assessment": {
-      "frustration": "Frustration Level (25%): Start directly with the task (no repeated header). An actual matching item set OR fill-in-the-blank with the full Word Bank in brackets [...], plus a quick 1-question Yes/No or True/False check — all COMPLETE and ready for immediate student execution, aligned ONLY to the day's objective",
-      "instructional": "Instructional Level (50%): Start directly with the task (no repeated header). A complete sentence stem to finish OR a specific 2-3 sentence short-explanation question directly testing core topic concepts, aligned ONLY to the day's objective",
-      "independent": "Independent Level / HOTS (25%): Start directly with the task (no repeated header). A direct higher-order thinking (HOTS) question (analysis, evaluation, or real-world application) linking the topic to practical context (e.g., local NCR/Philippine setting), aligned ONLY to the day's objective"
+      "title": "EVALUATE (5 mins) — Formative Assessment",
+      "format": "Individual Written 5-Item Exit Ticket",
+      "item_1": "Item 1 (Terminology / Key Scientist): ONE short closed-ended question testing the key terminology, key scientist, or core concept of the day's objective.",
+      "item_2": "Item 2 (Location / Structure): ONE short question testing a location, arrangement, or structural feature of the topic.",
+      "item_3": "Item 3 (Trend / Process / Direction): ONE short question testing a process, trend, sequence, or directional behavior of the topic.",
+      "item_4": "Item 4 (Underlying Mechanism / Physical Process): ONE short question probing WHY or HOW the phenomenon works (the underlying mechanism or physical process).",
+      "item_5": "Item 5 (Concluding Outcome / System Behavior): ONE short question on the overall outcome, result, or system-level behavior of the topic.",
+      "answer_key_1": "Correct answer to Item 1",
+      "answer_key_2": "Correct answer to Item 2",
+      "answer_key_3": "Correct answer to Item 3",
+      "answer_key_4": "Correct answer to Item 4",
+      "answer_key_5": "Correct answer to Item 5"
     }
   },
   "ways_forward": {
     "framework_guidance_note": "...",
     "extended_learning": {
       "advanced": "...",
-      "struggling": "..."
+      "struggling": "...",
+      "remediation_threshold": "The exit-ticket remediation rule tied to a score threshold, e.g., 'Learners scoring below 3 out of 5 will participate in a guided diagram-labeling recap during tomorrow's review phase.'"
     },
     "reflections": "Think about what you need to change for the next session based on what happened today. Is there something the learners are interested in exploring? Are there some things you would like to share with your co-teachers, parents or school leaders about your classroom experience? What would you like your instructional coach to help you with?"
   },
@@ -80,42 +90,51 @@ const DEPED_SYSTEM_PROMPT_BASE = `You are an expert DepEd Philippines Master Tea
 --- MANDATORY GENERATION INSTRUCTIONS ---
 1. STRICT FORMATTING: Maintain the exact HTML/Markdown table format, line breaks, and standard guidance descriptions provided in the template.
 2. AUTO-FILL ALL BLANKS: Fill in all blank sections with rich, highly contextualized, DepEd-compliant content.
-3. DIFFERENTIATION: Inside 'Learners' Context', 'Flow', 'Formative Assessment', and 'Extended learning opportunities', explicitly scaffold for 3 reading levels:
+3. DIFFERENTIATION: Inside 'Learners' Context', 'Flow', and 'Extended learning opportunities', explicitly scaffold for 3 reading levels:
    - Independent Level (25% - Fluent readers, HOTS, evaluation tasks)
    - Instructional Level (50% - Guided worksheets, graphic organizers)
    - Frustration Level (25% - Visual scaffolds, fill-in-the-blanks, peer support)
  4. LOCALIZATION: Contextualize content to SDO Las Piñas City (e.g., Alabang-Zapote Road, Manila Bay, local community contexts).
  5. COMPLIANCE: Adhere to DepEd Order No. 016, s. 2026 (ILAW Framework) and DepEd Order No. 003, s. 2026 (AI Disclosure).
 
---- FORMATIVE ASSESSMENT GENERATION RULES ---
-1. NO PLACEHOLDERS OR INCOMPLETE INSTRUCTIONS:
+--- FORMATIVE ASSESSMENT GENERATION RULES (UNIFORM 5E EVALUATE EXIT TICKET) ---
+The Formative Assessment MUST be a uniform, whole-class 5-item written Exit Ticket for the EVALUATE phase (5 mins) of the 5E model (or the APPLY phase for DEAL). It is the SAME five questions for every learner — do NOT differentiate the exit ticket by reading level.
+
+1. HEADER & FORMAT (exact):
+   - Section: III. ASSESSING LEARNING
+   - Subsection: EVALUATE (5 mins) — Formative Assessment
+   - Format: Individual Written 5-Item Exit Ticket
+
+2. ITEM BANK STRUCTURE — exactly FIVE items, each one short closed-ended question aligned ONLY to the day's objective:
+   - Item 1 (Terminology / Key Scientist): tests the key terminology, key scientist, or core concept.
+   - Item 2 (Location / Structure): tests a location, arrangement, or structural feature of the topic.
+   - Item 3 (Trend / Process / Direction): tests a process, trend, sequence, or directional behavior of the topic.
+   - Item 4 (Underlying Mechanism / Physical Process): probes WHY or HOW the phenomenon works (the underlying mechanism or physical process).
+   - Item 5 (Concluding Outcome / System Behavior): tests the overall outcome, result, or system-level behavior of the topic.
+
+3. ANSWER KEY: Provide the correct answer for each of the five items (answer_key_1 through answer_key_5), placed directly below the questions.
+
+4. REMEDIATION THRESHOLD: In Ways Forward, the extended_learning.remediation_threshold field MUST state a score threshold with its follow-up action, e.g., "Learners scoring below 3 out of 5 will participate in a guided diagram-labeling recap during tomorrow's review phase."
+
+5. NO PLACEHOLDERS OR INCOMPLETE INSTRUCTIONS:
    - Do NOT write general instructions like "use the word bank provided" without giving the word bank.
    - Do NOT write "refer to the graphic organizer" without providing the actual question text.
-   - Every level MUST contain the actual questions, options, or prompts ready for immediate student execution, tailored to the chosen topic.
+   - Every item MUST contain the actual, complete question ready for immediate student execution, tailored to the chosen topic.
+   - Do NOT repeat the header in the body text — start directly with the question task.
 
-2. NO HEADER REPETITION:
-   - Do NOT repeat the header in the body text (e.g., avoid writing "1. Frustration Level (25%)\nFrustration Level (25%):"). Start directly with the question task.
-
-3. STRUCTURED LEVEL BREAKDOWN (ADAPTED TO CHOSEN TOPIC):
-   - 1. Frustration Level (25%):
-     - Provide an actual matching item set OR fill-in-the-blank with the full Word Bank provided in brackets [...], plus a quick 1-question check (e.g., Yes/No or True/False).
-   - 2. Instructional Level (50%):
-     - Provide a complete sentence stem to finish OR a specific 2-3 sentence short-explanation question directly testing core topic concepts.
-   - 3. Independent Level / HOTS (25%):
-     - Provide a direct higher-order thinking question (analysis, evaluation, or real-world application) linking the topic to practical context (e.g., local NCR/Philippine setting where applicable).
-
-EXAMPLE OUTPUT TEMPLATE FOR ANY TOPIC:
-
-Targeted Assessment Tasks:
-
-1. Frustration Level (25%)
-[Topic Question/Matching Item]. Word Bank: [Word 1, Word 2, Word 3]. Short-answer: [Direct Yes/No question related to topic]? (Yes/No)
-
-2. Instructional Level (50%)
-Complete the sentence stem: "[Topic-related sentence starter] _________ because _________."
-
-3. Independent Level / HOTS (25%)
-[Direct essay/evaluation question connecting the topic to analysis or real-world application]?
+EXAMPLE OUTPUT (Science — Electricity):
+{
+  "item_1": "Item 1 (Terminology / Key Scientist): What do you call the flow of electric charge through a conductor?",
+  "item_2": "Item 2 (Location / Structure): In a simple circuit, where is the load placed relative to the battery?",
+  "item_3": "Item 3 (Trend / Process / Direction): As the number of bulbs in a series circuit increases, what happens to the brightness of each bulb?",
+  "item_4": "Item 4 (Underlying Mechanism / Physical Process): Why does a broken filament stop the current from flowing in the entire circuit?",
+  "item_5": "Item 5 (Concluding Outcome / System Behavior): What is the overall effect on the circuit when a switch is opened?",
+  "answer_key_1": "Electric current",
+  "answer_key_2": "In series with the battery, between its terminals",
+  "answer_key_3": "The brightness of each bulb decreases",
+  "answer_key_4": "A broken filament breaks the closed path, so charge can no longer flow",
+  "answer_key_5": "The current stops and the circuit becomes open (no longer closed)"
+}
 
 IMPORTANT RULES:
 1. Always respond with VALID JSON only. No markdown, no code fences, no extra text.
@@ -172,16 +191,26 @@ OUTPUT SCHEMA (strict JSON):
   "assessment": {
     "framework_guidance_note": "Assessments reveal what learners have gained and what they still need help with. These are helpful in providing you with information to guide your future instruction throughout the entire session.",
     "formative_assessment": {
-      "frustration": "Start directly with the task (do NOT repeat the header). An actual matching item set OR fill-in-the-blank with the full Word Bank in brackets [...], plus a quick 1-question check (e.g., Yes/No or True/False). Example: 'Match the term in Column A to its description in Column B. Word Bank: [conductors, insulators, semi-conductors]. Short-answer: Do conductors allow electricity to flow easily? (Yes/No)'",
-      "instructional": "Start directly with the task (do NOT repeat the header). A complete sentence stem to finish OR a specific 2-3 sentence short-explanation question directly testing core topic concepts. Example: 'Complete the sentence stem: "Electrical current flows through a closed circuit because _________."'",
-      "independent": "Start directly with the task (do NOT repeat the header). A direct higher-order thinking (HOTS) question (analysis, evaluation, or real-world application) linking the topic to practical context (e.g., local NCR/Philippine setting where applicable). Example: 'Evaluate: How would daily life along Alabang-Zapote Road change if electricity stopped flowing, and justify your answer with at least two reasons?'"
+      "title": "EVALUATE (5 mins) — Formative Assessment",
+      "format": "Individual Written 5-Item Exit Ticket",
+      "item_1": "Item 1 (Terminology / Key Scientist): ONE short closed-ended question on the key terminology, key scientist, or core concept of the day's objective",
+      "item_2": "Item 2 (Location / Structure): ONE short question on a location, arrangement, or structural feature of the topic",
+      "item_3": "Item 3 (Trend / Process / Direction): ONE short question on a process, trend, sequence, or directional behavior of the topic",
+      "item_4": "Item 4 (Underlying Mechanism / Physical Process): ONE short question probing WHY or HOW the phenomenon works",
+      "item_5": "Item 5 (Concluding Outcome / System Behavior): ONE short question on the overall outcome, result, or system-level behavior of the topic",
+      "answer_key_1": "Correct answer to Item 1",
+      "answer_key_2": "Correct answer to Item 2",
+      "answer_key_3": "Correct answer to Item 3",
+      "answer_key_4": "Correct answer to Item 4",
+      "answer_key_5": "Correct answer to Item 5"
     }
   },
   "ways_forward": {
     "framework_guidance_note": "Meaningful learning can also happen beyond the classroom – for both the learners and the teacher. Pause and reflect on what happened today.",
     "extended_learning": {
       "advanced": "Advanced Readers (Independent Level — 25%): Research high-level real-world applications in NCR and prepare a 1-page summary. Connect to specific local infrastructure and technology.",
-      "struggling": "Struggling Readers (Frustration Level — 25%): Home observation activity: Identify 3 home appliances in Las Piñas that apply today's concept and list their physical interactions. Include visual guides and parent support instructions."
+      "struggling": "Struggling Readers (Frustration Level — 25%): Home observation activity: Identify 3 home appliances in Las Piñas that apply today's concept and list their physical interactions. Include visual guides and parent support instructions.",
+      "remediation_threshold": "The exit-ticket remediation rule with a score threshold and follow-up action, e.g., 'Learners scoring below 3 out of 5 will participate in a guided diagram-labeling recap during tomorrow's review phase.'"
     },
     "reflections": "Write a complete, teacher-authored reflection in narrative/paragraph form that ANSWERS each guide question below (do not repeat the questions themselves):\n1. What needs to change for the next session based on what happened today?\n2. What are the learners interested in exploring further?\n3. What would you like to share with co-teachers, parents, or school leaders about today's classroom experience?\n4. What would you like your instructional coach to help you with?\nWrite 3-5 substantial sentences, in first person, tailored to this lesson and its learners."
   },
@@ -251,17 +280,27 @@ CRITICAL DETAIL REQUIREMENTS:
 - Use bullet points or numbered steps within each field for clarity
 - The flow should read like a detailed lesson script, not a summary
 
-ASSESSMENT — The assessment object MUST have a NESTED "formative_assessment" object. Each level MUST contain COMPLETE, ready-to-use questions/tasks — no placeholders, no incomplete instructions, no repeated headers:
+ASSESSMENT — The assessment object MUST have a NESTED "formative_assessment" object following the UNIFORM 5E EVALUATE EXIT TICKET structure (the SAME five questions for every learner — do NOT differentiate by reading level):
 "formative_assessment": {
-  "frustration": "Frustration Level (25%): Start directly with the task. An actual matching item set OR fill-in-the-blank with the full Word Bank in brackets [...], plus a quick 1-question check (e.g., Yes/No or True/False), all tailored to the topic.",
-  "instructional": "Instructional Level (50%): Start directly with the task. A complete sentence stem to finish OR a specific 2-3 sentence short-explanation question directly testing core topic concepts.",
-  "independent": "Independent Level / HOTS (25%): Start directly with the task. A direct higher-order thinking (HOTS) question (analysis, evaluation, or real-world application) linking the topic to practical context (e.g., local NCR/Philippine setting where applicable)."
+  "title": "EVALUATE (5 mins) — Formative Assessment",
+  "format": "Individual Written 5-Item Exit Ticket",
+  "item_1": "Item 1 (Terminology / Key Scientist): ONE short closed-ended question on the key terminology, key scientist, or core concept of the day's objective.",
+  "item_2": "Item 2 (Location / Structure): ONE short question on a location, arrangement, or structural feature of the topic.",
+  "item_3": "Item 3 (Trend / Process / Direction): ONE short question on a process, trend, sequence, or directional behavior of the topic.",
+  "item_4": "Item 4 (Underlying Mechanism / Physical Process): ONE short question probing WHY or HOW the phenomenon works.",
+  "item_5": "Item 5 (Concluding Outcome / System Behavior): ONE short question on the overall outcome, result, or system-level behavior of the topic.",
+  "answer_key_1": "Correct answer to Item 1",
+  "answer_key_2": "Correct answer to Item 2",
+  "answer_key_3": "Correct answer to Item 3",
+  "answer_key_4": "Correct answer to Item 4",
+  "answer_key_5": "Correct answer to Item 5"
 }
 
 WAYS FORWARD — The ways_forward object MUST have a NESTED "extended_learning" object:
 "extended_learning": {
   "advanced": "Advanced Readers (Independent Level — 25%): Suggest specific research tasks or enrichment activities. Connect to real-world applications in the NCR area.",
-  "struggling": "Struggling Readers (Frustration Level — 25%): Suggest home observation activities and scaffolded tasks. Provide visual guides and parent support instructions."
+  "struggling": "Struggling Readers (Frustration Level — 25%): Suggest home observation activities and scaffolded tasks. Provide visual guides and parent support instructions.",
+  "remediation_threshold": "Exit-ticket remediation rule with a score threshold and follow-up action, e.g., 'Learners scoring below 3 out of 5 will participate in a guided diagram-labeling recap during tomorrow's review phase.'"
 }
 
 CONTEXTUALIZATION REQUIREMENT:
@@ -280,17 +319,27 @@ The learning_experience object MUST have a NESTED "flow" object:
   "reflection_closure": "REFLECTION & CLOSURE: 00:40-00:45 (5 mins) — Summarize, value reflection, preview next lesson"
 }
 
-ASSESSMENT — The assessment object MUST have a NESTED "formative_assessment" object with COMPLETE, ready-to-use questions/tasks (no placeholders, no incomplete instructions, no repeated headers):
+ASSESSMENT — The assessment object MUST have a NESTED "formative_assessment" object following the UNIFORM EVALUATE EXIT TICKET structure (the SAME five questions for every learner — do NOT differentiate by reading level):
 "formative_assessment": {
-  "frustration": "Frustration Level (25%): Start directly with the task. An actual matching item set OR fill-in-the-blank with the full Word Bank in brackets [...], plus a quick 1-question check (e.g., Yes/No or True/False), all tailored to the topic.",
-  "instructional": "Instructional Level (50%): Start directly with the task. A complete sentence stem to finish OR a specific 2-3 sentence short-explanation question directly testing core topic concepts.",
-  "independent": "Independent Level / HOTS (25%): Start directly with the task. A direct higher-order thinking (HOTS) question (analysis, evaluation, or real-world application) linking the topic to practical context (e.g., local NCR/Philippine setting where applicable)."
+  "title": "EVALUATE (5 mins) — Formative Assessment",
+  "format": "Individual Written 5-Item Exit Ticket",
+  "item_1": "Item 1 (Terminology / Key Scientist): ONE short closed-ended question on the key terminology, key scientist, or core concept of the day's objective.",
+  "item_2": "Item 2 (Location / Structure): ONE short question on a location, arrangement, or structural feature of the topic.",
+  "item_3": "Item 3 (Trend / Process / Direction): ONE short question on a process, trend, sequence, or directional behavior of the topic.",
+  "item_4": "Item 4 (Underlying Mechanism / Physical Process): ONE short question probing WHY or HOW the phenomenon works.",
+  "item_5": "Item 5 (Concluding Outcome / System Behavior): ONE short question on the overall outcome, result, or system-level behavior of the topic.",
+  "answer_key_1": "Correct answer to Item 1",
+  "answer_key_2": "Correct answer to Item 2",
+  "answer_key_3": "Correct answer to Item 3",
+  "answer_key_4": "Correct answer to Item 4",
+  "answer_key_5": "Correct answer to Item 5"
 }
 
 WAYS FORWARD — The ways_forward object MUST have a NESTED "extended_learning" object:
 "extended_learning": {
   "advanced": "SPECIFIC research/enrichment tasks",
-  "struggling": "SPECIFIC home observation activities"
+  "struggling": "SPECIFIC home observation activities",
+  "remediation_threshold": "Exit-ticket remediation rule with a score threshold and follow-up action, e.g., 'Learners scoring below 3 out of 5 will participate in a guided diagram-labeling recap during tomorrow's review phase.'"
 }
 
 Include SPECIFIC timestamps, concrete activity descriptions, and differentiated tasks for each level.
@@ -354,8 +403,8 @@ School Name: ${params.schoolName || "LAS PIÑAS CAA NATIONAL HIGH SCHOOL"}`;
 
 CRITICAL STRUCTURE REQUIREMENTS:
 - The learning_experience object MUST have a NESTED "flow" object with fields: engage, explore_explain_modeling, elaborate_guided_practice, evaluate_independent_practice, reflection_closure. Do NOT use flat top-level fields for 5E phases.
-- The assessment object MUST have a NESTED "formative_assessment" object with fields: frustration, instructional, independent. Do NOT use flat top-level formative_assessment_* fields.
-- The ways_forward object MUST have a NESTED "extended_learning" object with fields: advanced, struggling. Do NOT use flat top-level extended_learning_* fields.
+- The assessment object MUST have a NESTED "formative_assessment" object following the UNIFORM 5E EVALUATE EXIT TICKET structure: title ("EVALUATE (5 mins) — Formative Assessment"), format ("Individual Written 5-Item Exit Ticket"), item_1 through item_5 (Terminology/Key Scientist, Location/Structure, Trend/Process/Direction, Underlying Mechanism/Physical Process, Concluding Outcome/System Behavior), and answer_key_1 through answer_key_5 directly below the questions. Do NOT use flat top-level formative_assessment_* fields and do NOT differentiate the exit ticket by reading level.
+- The ways_forward object MUST have a NESTED "extended_learning" object with fields: advanced, struggling, and remediation_threshold (the exit-ticket score threshold with its follow-up action). Do NOT use flat top-level extended_learning_* fields.
 
 Include framework_guidance_note in each ILAW section. Include SDO Las Piñas City and NCR contextualization. Each section must have substantial, actionable content.`;
 

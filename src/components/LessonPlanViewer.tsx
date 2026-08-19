@@ -456,14 +456,32 @@ Apply the Learning Design Principles by thinking about how to:
           <BannerRow title="Assessment." guidance={ASSESSMENT_GUIDANCE} />
           <SubRow
             label="Formative Assessment:"
-            instruction="Create a task, activity or questions to evaluate learning and provide feedback. Provide ways for learners to ask for guidance and support. Remember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports)"
+            instruction="EVALUATE (5 mins) — Formative Assessment. Use a uniform Individual Written 5-Item Exit Ticket that directly measures the day's objective, with an Answer Key below the questions and a remediation threshold stated under Ways Forward."
           >
-            <p className="font-bold italic mb-1">Targeted Assessment Tasks:</p>
-            <div className="space-y-2">
-              <ProcedureStep label="1. Frustration Level (25%)" content={formative.frustration} onEdit={(v) => onEdit?.("assessment.formative_assessment.frustration", v)} />
-              <ProcedureStep label="2. Instructional Level (50%)" content={formative.instructional} onEdit={(v) => onEdit?.("assessment.formative_assessment.instructional", v)} />
-              <ProcedureStep label="3. Independent Level / HOTS (25%)" content={formative.independent} onEdit={(v) => onEdit?.("assessment.formative_assessment.independent", v)} />
-            </div>
+            {[formative.item_1, formative.item_2, formative.item_3, formative.item_4, formative.item_5].some(Boolean) ? (
+              <div className="space-y-2">
+                <p className="font-bold italic mb-1">{formative.title || "EVALUATE (5 mins) — Formative Assessment"}</p>
+                <p className="italic mb-1">{formative.format || "Individual Written 5-Item Exit Ticket"}</p>
+                <ProcedureStep label="Item 1 (Terminology / Key Scientist)" content={formative.item_1 || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.item_1", v)} />
+                <ProcedureStep label="Item 2 (Location / Structure)" content={formative.item_2 || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.item_2", v)} />
+                <ProcedureStep label="Item 3 (Trend / Process / Direction)" content={formative.item_3 || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.item_3", v)} />
+                <ProcedureStep label="Item 4 (Underlying Mechanism / Physical Process)" content={formative.item_4 || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.item_4", v)} />
+                <ProcedureStep label="Item 5 (Concluding Outcome / System Behavior)" content={formative.item_5 || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.item_5", v)} />
+                <p className="font-bold italic mt-2">Answer Key:</p>
+                <ProcedureStep label="Answer Key — Item 1" content={formative.answer_key_1 || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.answer_key_1", v)} />
+                <ProcedureStep label="Answer Key — Item 2" content={formative.answer_key_2 || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.answer_key_2", v)} />
+                <ProcedureStep label="Answer Key — Item 3" content={formative.answer_key_3 || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.answer_key_3", v)} />
+                <ProcedureStep label="Answer Key — Item 4" content={formative.answer_key_4 || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.answer_key_4", v)} />
+                <ProcedureStep label="Answer Key — Item 5" content={formative.answer_key_5 || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.answer_key_5", v)} />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="font-bold italic mb-1">Targeted Assessment Tasks:</p>
+                <ProcedureStep label="1. Frustration Level (25%)" content={formative.frustration || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.frustration", v)} />
+                <ProcedureStep label="2. Instructional Level (50%)" content={formative.instructional || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.instructional", v)} />
+                <ProcedureStep label="3. Independent Level / HOTS (25%)" content={formative.independent || ""} onEdit={(v) => onEdit?.("assessment.formative_assessment.independent", v)} />
+              </div>
+            )}
           </SubRow>
         </tbody>
       </table>
@@ -479,6 +497,9 @@ Apply the Learning Design Principles by thinking about how to:
             <div className="space-y-2">
               <ProcedureStep label="Advanced Readers (Independent Level — 25%)" content={extended.advanced} onEdit={(v) => onEdit?.("ways_forward.extended_learning.advanced", v)} />
               <ProcedureStep label="Struggling Readers (Frustration Level — 25%)" content={extended.struggling} onEdit={(v) => onEdit?.("ways_forward.extended_learning.struggling", v)} />
+              {extended.remediation_threshold ? (
+                <ProcedureStep label="Remediation Threshold (Exit Ticket)" content={extended.remediation_threshold} onEdit={(v) => onEdit?.("ways_forward.extended_learning.remediation_threshold", v)} />
+              ) : null}
             </div>
           </SubRow>
           <SubRow

@@ -159,10 +159,30 @@ export interface DLPLearningExperience {
   opportunities_for_integration: string;
 }
 
-export interface DLPFormativeAssessment {
-  frustration: string;
-  instructional: string;
-  independent: string;
+/**
+ * Uniform 5E "EVALUATE" Exit Ticket structure (whole-class, same for every
+ * learner): 5 items + matching Answer Key. Legacy 3-tier differentiated
+ * fields are kept optional for backward compatibility with saved plans.
+ */
+export interface DLPExitTicket {
+  title?: string;
+  format?: string;
+  item_1?: string;
+  item_2?: string;
+  item_3?: string;
+  item_4?: string;
+  item_5?: string;
+  answer_key_1?: string;
+  answer_key_2?: string;
+  answer_key_3?: string;
+  answer_key_4?: string;
+  answer_key_5?: string;
+}
+
+export interface DLPFormativeAssessment extends DLPExitTicket {
+  frustration?: string;
+  instructional?: string;
+  independent?: string;
 }
 
 export interface DLPAssessment {
@@ -176,6 +196,7 @@ export interface DLPAssessment {
 export interface DLPExtendedLearning {
   advanced: string;
   struggling: string;
+  remediation_threshold?: string;
 }
 
 export interface DLPWaysForward {

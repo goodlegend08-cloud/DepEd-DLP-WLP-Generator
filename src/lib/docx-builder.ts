@@ -548,6 +548,8 @@ export async function buildDocx(
   const checked = signatories?.checked_by?.length ? signatories.checked_by : DEFAULT_CHECKED;
   const noted = signatories?.noted_by?.length ? signatories.noted_by : DEFAULT_NOTED;
 
+  const hasExitTicket = Boolean(formative.item_1 || formative.item_2 || formative.item_3 || formative.item_4 || formative.item_5);
+
   const doc = new Document({
     creator: "DepEd DLP Generator",
     title: `DLP - ${lessonTitle}`,
@@ -634,14 +636,29 @@ export async function buildDocx(
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               sectionBannerRow("Assessment.", assessment.framework_guidance_note || "Assessments reveal what learners have gained and what they still need help with. These are helpful in providing you with information to guide your future instruction throughout the entire session."),
-              kvRow("Formative Assessment:\nCreate a task, activity or questions to evaluate learning and provide feedback. Provide ways for learners to ask for guidance and support.\nRemember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports)", [
+              kvRow("Formative Assessment:\nEVALUATE (5 mins) — Formative Assessment. Use a uniform Individual Written 5-Item Exit Ticket that directly measures the day's objective, with an Answer Key below the questions and a remediation threshold stated under Ways Forward.", hasExitTicket ? [
+                `<b><i>${formative.title || "EVALUATE (5 mins) — Formative Assessment"}:</i></b> ${formative.format || "Individual Written 5-Item Exit Ticket"}`,
+                "",
+                `<b><i>Item 1 (Terminology / Key Scientist):</i></b> ${formative.item_1 || ""}`,
+                `<b><i>Item 2 (Location / Structure):</i></b> ${formative.item_2 || ""}`,
+                `<b><i>Item 3 (Trend / Process / Direction):</i></b> ${formative.item_3 || ""}`,
+                `<b><i>Item 4 (Underlying Mechanism / Physical Process):</i></b> ${formative.item_4 || ""}`,
+                `<b><i>Item 5 (Concluding Outcome / System Behavior):</i></b> ${formative.item_5 || ""}`,
+                "",
+                `<b><i>Answer Key:</i></b>`,
+                `1. ${formative.answer_key_1 || ""}`,
+                `2. ${formative.answer_key_2 || ""}`,
+                `3. ${formative.answer_key_3 || ""}`,
+                `4. ${formative.answer_key_4 || ""}`,
+                `5. ${formative.answer_key_5 || ""}`,
+              ].join("\n") : [
                 `<b><i>Targeted Assessment Tasks:</i></b>`,
                 "",
-                `<b><i>1. Frustration Level (25%):</i></b> ${formative.frustration}`,
+                `<b><i>1. Frustration Level (25%):</i></b> ${formative.frustration || ""}`,
                 "",
-                `<b><i>2. Instructional Level (50%):</i></b> ${formative.instructional}`,
+                `<b><i>2. Instructional Level (50%):</i></b> ${formative.instructional || ""}`,
                 "",
-                `<b><i>3. Independent Level / HOTS (25%):</i></b> ${formative.independent}`,
+                `<b><i>3. Independent Level / HOTS (25%):</i></b> ${formative.independent || ""}`,
               ].join("\n")),
             ],
           }),
@@ -657,6 +674,10 @@ export async function buildDocx(
                 `<b><i>Advanced Readers (Independent Level — 25%):</i></b> ${extended.advanced}`,
                 "",
                 `<b><i>Struggling Readers (Frustration Level — 25%):</i></b> ${extended.struggling}`,
+                ...(extended.remediation_threshold ? [
+                  "",
+                  `<b><i>Remediation Threshold (Exit Ticket):</i></b> ${extended.remediation_threshold}`,
+                ] : []),
               ].join("\n")),
               kvRow("Reflections:\nThink about what you need to change for the next session based on what happened today. Is there something the learners are interested in exploring? Are there some things you would like to share with your co-teachers, parents or school leaders about your classroom experience? What would you like your instructional coach to help you with?", ways_forward.reflections),
             ],

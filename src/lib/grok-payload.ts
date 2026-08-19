@@ -84,10 +84,20 @@ Every generated lesson plan MUST follow this exact sequence of tables:
 - **Opportunities for Integration:** Write down any possibilities to meaningfully integrate another learning area, special topic, or technology. Write NA if none.
 
 #### TABLE 4: ASSESSMENT
-- **Formative Assessment:** Create a 3–5 item task, activity or questions that directly measure the day's specific objective. Provide ways for learners to ask for guidance and support. Remember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports).
+- **Formative Assessment:** Generate a UNIFORM, whole-class 5-item written Exit Ticket for the EVALUATE phase (5 mins) — the SAME five questions for every learner (do NOT differentiate by reading level), aligned ONLY to the day's objective. Structure it exactly as:
+  - **Title:** "EVALUATE (5 mins) — Formative Assessment"
+  - **Format:** "Individual Written 5-Item Exit Ticket"
+  - **Item 1 (Terminology / Key Scientist):** ONE short closed-ended question testing the key terminology, key scientist, or core concept.
+  - **Item 2 (Location / Structure):** ONE short question testing a location, arrangement, or structural feature of the topic.
+  - **Item 3 (Trend / Process / Direction):** ONE short question testing a process, trend, sequence, or directional behavior of the topic.
+  - **Item 4 (Underlying Mechanism / Physical Process):** ONE short question probing WHY or HOW the phenomenon works.
+  - **Item 5 (Concluding Outcome / System Behavior):** ONE short question on the overall outcome, result, or system-level behavior of the topic.
+  - **Answer Key:** Provide the correct answer for each item (answer_key_1 through answer_key_5) directly below the questions.
+  - Every item MUST be a complete, ready-to-execute question — no placeholders, no "refer to..." instructions, no repeated headers.
 
 #### TABLE 5: WAYS FORWARD
 - **Extended learning opportunities:** Suggest other learning experiences outside the classroom hours that learners may want to access or reinforce what they have learned, to spark their curiosity further, or that may provide them support in areas of difficulty.
+- **Remediation threshold:** State the exit-ticket score threshold with its follow-up action, e.g., "Learners scoring below 3 out of 5 will participate in a guided diagram-labeling recap during tomorrow's review phase."
 - **Reflections:** Think about what you need to change for the next session based on what happened today. Consider what the learners are interested in exploring, things to share with co-teachers, parents or school leaders, and what you would like your instructional coach to help you with.
 
 ### III. SIGNATORY BLOCK FORMAT
@@ -134,7 +144,7 @@ ${data.extractedTemplateStructure}
 ---
 
 ### EXECUTION COMMAND:
-When prompted with a topic, generate ONE complete standalone Daily Lesson Plan for the single target day above, adhering strictly to the tabular structure, guide questions, grey heading bars, and formatting rules shown. The "Learning Competency" field must reproduce the exact unit-level competency provided, the "Learning Objectives" field must contain only that day's specific objective, and the Flow and Formative Assessment must be built around that day's objective only.`;
+When prompted with a topic, generate ONE complete standalone Daily Lesson Plan for the single target day above, adhering strictly to the tabular structure, guide questions, grey heading bars, and formatting rules shown. The "Learning Competency" field must reproduce the exact unit-level competency provided, the "Learning Objectives" field must contain only that day's specific objective, and the Flow and Formative Assessment must be built around that day's objective only. The Formative Assessment MUST be the uniform 5-item EVALUATE Exit Ticket (item_1–item_5 + answer_key_1–answer_key_5) with its remediation threshold stated under Ways Forward.`;
 }
 
 /**
