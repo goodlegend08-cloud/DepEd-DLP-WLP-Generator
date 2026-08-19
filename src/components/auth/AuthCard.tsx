@@ -27,10 +27,10 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 const AUTH_INPUT_CLASS =
-  "rounded-xl border-input shadow-sm transition-all focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
+  "rounded-xl border-slate-200 shadow-sm transition-all focus-visible:border-slate-900 focus-visible:ring-2 focus-visible:ring-slate-900/10 dark:border-slate-800 dark:focus-visible:border-slate-100";
 
 const ACTION_BUTTON_CLASS =
-  "bg-primary text-primary-foreground font-medium py-2.5 rounded-xl shadow-md hover:bg-primary/90 hover:shadow-lg transition-all";
+  "bg-slate-900 text-white font-medium py-2.5 rounded-xl shadow-md hover:bg-slate-800 hover:shadow-lg transition-all";
 
 type AuthMode = "login" | "signup";
 
@@ -248,14 +248,14 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="w-full max-w-md p-8 bg-card/80 backdrop-blur-md rounded-2xl border border-border shadow-xl animate-pulse space-y-6"
+            className="w-full max-w-md p-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-slate-800/60 shadow-xl animate-pulse space-y-6"
           >
-            <div className="h-8 bg-muted rounded-lg w-1/3 mx-auto" />
-            <div className="h-4 bg-muted rounded w-2/3 mx-auto" />
+            <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3 mx-auto" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-2/3 mx-auto" />
             <div className="space-y-4 pt-4">
-              <div className="h-10 bg-muted rounded-lg w-full" />
-              <div className="h-10 bg-muted rounded-lg w-full" />
-              <div className="h-11 bg-muted-foreground/20 rounded-lg w-full mt-6" />
+              <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-lg w-full" />
+              <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-lg w-full" />
+              <div className="h-11 bg-slate-300 dark:bg-slate-700 rounded-lg w-full mt-6" />
             </div>
           </motion.div>
         ) : (
@@ -266,7 +266,7 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
             transition={{ duration: 0.35 }}
           >
             <div key={shakeKey} className={shakeKey > 0 ? "auth-shake" : "auth-motion-card"}>
-              <Card className="bg-card/80 shadow-xl backdrop-blur-md border border-border">
+              <Card className="bg-white/80 shadow-xl backdrop-blur-md border border-slate-200/60 dark:bg-slate-900/80 dark:border-slate-800/60">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={isSignUp ? "signup" : "login"}
@@ -282,12 +282,12 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                   <div>
                     <CardHeader className="text-center">
                       <div className="mb-3 flex justify-center">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
                           <BookOpen className="h-5 w-5" />
                         </div>
                       </div>
                       <CardTitle className="text-2xl font-bold font-sans">{t("signup")}</CardTitle>
-                      <CardDescription className="text-sm font-normal leading-tight text-muted-foreground">
+                      <CardDescription className="text-sm font-normal leading-tight text-slate-500 dark:text-slate-400">
                         Check your email
                       </CardDescription>
                     </CardHeader>
@@ -321,12 +321,12 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                   <>
                     <CardHeader className="text-center">
                       <div className="mb-3 flex justify-center">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
                           <BookOpen className="h-5 w-5" />
                         </div>
                       </div>
                       <CardTitle className="text-2xl font-bold font-sans">{t("signup")}</CardTitle>
-                      <CardDescription className="text-sm font-normal leading-tight text-muted-foreground">
+                      <CardDescription className="text-sm font-normal leading-tight text-slate-500 dark:text-slate-400">
                         Create your account to start generating lesson plans
                       </CardDescription>
                     </CardHeader>
@@ -368,7 +368,7 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                           <div className="space-y-2">
                             <Label htmlFor="fullName">{t("fullName")}</Label>
                             <div className="relative">
-                              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                               <Input
                                 id="fullName"
                                 type="text"
@@ -384,7 +384,7 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                           <div className="space-y-2">
                             <Label htmlFor="email">{t("email")}</Label>
                             <div className="relative">
-                              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                               <Input
                                 id="email"
                                 type="email"
@@ -433,12 +433,12 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                           >
                             {t("continue")}
                           </Button>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-slate-600">
                             {t("alreadyHaveAccount")}{" "}
                             <button
                               type="button"
                               onClick={handleToggle}
-                              className="font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+                              className="font-medium text-slate-600 underline-offset-4 transition-colors hover:text-slate-900 hover:underline"
                             >
                               {t("login")}
                             </button>
@@ -488,12 +488,12 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                 <>
                   <CardHeader className="text-center">
                     <div className="mb-3 flex justify-center">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
                         <BookOpen className="h-5 w-5" />
                       </div>
                     </div>
                     <CardTitle className="text-2xl font-bold font-sans">{t("login")}</CardTitle>
-                    <CardDescription className="text-sm font-normal leading-tight text-muted-foreground">
+                    <CardDescription className="text-sm font-normal leading-tight text-slate-500 dark:text-slate-400">
                       Welcome back to DepEd Auto-DLP/DLL
                     </CardDescription>
                   </CardHeader>
@@ -507,7 +507,7 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                       <div className="space-y-2">
                         <Label htmlFor="login-email">{t("email")}</Label>
                         <div className="relative">
-                          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                           <Input
                             id="login-email"
                             type="email"
@@ -553,16 +553,16 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                       <div className="flex flex-col items-center space-y-2">
                         <a
                           href="/forgot-password"
-                          className="text-xs font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+                          className="text-xs font-medium text-slate-600 underline-offset-4 transition-colors hover:text-slate-900 hover:underline"
                         >
                           {t("forgotPassword")}
                         </a>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-slate-600">
                           {t("noAccount")}{" "}
                           <button
                             type="button"
                             onClick={handleToggle}
-                            className="font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+                            className="font-medium text-slate-600 underline-offset-4 transition-colors hover:text-slate-900 hover:underline"
                           >
                             {t("signup")}
                           </button>

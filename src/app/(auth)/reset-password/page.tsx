@@ -3,20 +3,9 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Loader } from "@/components/Loader";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { PasswordInput } from "@/components/ui/password-input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ShieldCheck, Lock, CheckCircle2 } from "lucide-react";
 
 export default function ResetPasswordPage() {
   return (
@@ -29,6 +18,8 @@ export default function ResetPasswordPage() {
 function ResetPasswordForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -79,83 +70,105 @@ function ResetPasswordForm() {
     setLoading(false);
   };
 
-  return (
-    <Card className="bg-card/80 shadow-xl backdrop-blur-md">
-      <CardHeader className="text-center">
-        <div className="mb-3 flex justify-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
-            {success ? <CheckCircle2 className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
-          </div>
-        </div>
-        <CardTitle className="text-2xl font-bold font-sans">
-          {success ? t("passwordReset") : t("resetPassword")}
-        </CardTitle>
-        <CardDescription className="text-sm font-normal leading-tight text-muted-foreground">
-          {success ? t("passwordResetSuccess") : "Choose a new password for your account"}
-        </CardDescription>
-      </CardHeader>
-
-      {!email || !token ? (
-        <CardContent className="text-center">
-          <p className="text-sm text-muted-foreground">
+  if (!email || !token) {
+    return (
+      <div className="auth-card">
+        <span className="auth-singup">{t("resetPassword")}</span>
+        <div className="auth-field-group">
+          <p className="auth-msg" style={{ color: "#000", textTransform: "none", textAlign: "center" }}>
             This reset link is invalid or has expired. Please request a new one.
           </p>
-        </CardContent>
-      ) : success ? (
-        <CardFooter className="justify-center">
-          <Button className="w-full" onClick={() => router.push("/login")}>
+          <Link href="/forgot-password" className="auth-enter" style={{ textAlign: "center", textDecoration: "none", marginBottom: 0 }}>
+            {t("continue")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="auth-card">
+        <span className="auth-singup">{t("passwordReset")}</span>
+        <div className="auth-field-group">
+          <p className="auth-msg" style={{ color: "#000", textTransform: "none", textAlign: "center" }}>
+            {t("passwordResetSuccess")}
+          </p>
+          <button type="button" className="auth-enter" style={{ marginBottom: 0 }} onClick={() => router.push("/login")}>
             {t("login")}
-          </Button>
-        </CardFooter>
-      ) : (
-        <form onSubmit={handleResetPassword}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="password">{t("newPassword")}</Label>
-              <PasswordInput
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                required
-                leadingIcon={<Lock className="h-4 w-4" />}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
-              <PasswordInput
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password"
-                required
-                leadingIcon={<Lock className="h-4 w-4" />}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-3">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader size="sm" />
-                  {t("loading")}
-                </span>
-              ) : (
-                t("resetPassword")
-              )}
-            </Button>
-            <span className="text-xs text-muted-foreground">
-              {t("rememberPassword")}{" "}
-              <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
-                {t("login")}
-              </Link>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="auth-card">
+      <span className="auth-singup">{t("resetPassword")}</span>
+
+      {error && <p className="auth-msg">{error}</p>}
+
+      <form className="auth-field-group" onSubmit={handleResetPassword}>
+        <div className="auth-inputBox">
+          <input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+          />
+          <span>{t("newPassword")}</span>
+          <button
+            type="button"
+            className="auth-eye"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
+        <div className="auth-inputBox1">
+          <input
+            id="confirmPassword"
+            type={showConfirm ? "text" : "password"}
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+          />
+          <span>{t("confirmPassword")}</span>
+          <button
+            type="button"
+            className="auth-eye"
+            onClick={() => setShowConfirm((prev) => !prev)}
+            aria-label={showConfirm ? "Hide password" : "Show password"}
+            tabIndex={-1}
+          >
+            {showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
+        <button type="submit" className="auth-enter" style={{ marginBottom: 0 }} disabled={loading}>
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader size="sm" />
+              {t("loading")}
             </span>
-          </CardFooter>
-        </form>
-      )}
-    </Card>
+          ) : (
+            t("resetPassword")
+          )}
+        </button>
+      </form>
+
+      <div className="auth-row">
+        <span className="text-xs text-black/70">
+          {t("rememberPassword")}{" "}
+          <Link href="/login" className="auth-link">
+            {t("login")}
+          </Link>
+        </span>
+      </div>
+    </div>
   );
 }
