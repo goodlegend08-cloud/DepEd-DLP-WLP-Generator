@@ -636,7 +636,7 @@ export async function buildDocx(
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               sectionBannerRow("Assessment.", assessment.framework_guidance_note || "Assessments reveal what learners have gained and what they still need help with. These are helpful in providing you with information to guide your future instruction throughout the entire session."),
-              kvRow("Formative Assessment:\nEVALUATE (5 mins) — Formative Assessment. Use a uniform Individual Written 5-Item Exit Ticket that directly measures the day's objective, with an Answer Key below the questions and a remediation threshold stated under Ways Forward.", hasExitTicket ? [
+              kvRow("Formative Assessment:\nCreate a task, activity or questions to evaluate learning and provide feedback. Provide ways for learners to ask for guidance and support.\nRemember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports)", hasExitTicket ? [
                 `<b><i>${formative.title || "EVALUATE (5 mins) — Formative Assessment"}:</i></b> ${formative.format || "Individual Written 5-Item Exit Ticket"}`,
                 "",
                 `<b><i>Item 1 (Terminology / Key Scientist):</i></b> ${formative.item_1 || ""}`,

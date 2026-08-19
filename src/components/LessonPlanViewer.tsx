@@ -456,7 +456,9 @@ Apply the Learning Design Principles by thinking about how to:
           <BannerRow title="Assessment." guidance={ASSESSMENT_GUIDANCE} />
           <SubRow
             label="Formative Assessment:"
-            instruction="EVALUATE (5 mins) — Formative Assessment. Use a uniform Individual Written 5-Item Exit Ticket that directly measures the day's objective, with an Answer Key below the questions and a remediation threshold stated under Ways Forward."
+            instruction={`Create a task, activity or questions to evaluate learning and provide feedback. Provide ways for learners to ask for guidance and support.
+
+Remember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports)`}
           >
             {[formative.item_1, formative.item_2, formative.item_3, formative.item_4, formative.item_5].some(Boolean) ? (
               <div className="space-y-2">
