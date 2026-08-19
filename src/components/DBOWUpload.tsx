@@ -13,6 +13,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Upload,
   FileText,
   Check,
@@ -326,18 +333,22 @@ export function DBOWUpload({ onSelection, onWeekSelection, onClear, selectedEntr
                 </Badge>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <select
+                <Select
                   value={filterContent}
-                  onChange={(e) => setFilterContent(e.target.value)}
-                  className="h-7 rounded-md border bg-background px-2 text-xs text-foreground outline-none transition-colors hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+                  onValueChange={(v) => setFilterContent(v ?? "all")}
                 >
-                  <option value="all">All Content Areas</option>
-                  {dbowData.contentAreas.map((area) => (
-                    <option key={area} value={area}>
-                      {area}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger size="sm" className="h-7 px-2 text-xs">
+                    <SelectValue placeholder="All Content Areas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Content Areas</SelectItem>
+                    {dbowData.contentAreas.map((area) => (
+                      <SelectItem key={area} value={area}>
+                        {area}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button
                   variant="outline"
                   size="sm"

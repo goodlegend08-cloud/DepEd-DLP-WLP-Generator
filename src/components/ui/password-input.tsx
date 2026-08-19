@@ -18,7 +18,7 @@ function PasswordInput({
   return (
     <div className={cn("relative", className)}>
       {leadingIcon && (
-        <span className="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-center text-slate-400">
+        <span className="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-center text-muted-foreground">
           {leadingIcon}
         </span>
       )}
