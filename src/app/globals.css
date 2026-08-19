@@ -20,6 +20,7 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-brand-gold: var(--brand-gold);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -46,72 +47,76 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  color-scheme: light;
+  --background: oklch(0.985 0.006 250);
+  --foreground: oklch(0.28 0.05 264);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.28 0.05 264);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.28 0.05 264);
+  --primary: oklch(0.47 0.15 261);
+  --primary-foreground: oklch(0.985 0.005 250);
+  --secondary: oklch(0.955 0.02 258);
+  --secondary-foreground: oklch(0.4 0.1 261);
+  --muted: oklch(0.955 0.015 255);
+  --muted-foreground: oklch(0.55 0.04 258);
+  --accent: oklch(0.955 0.02 258);
+  --accent-foreground: oklch(0.35 0.1 261);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --border: oklch(0.92 0.015 258);
+  --input: oklch(0.92 0.015 258);
+  --ring: oklch(0.5 0.15 261);
+  --chart-1: oklch(0.5 0.15 261);
+  --chart-2: oklch(0.68 0.13 240);
+  --chart-3: oklch(0.8 0.14 85);
+  --chart-4: oklch(0.55 0.2 300);
+  --chart-5: oklch(0.6 0.15 200);
+  --brand-gold: oklch(0.8 0.14 85);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.985 0.006 250);
+  --sidebar-foreground: oklch(0.28 0.05 264);
+  --sidebar-primary: oklch(0.47 0.15 261);
+  --sidebar-primary-foreground: oklch(0.985 0.005 250);
+  --sidebar-accent: oklch(0.955 0.02 258);
+  --sidebar-accent-foreground: oklch(0.35 0.1 261);
+  --sidebar-border: oklch(0.92 0.015 258);
+  --sidebar-ring: oklch(0.5 0.15 261);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  color-scheme: dark;
+  --background: oklch(0.2 0.03 260);
+  --foreground: oklch(0.97 0.005 250);
+  --card: oklch(0.26 0.03 260);
+  --card-foreground: oklch(0.97 0.005 250);
+  --popover: oklch(0.26 0.03 260);
+  --popover-foreground: oklch(0.97 0.005 250);
+  --primary: oklch(0.65 0.13 250);
+  --primary-foreground: oklch(0.18 0.03 260);
+  --secondary: oklch(0.3 0.04 258);
+  --secondary-foreground: oklch(0.95 0.01 250);
+  --muted: oklch(0.3 0.04 258);
+  --muted-foreground: oklch(0.7 0.03 252);
+  --accent: oklch(0.3 0.04 258);
+  --accent-foreground: oklch(0.95 0.01 250);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.6 0.14 255);
+  --chart-1: oklch(0.6 0.14 255);
+  --chart-2: oklch(0.75 0.12 235);
+  --chart-3: oklch(0.85 0.14 85);
+  --chart-4: oklch(0.68 0.16 310);
+  --chart-5: oklch(0.7 0.14 200);
+  --brand-gold: oklch(0.85 0.15 85);
+  --sidebar: oklch(0.2 0.03 260);
+  --sidebar-foreground: oklch(0.97 0.005 250);
+  --sidebar-primary: oklch(0.65 0.13 250);
+  --sidebar-primary-foreground: oklch(0.18 0.03 260);
+  --sidebar-accent: oklch(0.3 0.04 258);
+  --sidebar-accent-foreground: oklch(0.95 0.01 250);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.6 0.14 255);
 }
 
 @layer base {
@@ -124,180 +129,6 @@
   html {
     @apply font-sans;
   }
-}
-
-/* ============================================================
-   Auth forms — Uiverse.io style (login / signup)
-   ============================================================ */
-.auth-singup {
-  color: #000;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  display: block;
-  font-weight: bold;
-  font-size: x-large;
-  margin-top: 1.5em;
-}
-
-.auth-card {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 350px;
-  width: 300px;
-  flex-direction: column;
-  gap: 35px;
-  border-radius: 15px;
-  background: #e3e3e3;
-  box-shadow: 16px 16px 32px #c8c8c8,
-        -16px -16px 32px #fefefe;
-  border-radius: 8px;
-}
-
-.auth-card--wide {
-  width: 360px;
-}
-
-.auth-card .auth-field-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 28px;
-  width: 100%;
-}
-
-.auth-inputBox,
-.auth-inputBox1 {
-  position: relative;
-  width: 250px;
-}
-
-.auth-inputBox input,
-.auth-inputBox1 input {
-  width: 100%;
-  padding: 10px;
-  outline: none;
-  border: none;
-  color: #000;
-  font-size: 1em;
-  background: transparent;
-  border-left: 2px solid #000;
-  border-bottom: 2px solid #000;
-  transition: 0.1s;
-  border-bottom-left-radius: 8px;
-}
-
-.auth-inputBox span,
-.auth-inputBox1 span {
-  margin-top: 5px;
-  position: absolute;
-  left: 0;
-  transform: translateY(-4px);
-  margin-left: 10px;
-  padding: 10px;
-  pointer-events: none;
-  font-size: 12px;
-  color: #000;
-  text-transform: uppercase;
-  transition: 0.5s;
-  letter-spacing: 3px;
-  border-radius: 8px;
-}
-
-.auth-inputBox input:valid~span,
-.auth-inputBox input:focus~span {
-  transform: translateX(113px) translateY(-15px);
-  font-size: 0.8em;
-  padding: 5px 10px;
-  background: #000;
-  letter-spacing: 0.2em;
-  color: #fff;
-  border: 2px;
-}
-
-.auth-inputBox1 input:valid~span,
-.auth-inputBox1 input:focus~span {
-  transform: translateX(156px) translateY(-15px);
-  font-size: 0.8em;
-  padding: 5px 10px;
-  background: #000;
-  letter-spacing: 0.2em;
-  color: #fff;
-  border: 2px;
-}
-
-.auth-inputBox input:valid,
-.auth-inputBox input:focus,
-.auth-inputBox1 input:valid,
-.auth-inputBox1 input:focus {
-  border: 2px solid #000;
-  border-radius: 8px;
-}
-
-.auth-enter {
-  height: 45px;
-  width: 100px;
-  border-radius: 5px;
-  border: 2px solid #000;
-  cursor: pointer;
-  background-color: transparent;
-  transition: 0.5s;
-  text-transform: uppercase;
-  font-size: 10px;
-  letter-spacing: 2px;
-  margin-bottom: 3em;
-}
-
-.auth-enter:hover {
-  background-color: rgb(0, 0, 0);
-  color: white;
-}
-
-.auth-enter:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.auth-card .auth-msg {
-  margin: 0;
-  color: #b00020;
-  font-size: 12px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.auth-card .auth-link {
-  color: #000;
-  font-size: 11px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  text-decoration: underline;
-}
-
-.auth-card .auth-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin-top: -2em;
-}
-
-.auth-eye {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  border: none;
-  background: transparent;
-  color: #000;
-  cursor: pointer;
-  padding: 2px;
-  z-index: 1;
-  transition: opacity 0.2s;
-}
-
-.auth-eye:hover {
-  opacity: 0.6;
 }
 
 /* ============================================================

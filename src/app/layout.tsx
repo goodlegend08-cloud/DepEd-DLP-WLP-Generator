@@ -24,17 +24,24 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
+return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.style.colorScheme=t;}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100`}
+        className={`${geistSans.variable} ${geistMono.variable} relative min-h-screen overflow-x-hidden bg-background text-foreground antialiased`}
       >
         {/* Background Ambient Orbs */}
         <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-          <div className="absolute -top-20 -left-20 h-[30rem] w-[30rem] animate-pulse rounded-full bg-slate-300/30 blur-3xl dark:bg-slate-800/20" />
-          <div className="absolute -bottom-20 -right-20 h-[30rem] w-[30rem] rounded-full bg-neutral-200/40 blur-3xl dark:bg-neutral-900/30" />
+          <div className="absolute -top-20 -left-20 h-[30rem] w-[30rem] animate-pulse rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute -bottom-20 -right-20 h-[30rem] w-[30rem] rounded-full bg-brand-gold/10 blur-3xl dark:bg-brand-gold/10" />
           {/* Subtle Dot Mesh Overlay */}
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] opacity-40 [background-size:16px_16px] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] opacity-40 [background-size:16px_16px]" />
         </div>
 
         {/* Main App Content */}

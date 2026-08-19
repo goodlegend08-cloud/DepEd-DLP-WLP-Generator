@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/lib/i18n";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { BookOpen, ChevronLeft, ChevronRight, Search, Filter, X } from "lucide-react";
 import type { SavedLessonPlan } from "@/types/lesson-plan";
 
@@ -186,78 +193,52 @@ export default function DashboardPage() {
             </div>
 
             {/* Grade Level */}
-            <div className="space-y-1">
-              <Label className="text-xs">Grade Level</Label>
-              <select
-                value={gradeFilter}
-                onChange={(e) => { setGradeFilter(e.target.value); }}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">All Grades</option>
-                {data?.filterOptions.gradeLevels.map((g) => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-            </div>
+            <FilterSelect
+              label="Grade Level"
+              value={gradeFilter}
+              onValueChange={setGradeFilter}
+              placeholder="All Grades"
+              options={(data?.filterOptions.gradeLevels ?? []).map((g) => ({ value: g, label: g }))}
+            />
 
             {/* Learning Area */}
-            <div className="space-y-1">
-              <Label className="text-xs">Learning Area</Label>
-              <select
-                value={areaFilter}
-                onChange={(e) => { setAreaFilter(e.target.value); }}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">All Areas</option>
-                {data?.filterOptions.learningAreas.map((a) => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </select>
-            </div>
+            <FilterSelect
+              label="Learning Area"
+              value={areaFilter}
+              onValueChange={setAreaFilter}
+              placeholder="All Areas"
+              options={(data?.filterOptions.learningAreas ?? []).map((a) => ({ value: a, label: a }))}
+            />
 
             {/* Quarter */}
-            <div className="space-y-1">
-              <Label className="text-xs">Quarter</Label>
-              <select
-                value={quarterFilter}
-                onChange={(e) => { setQuarterFilter(e.target.value); }}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">All Quarters</option>
-                {data?.filterOptions.quarters.map((q) => (
-                  <option key={q} value={q}>{q}</option>
-                ))}
-              </select>
-            </div>
+            <FilterSelect
+              label="Quarter"
+              value={quarterFilter}
+              onValueChange={setQuarterFilter}
+              placeholder="All Quarters"
+              options={(data?.filterOptions.quarters ?? []).map((q) => ({ value: q, label: q }))}
+            />
 
             {/* Week */}
-            <div className="space-y-1">
-              <Label className="text-xs">Week</Label>
-              <select
-                value={weekFilter}
-                onChange={(e) => { setWeekFilter(e.target.value); }}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">All Weeks</option>
-                {data?.filterOptions.weeks.map((w) => (
-                  <option key={w} value={w}>{w}</option>
-                ))}
-              </select>
-            </div>
+            <FilterSelect
+              label="Week"
+              value={weekFilter}
+              onValueChange={setWeekFilter}
+              placeholder="All Weeks"
+              options={(data?.filterOptions.weeks ?? []).map((w) => ({ value: w, label: w }))}
+            />
 
             {/* Plan Type */}
-            <div className="space-y-1">
-              <Label className="text-xs">Plan Type</Label>
-              <select
-                value={planTypeFilter}
-                onChange={(e) => { setPlanTypeFilter(e.target.value); }}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">All Types</option>
-                <option value="dlp">DLP (Daily)</option>
-                <option value="wlp">WLP (Weekly)</option>
-              </select>
-            </div>
+            <FilterSelect
+              label="Plan Type"
+              value={planTypeFilter}
+              onValueChange={setPlanTypeFilter}
+              placeholder="All Types"
+              options={[
+                { value: "dlp", label: "DLP (Daily)" },
+                { value: "wlp", label: "WLP (Weekly)" },
+              ]}
+            />
           </div>
 
           <Button onClick={handleFilterChange} className="mt-3 h-9" size="sm">
@@ -371,5 +352,41 @@ function PlanCard({ plan }: { plan: SavedLessonPlan }) {
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onValueChange,
+  placeholder,
+  options,
+}: {
+  label: string;
+  value: string;
+  onValueChange: (v: string) => void;
+  placeholder: string;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">{label}</Label>
+      <Select
+        value={value === "" ? "all" : value}
+        onValueChange={(v) => onValueChange(v === "all" ? "" : (v ?? ""))}
+      >
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{placeholder}</SelectItem>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

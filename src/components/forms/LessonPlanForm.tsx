@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, ArrowLeft, ArrowRight, Loader2, X } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight, Loader2, X, Pencil } from "lucide-react";
 import { DBOWUpload } from "@/components/DBOWUpload";
 import { TemplateUpload } from "@/components/TemplateUpload";
 import { Loader } from "@/components/Loader";
@@ -113,9 +113,10 @@ function saveCachedSection(section: string) {
   }
 }
 const STEPS = [
-  { title: "Plan Type", description: "DLP or WLP" },
-  { title: "Topic", description: "Choose from DBOW" },
-  { title: "Lesson Information", description: "Details of the lesson" },
+  { title: "Plan Type", short: "Type", description: "DLP or WLP" },
+  { title: "Topic", short: "Topic", description: "Choose from DBOW" },
+  { title: "Lesson Information", short: "Details", description: "Details of the lesson" },
+  { title: "Review", short: "Review", description: "Confirm & generate" },
 ] as const;
 
 /** Show a stored ISO date ("2026-11-03") as a readable label ("November 03, 2026"). */
@@ -640,19 +641,19 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Stepper */}
-      <ol className="flex items-center justify-between gap-2 sm:gap-4">
+      <ol className="flex items-center justify-between gap-1 sm:gap-4">
         {STEPS.map((step, idx) => {
           const isActive = idx === currentStep;
           const isDone = idx < currentStep;
           return (
-            <li key={step.title} className="flex items-center gap-2 sm:gap-3 flex-1 last:flex-none">
+            <li key={step.title} className="flex items-center gap-1 sm:gap-3 flex-1 last:flex-none">
               <button
                 type="button"
                 onClick={() => idx < currentStep && setCurrentStep(idx)}
-                className={`flex items-center gap-2 ${idx < currentStep ? "cursor-pointer" : "cursor-default"}`}
+                className={`flex items-center gap-1 sm:gap-2 ${idx < currentStep ? "cursor-pointer" : "cursor-default"}`}
               >
                 <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-medium border transition-colors ${
+                  className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full text-sm font-medium border transition-colors ${
                     isActive
                       ? "border-primary bg-primary text-primary-foreground"
                       : isDone
@@ -662,8 +663,9 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                 >
                   {isDone ? <Check className="h-4 w-4" /> : idx + 1}
                 </span>
-                <span className={`hidden sm:block text-sm font-medium ${isActive ? "text-foreground" : isDone ? "text-foreground" : "text-muted-foreground"}`}>
-                  {step.title}
+                <span className={`text-xs sm:text-sm font-medium ${isActive ? "text-foreground" : isDone ? "text-foreground" : "text-muted-foreground"}`}>
+                  <span className="sm:hidden">{step.short}</span>
+                  <span className="hidden sm:inline">{step.title}</span>
                 </span>
               </button>
               {idx < STEPS.length - 1 && (
@@ -1038,6 +1040,112 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
+            <Button type="button" size="lg" onClick={goNext} className="flex-1 sm:flex-none">
+              Review
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 4: Review & Generate */}
+      {currentStep === 3 && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold">Review & Generate</h2>
+            <p className="text-sm text-muted-foreground">
+              Confirm the details below, then generate your lesson plan. Click Edit to change any item.
+            </p>
+          </div>
+
+          <Card>
+            <CardContent className="space-y-3 pt-6">
+              <SectionRow
+                label="Plan Type"
+                value={planType === "dlp" ? "Daily Lesson Plan (DLP)" : "Weekly Lesson Plan (WLP)"}
+                onEdit={() => setCurrentStep(0)}
+              />
+              <SectionRow
+                label="Topic"
+                value={
+                  planType === "wlp"
+                    ? selectedWeekEntries.length > 0
+                      ? `${selectedWeekEntries[0].weekRange} (${selectedWeekEntries.length} days)`
+                      : "No topics selected"
+                    : selectedDBOW
+                      ? `${selectedDBOW.day} — ${selectedDBOW.objective}`
+                      : "No DBOW topic selected"
+                }
+                onEdit={() => setCurrentStep(1)}
+              />
+              <SectionRow
+                label="Grade Level"
+                value={watch("gradeLevel") || "—"}
+                onEdit={() => setCurrentStep(2)}
+              />
+              <SectionRow
+                label="Learning Area"
+                value={watch("learningArea") || "—"}
+                onEdit={() => setCurrentStep(2)}
+              />
+              <SectionRow
+                label="Quarter / Week"
+                value={[watch("quarter"), watch("week")].filter(Boolean).join(" • ") || "—"}
+                onEdit={() => setCurrentStep(2)}
+              />
+              <SectionRow
+                label="Subject Description"
+                value={watch("subjectDescription") || "—"}
+                onEdit={() => setCurrentStep(2)}
+              />
+              <SectionRow
+                label="Teacher"
+                value={watch("teacherName") || "—"}
+                onEdit={() => setCurrentStep(2)}
+              />
+              <SectionRow
+                label="School"
+                value={watch("schoolName") || "—"}
+                onEdit={() => setCurrentStep(2)}
+              />
+              {planType === "wlp" ? (
+                <SectionRow
+                  label="Week Dates (Mon–Fri)"
+                  value={(
+                    [
+                      ["monday", "Monday"],
+                      ["tuesday", "Tuesday"],
+                      ["wednesday", "Wednesday"],
+                      ["thursday", "Thursday"],
+                      ["friday", "Friday"],
+                    ] as const
+                  )
+                    .map(([key, label]) => `${label}: ${isoToReadable(weekDates[key]) || "—"}`)
+                    .join("  •  ")}
+                  onEdit={() => setCurrentStep(2)}
+                />
+              ) : (
+                <SectionRow
+                  label="Calendar Date"
+                  value={watch("calendarDate") || "—"}
+                  onEdit={() => setCurrentStep(2)}
+                />
+              )}
+              {selectedTemplate && (
+                <SectionRow
+                  label="Template"
+                  value={selectedTemplate.name}
+                  onEdit={() => setCurrentStep(0)}
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-between gap-2">
+            <Button type="button" variant="outline" size="lg" onClick={goBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
             <Button type="submit" size="lg" className="flex-1 sm:flex-none" disabled={loading}>
               {loading ? (
                 <>
@@ -1159,5 +1267,24 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
         </div>
       )}
     </form>
+  );
+}
+
+function SectionRow({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-muted/30 px-3 py-2">
+      <div className="min-w-0">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="mt-0.5 truncate text-sm">{value}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onEdit}
+        className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
+      >
+        <Pencil className="h-3 w-3" />
+        Edit
+      </button>
+    </div>
   );
 }

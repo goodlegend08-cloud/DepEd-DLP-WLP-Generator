@@ -5,6 +5,18 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { Loader } from "@/components/Loader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { KeyRound, Mail, ArrowLeft } from "lucide-react";
 
 export default function ForgotPasswordPage() {
   return (
@@ -102,106 +114,123 @@ function ForgotPasswordForm() {
     setLoading(false);
   };
 
-  if (questions.length > 0) {
-    return (
-      <div className="auth-card">
-        <span className="auth-singup">{t("forgotPassword")}</span>
-
-        <form className="auth-field-group" onSubmit={handleVerify}>
-          {error && <p className="auth-msg">{error}</p>}
-          {questions.map((q, index) => {
-            const question = toQuestionString(q);
-            return (
-              <div key={`${index}-${question}`} className="auth-inputBox1">
-                <input
-                  id={`answer-${index}`}
-                  type="text"
-                  autoComplete="off"
-                  required
-                  value={answers[question] ?? ""}
-                  onChange={(e) => setAnswers((prev) => ({ ...prev, [question]: e.target.value }))}
-                />
-                <span>{question}</span>
-              </div>
-            );
-          })}
-          <button type="submit" className="auth-enter" style={{ marginBottom: 0 }} disabled={loading}>
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader size="sm" />
-                {t("loading")}
-              </span>
-            ) : (
-              t("verifyAnswers")
-            )}
-          </button>
-        </form>
-
-        <div className="auth-row">
-          <button
-            type="button"
-            onClick={() => {
-              setQuestions([]);
-              setAnswers({});
-              setError(null);
-            }}
-            className="auth-link"
-          >
-            Back
-          </button>
-          <span className="text-xs text-black/70">
-            {t("rememberPassword")}{" "}
-            <Link href="/login" className="auth-link">
-              {t("login")}
-            </Link>
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="auth-card">
-      <span className="auth-singup">{t("forgotPassword")}</span>
-
-      {error && <p className="auth-msg">{error}</p>}
-
-      <form className="auth-field-group" onSubmit={handleLookup}>
-        <div className="auth-inputBox1">
-          <input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-          />
-          <span>{t("email")}</span>
+    <Card className="bg-card/80 shadow-xl backdrop-blur-md">
+      <CardHeader className="text-center">
+        <div className="mb-3 flex justify-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
+            <KeyRound className="h-5 w-5" />
+          </div>
         </div>
-        <p className="auth-msg" style={{ color: "#000", textTransform: "none", textAlign: "center", maxWidth: "220px" }}>
-          Enter your email. We&apos;ll show your security questions so you can reset your password
-          without a reset email.
-        </p>
-        <button type="submit" className="auth-enter" style={{ marginBottom: 0 }} disabled={loading}>
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <Loader size="sm" />
-              {t("loading")}
-            </span>
-          ) : (
-            t("continue")
-          )}
-        </button>
-      </form>
+        <CardTitle className="text-2xl font-bold font-sans">{t("forgotPassword")}</CardTitle>
+        <CardDescription className="text-sm font-normal leading-tight text-muted-foreground">
+          Recover your account using your security questions
+        </CardDescription>
+      </CardHeader>
 
-      <div className="auth-row">
-        <span className="text-xs text-black/70">
-          {t("rememberPassword")}{" "}
-          <Link href="/login" className="auth-link">
-            {t("login")}
-          </Link>
-        </span>
-      </div>
-    </div>
+      {questions.length > 0 ? (
+        <form onSubmit={handleVerify}>
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+            )}
+            {questions.map((q, index) => {
+              const question = toQuestionString(q);
+              return (
+                <div key={`${index}-${question}`} className="space-y-2">
+                  <Label>{question}</Label>
+                  <Input
+                    id={`answer-${index}`}
+                    type="text"
+                    autoComplete="off"
+                    required
+                    value={answers[question] ?? ""}
+                    onChange={(e) => setAnswers((prev) => ({ ...prev, [question]: e.target.value }))}
+                  />
+                </div>
+              );
+            })}
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-3">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader size="sm" />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("verifyAnswers")
+              )}
+            </Button>
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => {
+                  setQuestions([]);
+                  setAnswers({});
+                  setError(null);
+                }}
+                className="inline-flex items-center gap-1 font-medium underline-offset-4 transition-colors hover:text-primary hover:underline"
+              >
+                <ArrowLeft className="h-3 w-3" />
+                Back
+              </button>
+              <span>
+                {t("rememberPassword")}{" "}
+                <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+                  {t("login")}
+                </Link>
+              </span>
+            </div>
+          </CardFooter>
+        </form>
+      ) : (
+        <form onSubmit={handleLookup}>
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">{t("email")}</Label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  className="pl-10"
+                  placeholder="teacher@example.com"
+                />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Enter your email. We&apos;ll show your security questions so you can reset your password
+              without a reset email.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-3">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader size="sm" />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("continue")
+              )}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {t("rememberPassword")}{" "}
+              <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+                {t("login")}
+              </Link>
+            </span>
+          </CardFooter>
+        </form>
+      )}
+    </Card>
   );
 }
