@@ -55,11 +55,11 @@ Respond with VALID JSON only. No markdown, no code fences, no extra text. The JS
     "formative_assessment": {
       "title": "EVALUATE (5 mins) — Formative Assessment",
       "format": "Individual Written 5-Item Exit Ticket",
-      "item_1": "Item 1 (Terminology / Key Scientist): ONE short closed-ended question testing the key terminology, key scientist, or core concept of the day's objective.",
-      "item_2": "Item 2 (Location / Structure): ONE short question testing a location, arrangement, or structural feature of the topic.",
-      "item_3": "Item 3 (Trend / Process / Direction): ONE short question testing a process, trend, sequence, or directional behavior of the topic.",
-      "item_4": "Item 4 (Underlying Mechanism / Physical Process): ONE short question probing WHY or HOW the phenomenon works (the underlying mechanism or physical process).",
-      "item_5": "Item 5 (Concluding Outcome / System Behavior): ONE short question on the overall outcome, result, or system-level behavior of the topic.",
+      "item_1": "ONE short closed-ended question testing the key terminology, key scientist, or core concept of the day's objective.",
+      "item_2": "ONE short question testing a location, arrangement, or structural feature of the topic.",
+      "item_3": "ONE short question testing a process, trend, sequence, or directional behavior of the topic.",
+      "item_4": "ONE short question probing WHY or HOW the phenomenon works (the underlying mechanism or physical process).",
+      "item_5": "ONE short question on the overall outcome, result, or system-level behavior of the topic.",
       "answer_key_1": "Correct answer to Item 1",
       "answer_key_2": "Correct answer to Item 2",
       "answer_key_3": "Correct answer to Item 3",
@@ -112,7 +112,7 @@ The Formative Assessment MUST be a uniform, whole-class 5-item written Exit Tick
    - Item 4 (Underlying Mechanism / Physical Process): probes WHY or HOW the phenomenon works (the underlying mechanism or physical process).
    - Item 5 (Concluding Outcome / System Behavior): tests the overall outcome, result, or system-level behavior of the topic.
 
-3. ANSWER KEY: Provide the correct answer for each of the five items (answer_key_1 through answer_key_5), placed directly below the questions.
+3. ANSWER KEY: Provide the correct answer for each of the five items (answer_key_1 through answer_key_5), placed directly below the questions. Each answer MUST be only the answer text — do NOT prefix it with "Answer Key — Item N".
 
 4. REMEDIATION THRESHOLD: In Ways Forward, the extended_learning.remediation_threshold field MUST state a score threshold with its follow-up action, e.g., "Learners scoring below 3 out of 5 will participate in a guided diagram-labeling recap during tomorrow's review phase."
 
@@ -122,13 +122,15 @@ The Formative Assessment MUST be a uniform, whole-class 5-item written Exit Tick
    - Every item MUST contain the actual, complete question ready for immediate student execution, tailored to the chosen topic.
    - Do NOT repeat the header in the body text — start directly with the question task.
 
+6. LABEL-FREE VALUES: Each item_* value MUST contain ONLY the question text — do NOT prefix it with "Item N (Label): " because the application already renders the item label. Each answer_key_* value MUST contain ONLY the answer text — do NOT prefix it with "Answer Key — Item N".
+
 EXAMPLE OUTPUT (Science — Electricity):
 {
-  "item_1": "Item 1 (Terminology / Key Scientist): What do you call the flow of electric charge through a conductor?",
-  "item_2": "Item 2 (Location / Structure): In a simple circuit, where is the load placed relative to the battery?",
-  "item_3": "Item 3 (Trend / Process / Direction): As the number of bulbs in a series circuit increases, what happens to the brightness of each bulb?",
-  "item_4": "Item 4 (Underlying Mechanism / Physical Process): Why does a broken filament stop the current from flowing in the entire circuit?",
-  "item_5": "Item 5 (Concluding Outcome / System Behavior): What is the overall effect on the circuit when a switch is opened?",
+  "item_1": "What do you call the flow of electric charge through a conductor?",
+  "item_2": "In a simple circuit, where is the load placed relative to the battery?",
+  "item_3": "As the number of bulbs in a series circuit increases, what happens to the brightness of each bulb?",
+  "item_4": "Why does a broken filament stop the current from flowing in the entire circuit?",
+  "item_5": "What is the overall effect on the circuit when a switch is opened?",
   "answer_key_1": "Electric current",
   "answer_key_2": "In series with the battery, between its terminals",
   "answer_key_3": "The brightness of each bulb decreases",
@@ -193,11 +195,11 @@ OUTPUT SCHEMA (strict JSON):
     "formative_assessment": {
       "title": "EVALUATE (5 mins) — Formative Assessment",
       "format": "Individual Written 5-Item Exit Ticket",
-      "item_1": "Item 1 (Terminology / Key Scientist): ONE short closed-ended question on the key terminology, key scientist, or core concept of the day's objective",
-      "item_2": "Item 2 (Location / Structure): ONE short question on a location, arrangement, or structural feature of the topic",
-      "item_3": "Item 3 (Trend / Process / Direction): ONE short question on a process, trend, sequence, or directional behavior of the topic",
-      "item_4": "Item 4 (Underlying Mechanism / Physical Process): ONE short question probing WHY or HOW the phenomenon works",
-      "item_5": "Item 5 (Concluding Outcome / System Behavior): ONE short question on the overall outcome, result, or system-level behavior of the topic",
+      "item_1": "ONE short closed-ended question on the key terminology, key scientist, or core concept of the day's objective",
+      "item_2": "ONE short question on a location, arrangement, or structural feature of the topic",
+      "item_3": "ONE short question on a process, trend, sequence, or directional behavior of the topic",
+      "item_4": "ONE short question probing WHY or HOW the phenomenon works",
+      "item_5": "ONE short question on the overall outcome, result, or system-level behavior of the topic",
       "answer_key_1": "Correct answer to Item 1",
       "answer_key_2": "Correct answer to Item 2",
       "answer_key_3": "Correct answer to Item 3",
@@ -284,11 +286,11 @@ ASSESSMENT — The assessment object MUST have a NESTED "formative_assessment" o
 "formative_assessment": {
   "title": "EVALUATE (5 mins) — Formative Assessment",
   "format": "Individual Written 5-Item Exit Ticket",
-  "item_1": "Item 1 (Terminology / Key Scientist): ONE short closed-ended question on the key terminology, key scientist, or core concept of the day's objective.",
-  "item_2": "Item 2 (Location / Structure): ONE short question on a location, arrangement, or structural feature of the topic.",
-  "item_3": "Item 3 (Trend / Process / Direction): ONE short question on a process, trend, sequence, or directional behavior of the topic.",
-  "item_4": "Item 4 (Underlying Mechanism / Physical Process): ONE short question probing WHY or HOW the phenomenon works.",
-  "item_5": "Item 5 (Concluding Outcome / System Behavior): ONE short question on the overall outcome, result, or system-level behavior of the topic.",
+  "item_1": "ONE short closed-ended question on the key terminology, key scientist, or core concept of the day's objective.",
+  "item_2": "ONE short question on a location, arrangement, or structural feature of the topic.",
+  "item_3": "ONE short question on a process, trend, sequence, or directional behavior of the topic.",
+  "item_4": "ONE short question probing WHY or HOW the phenomenon works.",
+  "item_5": "ONE short question on the overall outcome, result, or system-level behavior of the topic.",
   "answer_key_1": "Correct answer to Item 1",
   "answer_key_2": "Correct answer to Item 2",
   "answer_key_3": "Correct answer to Item 3",
@@ -323,11 +325,11 @@ ASSESSMENT — The assessment object MUST have a NESTED "formative_assessment" o
 "formative_assessment": {
   "title": "EVALUATE (5 mins) — Formative Assessment",
   "format": "Individual Written 5-Item Exit Ticket",
-  "item_1": "Item 1 (Terminology / Key Scientist): ONE short closed-ended question on the key terminology, key scientist, or core concept of the day's objective.",
-  "item_2": "Item 2 (Location / Structure): ONE short question on a location, arrangement, or structural feature of the topic.",
-  "item_3": "Item 3 (Trend / Process / Direction): ONE short question on a process, trend, sequence, or directional behavior of the topic.",
-  "item_4": "Item 4 (Underlying Mechanism / Physical Process): ONE short question probing WHY or HOW the phenomenon works.",
-  "item_5": "Item 5 (Concluding Outcome / System Behavior): ONE short question on the overall outcome, result, or system-level behavior of the topic.",
+  "item_1": "ONE short closed-ended question on the key terminology, key scientist, or core concept of the day's objective.",
+  "item_2": "ONE short question on a location, arrangement, or structural feature of the topic.",
+  "item_3": "ONE short question on a process, trend, sequence, or directional behavior of the topic.",
+  "item_4": "ONE short question probing WHY or HOW the phenomenon works.",
+  "item_5": "ONE short question on the overall outcome, result, or system-level behavior of the topic.",
   "answer_key_1": "Correct answer to Item 1",
   "answer_key_2": "Correct answer to Item 2",
   "answer_key_3": "Correct answer to Item 3",
@@ -403,7 +405,7 @@ School Name: ${params.schoolName || "LAS PIÑAS CAA NATIONAL HIGH SCHOOL"}`;
 
 CRITICAL STRUCTURE REQUIREMENTS:
 - The learning_experience object MUST have a NESTED "flow" object with fields: engage, explore_explain_modeling, elaborate_guided_practice, evaluate_independent_practice, reflection_closure. Do NOT use flat top-level fields for 5E phases.
-- The assessment object MUST have a NESTED "formative_assessment" object following the UNIFORM 5E EVALUATE EXIT TICKET structure: title ("EVALUATE (5 mins) — Formative Assessment"), format ("Individual Written 5-Item Exit Ticket"), item_1 through item_5 (Terminology/Key Scientist, Location/Structure, Trend/Process/Direction, Underlying Mechanism/Physical Process, Concluding Outcome/System Behavior), and answer_key_1 through answer_key_5 directly below the questions. Do NOT use flat top-level formative_assessment_* fields and do NOT differentiate the exit ticket by reading level.
+- The assessment object MUST have a NESTED "formative_assessment" object following the UNIFORM 5E EVALUATE EXIT TICKET structure: title ("EVALUATE (5 mins) — Formative Assessment"), format ("Individual Written 5-Item Exit Ticket"), item_1 through item_5 (Terminology/Key Scientist, Location/Structure, Trend/Process/Direction, Underlying Mechanism/Physical Process, Concluding Outcome/System Behavior), and answer_key_1 through answer_key_5 directly below the questions. Each item_* value MUST be ONLY the question text and each answer_key_* value ONLY the answer text (no "Item N (...): " or "Answer Key — Item N" prefixes — the app renders those labels). Do NOT use flat top-level formative_assessment_* fields and do NOT differentiate the exit ticket by reading level.
 - The ways_forward object MUST have a NESTED "extended_learning" object with fields: advanced, struggling, and remediation_threshold (the exit-ticket score threshold with its follow-up action). Do NOT use flat top-level extended_learning_* fields.
 
 Include framework_guidance_note in each ILAW section. Include SDO Las Piñas City and NCR contextualization. Each section must have substantial, actionable content.`;

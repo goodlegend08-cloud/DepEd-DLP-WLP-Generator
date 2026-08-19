@@ -94,6 +94,7 @@ Every generated lesson plan MUST follow this exact sequence of tables:
   - **Item 5 (Concluding Outcome / System Behavior):** ONE short question on the overall outcome, result, or system-level behavior of the topic.
   - **Answer Key:** Provide the correct answer for each item (answer_key_1 through answer_key_5) directly below the questions.
   - Every item MUST be a complete, ready-to-execute question — no placeholders, no "refer to..." instructions, no repeated headers.
+  - LABEL-FREE VALUES: Each item_* value MUST contain ONLY the question text — do NOT embed "Item N (...): " prefixes (the app renders the labels). Each answer_key_* value MUST contain ONLY the answer text — do NOT embed "Answer Key — Item N" prefixes.
 
 #### TABLE 5: WAYS FORWARD
 - **Extended learning opportunities:** Suggest other learning experiences outside the classroom hours that learners may want to access or reinforce what they have learned, to spark their curiosity further, or that may provide them support in areas of difficulty.

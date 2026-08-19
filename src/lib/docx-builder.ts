@@ -19,6 +19,7 @@ import {
 import type { ITableCellBorders } from "docx";
 import fs from "fs";
 import path from "path";
+import { stripTicketLabel } from "@/lib/utils";
 import type { GeneratedDLPPlan, WeeklyLessonPlan, LessonPlanInput, DLPFlowPhases, DLPFormativeAssessment, DLPExtendedLearning } from "@/types/lesson-plan";
 
 // ============================================================
@@ -639,18 +640,18 @@ export async function buildDocx(
               kvRow("Formative Assessment:\nCreate a task, activity or questions to evaluate learning and provide feedback. Provide ways for learners to ask for guidance and support.\nRemember to provide appropriate accommodation so all learners can demonstrate their understanding (e.g. varied response formats, small group options, visual or auditory supports)", hasExitTicket ? [
                 `<b><i>${formative.title || "EVALUATE (5 mins) — Formative Assessment"}:</i></b> ${formative.format || "Individual Written 5-Item Exit Ticket"}`,
                 "",
-                `<b><i>Item 1 (Terminology / Key Scientist):</i></b> ${formative.item_1 || ""}`,
-                `<b><i>Item 2 (Location / Structure):</i></b> ${formative.item_2 || ""}`,
-                `<b><i>Item 3 (Trend / Process / Direction):</i></b> ${formative.item_3 || ""}`,
-                `<b><i>Item 4 (Underlying Mechanism / Physical Process):</i></b> ${formative.item_4 || ""}`,
-                `<b><i>Item 5 (Concluding Outcome / System Behavior):</i></b> ${formative.item_5 || ""}`,
+                `<b><i>Item 1 (Terminology / Key Scientist):</i></b> ${stripTicketLabel(formative.item_1 || "", "item")}`,
+                `<b><i>Item 2 (Location / Structure):</i></b> ${stripTicketLabel(formative.item_2 || "", "item")}`,
+                `<b><i>Item 3 (Trend / Process / Direction):</i></b> ${stripTicketLabel(formative.item_3 || "", "item")}`,
+                `<b><i>Item 4 (Underlying Mechanism / Physical Process):</i></b> ${stripTicketLabel(formative.item_4 || "", "item")}`,
+                `<b><i>Item 5 (Concluding Outcome / System Behavior):</i></b> ${stripTicketLabel(formative.item_5 || "", "item")}`,
                 "",
                 `<b><i>Answer Key:</i></b>`,
-                `1. ${formative.answer_key_1 || ""}`,
-                `2. ${formative.answer_key_2 || ""}`,
-                `3. ${formative.answer_key_3 || ""}`,
-                `4. ${formative.answer_key_4 || ""}`,
-                `5. ${formative.answer_key_5 || ""}`,
+                `1. ${stripTicketLabel(formative.answer_key_1 || "", "answer")}`,
+                `2. ${stripTicketLabel(formative.answer_key_2 || "", "answer")}`,
+                `3. ${stripTicketLabel(formative.answer_key_3 || "", "answer")}`,
+                `4. ${stripTicketLabel(formative.answer_key_4 || "", "answer")}`,
+                `5. ${stripTicketLabel(formative.answer_key_5 || "", "answer")}`,
               ].join("\n") : [
                 `<b><i>Targeted Assessment Tasks:</i></b>`,
                 "",
