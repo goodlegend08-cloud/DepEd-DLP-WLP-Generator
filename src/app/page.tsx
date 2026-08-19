@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AuthErrorRedirect } from "@/components/AuthErrorRedirect";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
-import { BookOpen, FileText, Zap, Shield } from "lucide-react";
+import { BookOpen, FileText, Zap, Shield, Users, ClipboardList, CalendarRange } from "lucide-react";
+
+interface LandingStats {
+  users: number;
+  plansSaved: number;
+  plansDlp: number;
+  plansWlp: number;
+}
 
 export default function LandingPage() {
   const router = useRouter();
   const { t, language, setLanguage } = useI18n();
   const supabase = createClient();
+  const [stats, setStats] = useState<LandingStats | null>(null);
 
   // If the user is already logged in, send them straight to the dashboard.
   useEffect(() => {
@@ -33,6 +41,25 @@ export default function LandingPage() {
       cancelled = true;
     };
   }, [supabase, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadStats = async () => {
+      try {
+        const res = await fetch("/api/stats", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setStats(data);
+        }
+      } catch {
+        // Stats are optional; the page still renders without them.
+      }
+    };
+    loadStats();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -83,6 +110,44 @@ export default function LandingPage() {
             </Link>
           </div>
         </section>
+
+        {stats && (
+          <section className="container mx-auto px-4 pb-16">
+            <h2 className="text-center text-2xl font-semibold mb-8">
+              {t("statsTitle")}
+            </h2>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <Users className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <div className="text-3xl font-bold">{stats.users.toLocaleString()}</div>
+                  <p className="text-sm text-muted-foreground">{t("statUsers")}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <ClipboardList className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <div className="text-3xl font-bold">{stats.plansSaved.toLocaleString()}</div>
+                  <p className="text-sm text-muted-foreground">{t("statPlansSaved")}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <FileText className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <div className="text-3xl font-bold">{stats.plansDlp.toLocaleString()}</div>
+                  <p className="text-sm text-muted-foreground">{t("statPlansDlp")}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <CalendarRange className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <div className="text-3xl font-bold">{stats.plansWlp.toLocaleString()}</div>
+                  <p className="text-sm text-muted-foreground">{t("statPlansWlp")}</p>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+        )}
 
         <section className="container mx-auto px-4 py-16">
           <div className="grid gap-6 md:grid-cols-3">

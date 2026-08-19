@@ -31,6 +31,11 @@ const translations = {
     feature3Desc:
       "Zero cost. Your data stays private with secure authentication and row-level security. No student PII stored.",
     landingFooter: "DepEd Auto-DLP/DLL Generator v1.0 — Built for Filipino Educators",
+    statsTitle: "Trusted by Filipino educators",
+    statUsers: "Registered Teachers",
+    statPlansSaved: "Lesson Plans Saved",
+    statPlansDlp: "Daily Lesson Plans",
+    statPlansWlp: "Weekly Lesson Plans",
 
     // Form
     gradeLevel: "Grade Level",
@@ -140,6 +145,11 @@ const translations = {
     feature3Desc:
       "Walang bayad. Ligtas ang iyong datos na may secure na authentication at row-level security. Walang nakaimbak na PII ng estudyante.",
     landingFooter: "DepEd Auto-DLP/DLL Generator v1.0 — Ginawa para sa mga Pilipinong Guro",
+    statsTitle: "Pinagkakatiwalaan ng mga guro sa Pilipinas",
+    statUsers: "Mga Nakarehistrong Guro",
+    statPlansSaved: "Mga Nai-save na Lesson Plan",
+    statPlansDlp: "Daily Lesson Plans",
+    statPlansWlp: "Weekly Lesson Plans",
 
     // Form
     gradeLevel: "Baitang",
