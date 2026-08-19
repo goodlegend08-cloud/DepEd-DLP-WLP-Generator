@@ -111,10 +111,26 @@ export async function generateFromPayload(
     });
   }
   if (process.env.OPENROUTER_API_KEY) {
+    const openrouterClient = getOpenRouter();
     providers.push({
       name: "openrouter",
-      client: getOpenRouter(),
+      client: openrouterClient,
       model: process.env.OPENROUTER_MODEL || "z-ai/glm-5.2:free",
+    });
+    providers.push({
+      name: "openrouter-nemotron",
+      client: openrouterClient,
+      model: "nvidia/nemotron-3-ultra-550b-a55b:free",
+    });
+    providers.push({
+      name: "openrouter-nemotron-super",
+      client: openrouterClient,
+      model: "nvidia/nemotron-3-super-120b-a12b:free",
+    });
+    providers.push({
+      name: "openrouter-cohere",
+      client: openrouterClient,
+      model: "cohere/north-mini-code:free",
     });
   }
   if (process.env.GEMINI_API_KEY) {
