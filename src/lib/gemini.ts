@@ -80,6 +80,8 @@ export interface ProviderStatus {
   model: string;
   status: "trying" | "failed" | "succeeded";
   error?: string;
+  attempt?: number;
+  total?: number;
 }
 
 export async function generateFromPayload(
@@ -167,10 +169,13 @@ export async function generateFromPayload(
   let lastError: Error | null = null;
   let firstError: Error | null = null;
 
-  for (const provider of providers) {
+  for (let i = 0; i < providers.length; i++) {
+    const provider = providers[i];
     const model = provider.model || payload.model;
+    const attempt = i + 1;
+    const total = providers.length;
     try {
-      onStatus?.({ provider: provider.name, model, status: "trying" });
+      onStatus?.({ provider: provider.name, model, status: "trying", attempt, total });
       const result = await provider.client.chat.completions.create({
         model,
         messages: payload.messages,
@@ -189,11 +194,11 @@ export async function generateFromPayload(
         );
         lastError = emptyError;
         if (!firstError) firstError = emptyError;
-        onStatus?.({ provider: provider.name, model, status: "failed", error: emptyError.message });
+        onStatus?.({ provider: provider.name, model, status: "failed", error: emptyError.message, attempt, total });
         continue;
       }
 
-      onStatus?.({ provider: provider.name, model, status: "succeeded" });
+      onStatus?.({ provider: provider.name, model, status: "succeeded", attempt, total });
       return {
         content,
         provider: provider.name,
@@ -207,6 +212,8 @@ export async function generateFromPayload(
         model,
         status: "failed",
         error: lastError.message,
+        attempt,
+        total,
       });
       // Any failure (rate limit, TPM/quota, unknown model, auth, etc.) falls
       // through to the next provider immediately — no backoff, so a broken

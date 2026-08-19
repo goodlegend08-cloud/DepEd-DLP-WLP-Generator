@@ -135,9 +135,9 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<"generating" | "completed" | "failed">("generating");
   const [error, setError] = useState<string | null>(null);
-  const [aiStatus, setAiStatus] = useState<
-    { provider?: string; model?: string; status?: string; error?: string }[]
-  >([]);
+  const [activeProvider, setActiveProvider] = useState<
+    { provider?: string; model?: string; status?: string; error?: string; attempt?: number; total?: number } | null
+  >(null);
   const [selectedDBOW, setSelectedDBOW] = useState<DBOWEntry | null>(null);
   const [selectedWeekEntries, setSelectedWeekEntries] = useState<DBOWEntry[]>([]);
   const [weekDates, setWeekDates] = useState<WeekDates>({
@@ -483,7 +483,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
   const onSubmit = async (data: LessonPlanInput) => {
     setLoading(true);
     setError(null);
-    setAiStatus([]);
+    setActiveProvider(null);
     setPhase("generating");
 
     // Add planType, DBOW entry, template, and start date to the payload
@@ -532,6 +532,31 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
         aiModel?: string;
       } | null = null;
 
+      // Paced single-slot display: failures hold for 1s so the user can read
+      // them, then the next provider's "working" state fades in.
+      type ProviderEvt = {
+        provider?: string;
+        model?: string;
+        status?: string;
+        error?: string;
+        attempt?: number;
+        total?: number;
+      };
+      const statusQueue: ProviderEvt[] = [];
+      let pumping = false;
+      const pump = async () => {
+        if (pumping) return;
+        pumping = true;
+        while (statusQueue.length > 0) {
+          const next = statusQueue.shift()!;
+          setActiveProvider(next);
+          if (next.status === "failed") {
+            await new Promise((r) => setTimeout(r, 1000));
+          }
+        }
+        pumping = false;
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -550,6 +575,8 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
             provider?: string;
             model?: string;
             status?: string;
+            attempt?: number;
+            total?: number;
           };
           try {
             evt = JSON.parse(trimmed);
@@ -557,15 +584,8 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
             continue;
           }
           if (evt.type === "provider") {
-            setAiStatus((prev) => {
-              const idx = prev.findIndex(
-                (s) => s.provider === evt.provider && s.model === evt.model
-              );
-              if (idx === -1) return [...prev, evt];
-              const next = [...prev];
-              next[idx] = { ...next[idx], ...evt };
-              return next;
-            });
+            statusQueue.push(evt);
+            pump();
           } else if (evt.type === "result") {
             planResult = evt;
             setPhase("completed");
@@ -1036,7 +1056,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
 
       {loading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border bg-card p-6 shadow-2xl">
+          <div className="flex h-64 w-full max-w-md flex-col rounded-xl border bg-card p-6 shadow-2xl">
             <div className="flex items-center gap-3">
               {phase === "completed" ? (
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-600/15 text-green-600">
@@ -1049,7 +1069,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
               ) : (
                 <Loader size="md" />
               )}
-              <div>
+              <div className="min-w-0">
                 <p className="font-semibold">
                   {phase === "completed"
                     ? t("generationComplete")
@@ -1057,7 +1077,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                       ? t("generationFailed")
                       : t("generating")}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="truncate text-sm text-muted-foreground">
                   {phase === "completed"
                     ? t("generationCompleteDesc")
                     : phase === "failed"
@@ -1067,57 +1087,73 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
               </div>
             </div>
 
-            {aiStatus.length > 0 && (
-              <ul className="mt-4 space-y-1">
-                {aiStatus.map((s, i) => (
-                  <li
-                    key={i}
-                    className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-all duration-200 ease-in-out ${
-                      s.status === "trying"
-                        ? "border-primary/30 bg-primary/5"
-                        : s.status === "succeeded"
-                          ? "border-green-600/30 bg-green-600/5"
-                          : "border-border"
-                    }`}
+            {activeProvider && (
+              <div className="mt-5 flex flex-1 flex-col justify-center">
+                <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{t("attempt")}</span>
+                  {activeProvider.attempt != null && activeProvider.total != null && (
+                    <span>
+                      {activeProvider.attempt} / {activeProvider.total}
+                    </span>
+                  )}
+                </div>
+                <div className="mb-3 h-1 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-300 ease-in-out"
+                    style={{
+                      width: `${Math.round(
+                        ((activeProvider.attempt ?? 0) / (activeProvider.total ?? 1)) * 100
+                      )}%`,
+                    }}
+                  />
+                </div>
+
+                <div
+                  className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-all duration-300 ease-in-out ${
+                    activeProvider.status === "trying"
+                      ? "border-primary/30 bg-primary/5"
+                      : activeProvider.status === "succeeded"
+                        ? "border-green-600/30 bg-green-600/5"
+                        : "border-border"
+                  }`}
+                >
+                  <span
+                    className={
+                      activeProvider.status === "failed"
+                        ? "text-red-500"
+                        : activeProvider.status === "succeeded"
+                          ? "text-green-600"
+                          : "text-primary"
+                    }
                   >
-                    <span
-                      className={
-                        s.status === "failed"
-                          ? "text-red-500"
-                          : s.status === "succeeded"
-                            ? "text-green-600"
-                            : "text-primary"
-                      }
-                    >
-                      {s.status === "failed" ? (
-                        <X className="h-4 w-4" />
-                      ) : s.status === "succeeded" ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate font-medium">
-                      {s.provider}/{s.model}
-                    </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {s.status === "trying"
-                        ? t("aiStatusTrying")
-                        : s.status === "failed"
-                          ? t("aiStatusFailed")
-                          : t("aiStatusReady")}
-                    </span>
-                    {s.status === "failed" && s.error && (
-                      <span
-                        className="max-w-[140px] shrink-0 truncate rounded border border-destructive/20 bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive"
-                        title={s.error}
-                      >
-                        {s.error}
-                      </span>
+                    {activeProvider.status === "failed" ? (
+                      <X className="h-4 w-4" />
+                    ) : activeProvider.status === "succeeded" ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     )}
-                  </li>
-                ))}
-              </ul>
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {activeProvider.provider}/{activeProvider.model}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {activeProvider.status === "trying"
+                      ? t("aiStatusTrying")
+                      : activeProvider.status === "failed"
+                        ? t("aiStatusFailed")
+                        : t("aiStatusReady")}
+                  </span>
+                  {activeProvider.status === "failed" && activeProvider.error && (
+                    <span
+                      className="max-w-[180px] shrink-0 truncate rounded border border-destructive/20 bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive"
+                      title={activeProvider.error}
+                    >
+                      {activeProvider.error}
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>

@@ -45,6 +45,7 @@ const translations = {
     generationCompleteDesc: "Preparing your lesson plan...",
     generationFailed: "Generation Failed",
     generationFailedDesc: "The AI providers were unable to generate a plan. Please try again.",
+    attempt: "Attempt",
 
     // Sections
     objectives: "I. Objectives (Layunin)",
@@ -138,6 +139,7 @@ const translations = {
     generationCompleteDesc: "Inihahanda ang iyong lesson plan...",
     generationFailed: "Nabigo ang Paggawa",
     generationFailedDesc: "Hindi nakagawa ang mga AI provider ng plan. Subukan muli.",
+    attempt: "Pagtangka",
 
     // Sections
     objectives: "I. Layunin",
