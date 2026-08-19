@@ -20,6 +20,17 @@ const translations = {
     heroTagline: "Free, AI-powered, DepEd-compliant",
     getStarted: "Get Started",
     alreadyHaveAccount: "Already have an account?",
+    loginExisting: "I already have an account",
+    feature1Title: "AI-Powered Generation",
+    feature1Desc:
+      "Generate complete, pedagogically-sound lesson plans in seconds using Google Gemini AI. Aligned with DepEd standards.",
+    feature2Title: "DepEd-Compliant Format",
+    feature2Desc:
+      "Output follows official DLL/DLP structure with proper sections, COI/RPMS tags, and standard formatting.",
+    feature3Title: "Free & Private",
+    feature3Desc:
+      "Zero cost. Your data stays private with secure authentication and row-level security. No student PII stored.",
+    landingFooter: "DepEd Auto-DLP/DLL Generator v1.0 — Built for Filipino Educators",
 
     // Form
     gradeLevel: "Grade Level",
@@ -118,6 +129,17 @@ const translations = {
     heroTagline: "Libre, AI-powered, compliant sa DepEd",
     getStarted: "Magsimula",
     alreadyHaveAccount: "May account ka na?",
+    loginExisting: "May account na ako",
+    feature1Title: "Pagbuo gamit ang AI",
+    feature1Desc:
+      "Lumikha ng kumpleto at de-kalidad na lesson plan sa ilang segundo gamit ang Google Gemini AI. Naaayon sa mga pamantayan ng DepEd.",
+    feature2Title: "Format na Tugma sa DepEd",
+    feature2Desc:
+      "Ang output ay sumusunod sa opisyal na istruktura ng DLL/DLP na may tamang mga seksyon, COI/RPMS tags, at standard na format.",
+    feature3Title: "Libre at Pribado",
+    feature3Desc:
+      "Walang bayad. Ligtas ang iyong datos na may secure na authentication at row-level security. Walang nakaimbak na PII ng estudyante.",
+    landingFooter: "DepEd Auto-DLP/DLL Generator v1.0 — Ginawa para sa mga Pilipinong Guro",
 
     // Form
     gradeLevel: "Baitang",
