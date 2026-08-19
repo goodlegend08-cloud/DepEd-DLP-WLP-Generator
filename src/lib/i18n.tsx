@@ -41,6 +41,10 @@ const translations = {
     aiStatusTrying: "Working...",
     aiStatusFailed: "Failed",
     aiStatusReady: "Ready",
+    generationComplete: "Generation Complete",
+    generationCompleteDesc: "Preparing your lesson plan...",
+    generationFailed: "Generation Failed",
+    generationFailedDesc: "The AI providers were unable to generate a plan. Please try again.",
 
     // Sections
     objectives: "I. Objectives (Layunin)",
@@ -130,6 +134,10 @@ const translations = {
     aiStatusTrying: "Gumagawa...",
     aiStatusFailed: "Bigo",
     aiStatusReady: "Handa",
+    generationComplete: "Kumpleto ang Paggawa",
+    generationCompleteDesc: "Inihahanda ang iyong lesson plan...",
+    generationFailed: "Nabigo ang Paggawa",
+    generationFailedDesc: "Hindi nakagawa ang mga AI provider ng plan. Subukan muli.",
 
     // Sections
     objectives: "I. Layunin",

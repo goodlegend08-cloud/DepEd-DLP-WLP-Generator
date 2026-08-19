@@ -133,6 +133,7 @@ const readableToIso = (txt: string): string => {
 export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState<"generating" | "completed" | "failed">("generating");
   const [error, setError] = useState<string | null>(null);
   const [aiStatus, setAiStatus] = useState<
     { provider?: string; model?: string; status?: string; error?: string }[]
@@ -483,6 +484,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
     setLoading(true);
     setError(null);
     setAiStatus([]);
+    setPhase("generating");
 
     // Add planType, DBOW entry, template, and start date to the payload
     const isWeek = planType === "wlp";
@@ -558,7 +560,9 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
             setAiStatus((prev) => [...prev, evt]);
           } else if (evt.type === "result") {
             planResult = evt;
+            setPhase("completed");
           } else if (evt.type === "error") {
+            setPhase("failed");
             throw new Error(evt.error || "Failed to generate lesson plan");
           }
         }
@@ -567,6 +571,8 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
       if (!planResult?.lessonPlan) {
         throw new Error("No lesson plan was generated");
       }
+      setPhase("completed");
+      await new Promise((r) => setTimeout(r, 900));
       onGenerated(
         planResult.lessonPlan as GeneratedLessonPlan | GeneratedDLPPlan | WeeklyLessonPlan,
         data,
@@ -576,7 +582,10 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
         }
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      const message = err instanceof Error ? err.message : "An unexpected error occurred";
+      setError(message);
+      setPhase("failed");
+      await new Promise((r) => setTimeout(r, 1200));
     } finally {
       setLoading(false);
     }
@@ -1021,10 +1030,32 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-xl border bg-card p-6 shadow-2xl">
             <div className="flex items-center gap-3">
-              <Loader size="md" />
+              {phase === "completed" ? (
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-600/15 text-green-600">
+                  <Check className="h-5 w-5" />
+                </span>
+              ) : phase === "failed" ? (
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+                  <X className="h-5 w-5" />
+                </span>
+              ) : (
+                <Loader size="md" />
+              )}
               <div>
-                <p className="font-semibold">{t("generating")}</p>
-                <p className="text-sm text-muted-foreground">{t("aiStatusTitle")}</p>
+                <p className="font-semibold">
+                  {phase === "completed"
+                    ? t("generationComplete")
+                    : phase === "failed"
+                      ? t("generationFailed")
+                      : t("generating")}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {phase === "completed"
+                    ? t("generationCompleteDesc")
+                    : phase === "failed"
+                      ? t("generationFailedDesc")
+                      : t("aiStatusTitle")}
+                </p>
               </div>
             </div>
 
@@ -1050,7 +1081,7 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                         ) : s.status === "succeeded" ? (
                           <Check className="h-4 w-4" />
                         ) : (
-                          <Loader size="sm" />
+                          <span className="inline-block h-2 w-2 rounded-full bg-primary/50" />
                         )}
                       </span>
                       <span className="flex-1 truncate font-medium">
