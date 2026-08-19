@@ -166,65 +166,82 @@ export async function generateFromPayload(
     );
   }
 
-  let lastError: Error | null = null;
+let lastError: Error | null = null;
   let firstError: Error | null = null;
 
-  for (let i = 0; i < providers.length; i++) {
-    const provider = providers[i];
-    const model = provider.model || payload.model;
-    const attempt = i + 1;
-    const total = providers.length;
-    try {
-      onStatus?.({ provider: provider.name, model, status: "trying", attempt, total });
-      const result = await provider.client.chat.completions.create({
-        model,
-        messages: payload.messages,
-        temperature: payload.temperature ?? 0.7,
-        top_p: 0.9,
-        max_tokens: 8192,
-      });
+  // "No room for errors": if every provider fails in a pass, loop the whole
+  // chain again. Transient failures (rate limits, TPM/quota, 5xx) often clear
+  // after a short wait, so a plan should almost never come back as a hard
+  // failure. MAX_GENERATION_PASSES caps the total so a full outage eventually
+  // reports instead of hanging forever.
+  const maxPasses = Math.max(
+    1,
+    parseInt(process.env.MAX_GENERATION_PASSES || "3", 10) || 3
+  );
+  const passDelayMs = Math.max(0, parseInt(process.env.GENERATION_PASS_DELAY_MS || "2000", 10) || 2000);
+  const totalAttempts = providers.length * maxPasses;
+  let attempt = 0;
 
-      const content = result.choices[0].message.content ?? "";
-      if (!content.trim()) {
-        // Some models (e.g. reasoning models) can return 200 with no content
-        // if they burn their token budget on "thinking". Treat as failure and
-        // fall through to the next provider.
-        const emptyError = new Error(
-          "Provider returned an empty response (tokens consumed on reasoning?)"
-        );
-        lastError = emptyError;
-        if (!firstError) firstError = emptyError;
-        onStatus?.({ provider: provider.name, model, status: "failed", error: emptyError.message, attempt, total });
-        continue;
+  for (let pass = 0; pass < maxPasses; pass++) {
+    if (pass > 0) {
+      await new Promise((r) => setTimeout(r, passDelayMs));
+    }
+    for (let i = 0; i < providers.length; i++) {
+      const provider = providers[i];
+      const model = provider.model || payload.model;
+      attempt += 1;
+      try {
+        onStatus?.({ provider: provider.name, model, status: "trying", attempt, total: totalAttempts });
+        const result = await provider.client.chat.completions.create({
+          model,
+          messages: payload.messages,
+          temperature: payload.temperature ?? 0.7,
+          top_p: 0.9,
+          max_tokens: 8192,
+        });
+
+        const content = result.choices[0].message.content ?? "";
+        if (!content.trim()) {
+          // Some models (e.g. reasoning models) can return 200 with no content
+          // if they burn their token budget on "thinking". Treat as failure and
+          // fall through to the next provider.
+          const emptyError = new Error(
+            "Provider returned an empty response (tokens consumed on reasoning?)"
+          );
+          lastError = emptyError;
+          if (!firstError) firstError = emptyError;
+          onStatus?.({ provider: provider.name, model, status: "failed", error: emptyError.message, attempt, total: totalAttempts });
+          continue;
+        }
+
+        onStatus?.({ provider: provider.name, model, status: "succeeded", attempt, total: totalAttempts });
+        return {
+          content,
+          provider: provider.name,
+          model,
+        };
+      } catch (error) {
+        lastError = error as Error;
+        if (!firstError) firstError = lastError;
+        onStatus?.({
+          provider: provider.name,
+          model,
+          status: "failed",
+          error: lastError.message,
+          attempt,
+          total: totalAttempts,
+        });
+        // Any failure (rate limit, TPM/quota, unknown model, auth, etc.) falls
+        // through to the next provider immediately — no backoff, so a broken
+        // provider never stalls generation.
       }
-
-      onStatus?.({ provider: provider.name, model, status: "succeeded", attempt, total });
-      return {
-        content,
-        provider: provider.name,
-        model,
-      };
-    } catch (error) {
-      lastError = error as Error;
-      if (!firstError) firstError = lastError;
-      onStatus?.({
-        provider: provider.name,
-        model,
-        status: "failed",
-        error: lastError.message,
-        attempt,
-        total,
-      });
-      // Any failure (rate limit, TPM/quota, unknown model, auth, etc.) falls
-      // through to the next provider immediately — no backoff, so a broken
-      // provider never stalls generation.
     }
   }
 
   throw (
     firstError ||
     lastError ||
-    new Error("Failed to generate lesson plan after retries on all providers")
+    new Error(`Failed to generate lesson plan after ${totalAttempts} attempts across all providers`)
   );
 }
 
