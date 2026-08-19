@@ -37,6 +37,8 @@ export function LeaveGuard({ enabled, exitSignal = 0, onConfirmExit }: LeaveGuar
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
+      // Older Safari needs a truthy return value to show the confirm.
+      return "";
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
