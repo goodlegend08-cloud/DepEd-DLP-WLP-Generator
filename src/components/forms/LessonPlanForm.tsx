@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, ArrowLeft, ArrowRight, X } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight, Loader2, X } from "lucide-react";
 import { DBOWUpload } from "@/components/DBOWUpload";
 import { TemplateUpload } from "@/components/TemplateUpload";
 import { Loader } from "@/components/Loader";
@@ -557,7 +557,15 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
             continue;
           }
           if (evt.type === "provider") {
-            setAiStatus((prev) => [...prev, evt]);
+            setAiStatus((prev) => {
+              const idx = prev.findIndex(
+                (s) => s.provider === evt.provider && s.model === evt.model
+              );
+              if (idx === -1) return [...prev, evt];
+              const next = [...prev];
+              next[idx] = { ...next[idx], ...evt };
+              return next;
+            });
           } else if (evt.type === "result") {
             planResult = evt;
             setPhase("completed");
@@ -1060,48 +1068,52 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
             </div>
 
             {aiStatus.length > 0 && (
-              <ul className="mt-5 space-y-2">
+              <ul className="mt-4 space-y-1">
                 {aiStatus.map((s, i) => (
                   <li
                     key={i}
-                    className="flex flex-col gap-0.5 rounded-md border px-3 py-2 text-sm"
+                    className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-all duration-200 ease-in-out ${
+                      s.status === "trying"
+                        ? "border-primary/30 bg-primary/5"
+                        : s.status === "succeeded"
+                          ? "border-green-600/30 bg-green-600/5"
+                          : "border-border"
+                    }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={
-                          s.status === "failed"
-                            ? "text-red-500"
-                            : s.status === "succeeded"
-                              ? "text-green-600"
-                              : "text-primary"
-                        }
-                      >
-                        {s.status === "failed" ? (
-                          <X className="h-4 w-4" />
-                        ) : s.status === "succeeded" ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <span className="inline-block h-2 w-2 rounded-full bg-primary/50" />
-                        )}
-                      </span>
-                      <span className="flex-1 truncate font-medium">
-                        {s.provider}/{s.model}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {s.status === "trying"
-                          ? t("aiStatusTrying")
-                          : s.status === "failed"
-                            ? t("aiStatusFailed")
-                            : t("aiStatusReady")}
-                      </span>
-                    </div>
+                    <span
+                      className={
+                        s.status === "failed"
+                          ? "text-red-500"
+                          : s.status === "succeeded"
+                            ? "text-green-600"
+                            : "text-primary"
+                      }
+                    >
+                      {s.status === "failed" ? (
+                        <X className="h-4 w-4" />
+                      ) : s.status === "succeeded" ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {s.provider}/{s.model}
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {s.status === "trying"
+                        ? t("aiStatusTrying")
+                        : s.status === "failed"
+                          ? t("aiStatusFailed")
+                          : t("aiStatusReady")}
+                    </span>
                     {s.status === "failed" && s.error && (
-                      <p
-                        className="truncate pl-6 text-xs text-muted-foreground"
+                      <span
+                        className="max-w-[140px] shrink-0 truncate rounded border border-destructive/20 bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive"
                         title={s.error}
                       >
-                        {s.error.length > 90 ? s.error.slice(0, 90) + "…" : s.error}
-                      </p>
+                        {s.error}
+                      </span>
                     )}
                   </li>
                 ))}
