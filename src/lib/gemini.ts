@@ -186,24 +186,12 @@ let lastError: Error | null = null;
     if (pass > 0) {
       await new Promise((r) => setTimeout(r, passDelayMs));
     }
-
-    // Parallel race: fire every provider at once and take the first one that
-    // returns usable content. Generation finishes in the fastest provider's
-    // time instead of the slowest. The pass loop above still retries the whole
-    // chain if every provider fails, so reliability is unchanged.
-    const attempts = providers.map((provider) => {
+    for (let i = 0; i < providers.length; i++) {
+      const provider = providers[i];
       const model = provider.model || payload.model;
       attempt += 1;
-      const currentAttempt = attempt;
-      onStatus?.({
-        provider: provider.name,
-        model,
-        status: "trying",
-        attempt: currentAttempt,
-        total: totalAttempts,
-      });
-
-      return (async (): Promise<GenerationResult> => {
+      try {
+        onStatus?.({ provider: provider.name, model, status: "trying", attempt, total: totalAttempts });
         const result = await provider.client.chat.completions.create({
           model,
           messages: payload.messages,
@@ -215,46 +203,38 @@ let lastError: Error | null = null;
         const content = result.choices[0].message.content ?? "";
         if (!content.trim()) {
           // Some models (e.g. reasoning models) can return 200 with no content
-          // if they burn their token budget on "thinking". Treat as failure so
-          // the race keeps waiting for a provider that returns real content.
-          throw new Error(
+          // if they burn their token budget on "thinking". Treat as failure and
+          // fall through to the next provider.
+          const emptyError = new Error(
             "Provider returned an empty response (tokens consumed on reasoning?)"
           );
+          lastError = emptyError;
+          if (!firstError) firstError = emptyError;
+          onStatus?.({ provider: provider.name, model, status: "failed", error: emptyError.message, attempt, total: totalAttempts });
+          continue;
         }
 
-        return { content, provider: provider.name, model };
-      })()
-        .then((result) => {
-          onStatus?.({
-            provider: provider.name,
-            model,
-            status: "succeeded",
-            attempt: currentAttempt,
-            total: totalAttempts,
-          });
-          return result;
-        })
-        .catch((error) => {
-          const err = error as Error;
-          lastError = err;
-          if (!firstError) firstError = err;
-          onStatus?.({
-            provider: provider.name,
-            model,
-            status: "failed",
-            error: err.message,
-            attempt: currentAttempt,
-            total: totalAttempts,
-          });
-          throw err;
+        onStatus?.({ provider: provider.name, model, status: "succeeded", attempt, total: totalAttempts });
+        return {
+          content,
+          provider: provider.name,
+          model,
+        };
+      } catch (error) {
+        lastError = error as Error;
+        if (!firstError) firstError = lastError;
+        onStatus?.({
+          provider: provider.name,
+          model,
+          status: "failed",
+          error: lastError.message,
+          attempt,
+          total: totalAttempts,
         });
-    });
-
-    // First success wins. If every provider fails this pass, Promise.any
-    // rejects and we retry the whole chain on the next pass.
-    const winner = await Promise.any(attempts).catch(() => null);
-    if (winner) {
-      return winner;
+        // Any failure (rate limit, TPM/quota, unknown model, auth, etc.) falls
+        // through to the next provider immediately — no backoff, so a broken
+        // provider never stalls generation.
+      }
     }
   }
 
