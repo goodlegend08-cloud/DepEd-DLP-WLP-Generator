@@ -723,6 +723,24 @@ export async function POST(request: Request) {
           ((dlpPlan.ways_forward as unknown as Record<string, unknown>).reflection?.toString() as string | undefined) ||
           DEFAULT_REFLEXIONS;
 
+        // Form override: signatories from Step 4 always win over the AI's guess.
+        if (input.signatories?.prepared_by?.name) {
+          dlpPlan.signatories = {
+            prepared_by: {
+              name: input.signatories.prepared_by.name,
+              title: input.signatories.prepared_by.title || "",
+            },
+            checked_by:
+              input.signatories.checked_by?.filter((s) => s.name.trim()).length > 0
+                ? input.signatories.checked_by.filter((s) => s.name.trim())
+                : [],
+            noted_by:
+              input.signatories.noted_by?.filter((s) => s.name.trim()).length > 0
+                ? input.signatories.noted_by.filter((s) => s.name.trim())
+                : [],
+          };
+        }
+
         emit({
           type: "result",
           lessonPlan: dlpPlan,

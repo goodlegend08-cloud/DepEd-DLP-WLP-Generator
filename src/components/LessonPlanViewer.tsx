@@ -5,13 +5,13 @@ import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { stripTicketLabel } from "@/lib/utils";
-import type { GeneratedLessonPlan, GeneratedDLPPlan, LessonPlanInput, DLPFlowPhases, DLPFormativeAssessment, DLPExtendedLearning } from "@/types/lesson-plan";
+import type { GeneratedLessonPlan, GeneratedDLPPlan, LessonPlanInput, DLPFlowPhases, DLPFormativeAssessment, DLPExtendedLearning, DLPSignatories } from "@/types/lesson-plan";
 
 interface LessonPlanViewerProps {
   plan: GeneratedLessonPlan | GeneratedDLPPlan;
   input?: LessonPlanInput;
   /** When provided, text fields become editable via double-click. */
-  onEdit?: (key: string, value: string) => void;
+  onEdit?: (key: string, value: string | Record<string, unknown>) => void;
 }
 
 function isILAWFormat(plan: GeneratedLessonPlan | GeneratedDLPPlan): plan is GeneratedDLPPlan {
@@ -225,12 +225,22 @@ function SignatureRule() {
 }
 
 /** One centered signature column: bold uppercase name, underline rule, italic title. */
-function SignatureColumn({ name, title }: { name: string; title: string }) {
+function SignatureColumn({
+  name,
+  title,
+  onEditName,
+  onEditTitle,
+}: {
+  name: string;
+  title: string;
+  onEditName?: (value: string) => void;
+  onEditTitle?: (value: string) => void;
+}) {
   return (
     <div className="flex-1 text-center">
-      <p className="text-[12pt] font-bold uppercase">{name}</p>
+      <EditableText value={name} onEdit={onEditName} className="text-[12pt] font-bold uppercase" />
       <SignatureRule />
-      <p className="text-[11pt] italic leading-tight whitespace-pre-wrap">{title}</p>
+      <EditableText value={title} onEdit={onEditTitle} className="text-[11pt] italic leading-tight whitespace-pre-wrap" />
     </div>
   );
 }
@@ -244,11 +254,13 @@ function SignatureBlock({
   preparedTitle,
   checked,
   noted,
+  onEdit,
 }: {
   preparedName: string;
   preparedTitle: string;
   checked: { name: string; title: string }[];
   noted: { name: string; title: string }[];
+  onEdit?: (path: string, value: string) => void;
 }) {
   return (
     <div className="mt-8">
@@ -256,7 +268,12 @@ function SignatureBlock({
       <div>
         <p className="font-bold">Prepared:</p>
         <div className="mt-6 flex">
-          <SignatureColumn name={preparedName.toUpperCase()} title={preparedTitle} />
+          <SignatureColumn
+            name={preparedName}
+            title={preparedTitle}
+            onEditName={onEdit ? (v) => onEdit("prepared_by.name", v) : undefined}
+            onEditTitle={onEdit ? (v) => onEdit("prepared_by.title", v) : undefined}
+          />
         </div>
       </div>
 
@@ -265,7 +282,13 @@ function SignatureBlock({
         <p className="font-bold">Checked &amp; Reviewed:</p>
         <div className="mt-6 flex">
           {checked.map((s, i) => (
-            <SignatureColumn key={i} name={s.name} title={s.title} />
+            <SignatureColumn
+              key={i}
+              name={s.name}
+              title={s.title}
+              onEditName={onEdit ? (v) => onEdit(`checked_by.${i}.name`, v) : undefined}
+              onEditTitle={onEdit ? (v) => onEdit(`checked_by.${i}.title`, v) : undefined}
+            />
           ))}
         </div>
       </div>
@@ -275,7 +298,13 @@ function SignatureBlock({
         <p className="font-bold">Noted:</p>
         <div className="mt-6 flex">
           {noted.map((s, i) => (
-            <SignatureColumn key={i} name={s.name} title={s.title} />
+            <SignatureColumn
+              key={i}
+              name={s.name}
+              title={s.title}
+              onEditName={onEdit ? (v) => onEdit(`noted_by.${i}.name`, v) : undefined}
+              onEditTitle={onEdit ? (v) => onEdit(`noted_by.${i}.title`, v) : undefined}
+            />
           ))}
         </div>
       </div>
@@ -290,7 +319,7 @@ export function LessonPlanViewer({ plan, input, onEdit }: LessonPlanViewerProps)
   return <LegacyViewer plan={plan} input={input} />;
 }
 
-function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: string, value: string) => void }) {
+function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: string, value: string | Record<string, unknown>) => void }) {
   const { lesson_plan_meta, intentions, learning_experience, assessment, ways_forward, signatories } = plan;
   const flow = resolveFlow(learning_experience.flow, {
     engage: learning_experience.engage,
@@ -316,6 +345,23 @@ function ILAWViewer({ plan, onEdit }: { plan: GeneratedDLPPlan; onEdit?: (key: s
     signatories?.checked_by?.length ? signatories.checked_by : DEFAULT_CHECKED;
   const noted =
     signatories?.noted_by?.length ? signatories.noted_by : DEFAULT_NOTED;
+
+  const handleSignatoryEdit = (path: string, value: string) => {
+    // Materialize the full signatories block from the currently rendered
+    // values so editing one column never drops the other default columns.
+    const base: DLPSignatories = {
+      prepared_by: { name: preparedName, title: preparedTitle },
+      checked_by: checked,
+      noted_by: noted,
+    };
+    const parts = path.split(".");
+    let target = base as unknown as Record<string, unknown>;
+    for (let i = 0; i < parts.length - 1; i++) {
+      target = target[parts[i]] as Record<string, unknown>;
+    }
+    target[parts[parts.length - 1]] = value;
+    onEdit?.("signatories", base as unknown as Record<string, unknown>);
+  };
 
   const INTENTIONS_GUIDANCE =
     intentions.framework_guidance_note ||
@@ -535,6 +581,7 @@ Remember to provide appropriate accommodation so all learners can demonstrate th
         preparedTitle={preparedTitle}
         checked={checked}
         noted={noted}
+        onEdit={onEdit ? handleSignatoryEdit : undefined}
       />
     </div>
   );

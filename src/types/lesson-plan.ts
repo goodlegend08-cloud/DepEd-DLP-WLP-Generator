@@ -40,6 +40,7 @@ export interface LessonPlanInput {
   dayNumber?: string;
   calendarDate?: string;
   startDate?: string;
+  signatories?: DLPSignatories;
   templateId?: string;
   dbowEntry?: DBOWEntryPayload | null;
   dbowEntries?: DBOWEntryPayload[];

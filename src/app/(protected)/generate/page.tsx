@@ -36,7 +36,7 @@ export default function GeneratePage() {
   };
 
   /** Update a nested field of the generated plan via a dot-path key. */
-  const handleEditPlan = (key: string, value: string) => {
+  const handleEditPlan = (key: string, value: string | Record<string, unknown>) => {
     setGeneratedPlan((prev) => {
       if (!prev) return prev;
       const clone = structuredClone(prev as unknown) as Record<string, unknown>;

@@ -112,10 +112,59 @@ function saveCachedSection(section: string) {
     // localStorage may be unavailable; persistence is a nice-to-have
   }
 }
+
+interface SignatoryFormRow {
+  name: string;
+  title: string;
+}
+
+interface SignatoriesFormState {
+  preparedBy: SignatoryFormRow;
+  checkedBy: SignatoryFormRow[];
+  notedBy: SignatoryFormRow[];
+}
+
+const DEFAULT_SIGNATORIES: SignatoriesFormState = {
+  preparedBy: { name: "JOSE ROMMEL L. GARCIA", title: "Teacher III" },
+  checkedBy: [
+    { name: "TRIXIA A. PALMOS", title: "Master Teacher II - Science" },
+    { name: "CARMELITA G. YAP", title: "Science Coordinator" },
+    { name: "Jeanette J. Ruga, Ph.D.", title: "Assistant School Principal II\nOfficer-in-Charge" },
+  ],
+  notedBy: [
+    { name: "MILDRED T. TUBLE", title: "Public Schools District Supervisor – Cluster I" },
+    { name: "GENOVIE G. TAGUM, Ph.D.", title: "Education Program Supervisor – SCIENCE" },
+  ],
+};
+
+const SIGNATORIES_KEY = "signatories-cached";
+
+function loadCachedSignatories(): SignatoriesFormState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(SIGNATORIES_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SignatoriesFormState;
+    if (parsed?.preparedBy?.name) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedSignatories(state: SignatoriesFormState) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SIGNATORIES_KEY, JSON.stringify(state));
+  } catch {
+    // localStorage may be unavailable; persistence is a nice-to-have
+  }
+}
 const STEPS = [
   { title: "Plan Type", description: "DLP or WLP" },
   { title: "Topic", description: "Choose from DBOW" },
   { title: "Lesson Information", description: "Details of the lesson" },
+  { title: "Signatories", description: "Prepared / Checked / Noted" },
 ] as const;
 
 /** Show a stored ISO date ("2026-11-03") as a readable label ("November 03, 2026"). */
@@ -152,7 +201,19 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
   const [dbowMetadata, setDbowMetadata] = useState<DBOWMetadata | null>(null);
   const [planType, setPlanType] = useState<PlanType>("dlp");
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateMeta | null>(null);
+  const [signatories, setSignatories] = useState<SignatoriesFormState>(DEFAULT_SIGNATORIES);
   const { t } = useI18n();
+
+  // Pre-fill signatories from saved defaults (fall back to the school defaults), then persist edits
+  useEffect(() => {
+    const saved = loadCachedSignatories();
+    if (saved) {
+      setSignatories(saved);
+    }
+  }, []);
+  useEffect(() => {
+    saveCachedSignatories(signatories);
+  }, [signatories]);
 
   const {
     register,
@@ -492,6 +553,11 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
       ...data,
       planType,
       startDate: data.startDate,
+      signatories: {
+        prepared_by: signatories.preparedBy,
+        checked_by: signatories.checkedBy.filter((s) => s.name.trim()),
+        noted_by: signatories.notedBy.filter((s) => s.name.trim()),
+      },
       templateId: selectedTemplate?.id,
       dbowEntry: isWeek ? (selectedWeekEntries[0] || null) : (selectedDBOW || null),
       dbowEntries: isWeek ? selectedWeekEntries : (selectedDBOW ? dbowEntries : undefined),
@@ -1029,6 +1095,176 @@ export function LessonPlanForm({ onGenerated, onTemplateSelect }: LessonPlanForm
                 <p className="text-xs text-muted-foreground">
                   Used by the Date Engine to compute exact dates (skips weekends &amp; holidays)
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-between gap-2">
+            <Button type="button" variant="outline" size="lg" onClick={goBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <Button type="button" size="lg" className="flex-1 sm:flex-none" onClick={goNext}>
+              Next: Signatories
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 4: Signatories */}
+      {currentStep === 3 && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold">Signatories</h2>
+            <p className="text-sm text-muted-foreground">
+              Who prepares, checks, and notes the lesson plan. These appear on the generated plan and the .docx export.
+            </p>
+          </div>
+
+          <Card>
+            <CardContent className="space-y-6 pt-6">
+              <div className="space-y-2">
+                <Label>Prepared By</Label>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Input
+                    value={signatories.preparedBy.name}
+                    placeholder="e.g., JOSE ROMMEL L. GARCIA"
+                    onChange={(e) =>
+                      setSignatories((prev) => ({
+                        ...prev,
+                        preparedBy: { ...prev.preparedBy, name: e.target.value },
+                      }))
+                    }
+                  />
+                  <Input
+                    value={signatories.preparedBy.title}
+                    placeholder="e.g., Teacher III"
+                    onChange={(e) =>
+                      setSignatories((prev) => ({
+                        ...prev,
+                        preparedBy: { ...prev.preparedBy, title: e.target.value },
+                      }))
+                    }
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Saved as your default signatories — edit anytime</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Checked &amp; Reviewed By</Label>
+                {signatories.checkedBy.map((row, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Input
+                      value={row.name}
+                      placeholder="Full name"
+                      onChange={(e) =>
+                        setSignatories((prev) => ({
+                          ...prev,
+                          checkedBy: prev.checkedBy.map((r, i) =>
+                            i === idx ? { ...r, name: e.target.value } : r
+                          ),
+                        }))
+                      }
+                    />
+                    <Input
+                      value={row.title}
+                      placeholder="Position / title"
+                      onChange={(e) =>
+                        setSignatories((prev) => ({
+                          ...prev,
+                          checkedBy: prev.checkedBy.map((r, i) =>
+                            i === idx ? { ...r, title: e.target.value } : r
+                          ),
+                        }))
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setSignatories((prev) => ({
+                          ...prev,
+                          checkedBy: prev.checkedBy.filter((_, i) => i !== idx),
+                        }))
+                      }
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setSignatories((prev) => ({
+                      ...prev,
+                      checkedBy: [...prev.checkedBy, { name: "", title: "" }],
+                    }))
+                  }
+                >
+                  + Add
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Noted By</Label>
+                {signatories.notedBy.map((row, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Input
+                      value={row.name}
+                      placeholder="Full name"
+                      onChange={(e) =>
+                        setSignatories((prev) => ({
+                          ...prev,
+                          notedBy: prev.notedBy.map((r, i) =>
+                            i === idx ? { ...r, name: e.target.value } : r
+                          ),
+                        }))
+                      }
+                    />
+                    <Input
+                      value={row.title}
+                      placeholder="Position / title"
+                      onChange={(e) =>
+                        setSignatories((prev) => ({
+                          ...prev,
+                          notedBy: prev.notedBy.map((r, i) =>
+                            i === idx ? { ...r, title: e.target.value } : r
+                          ),
+                        }))
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setSignatories((prev) => ({
+                          ...prev,
+                          notedBy: prev.notedBy.filter((_, i) => i !== idx),
+                        }))
+                      }
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setSignatories((prev) => ({
+                      ...prev,
+                      notedBy: [...prev.notedBy, { name: "", title: "" }],
+                    }))
+                  }
+                >
+                  + Add
+                </Button>
               </div>
             </CardContent>
           </Card>
