@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
@@ -13,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BookOpen, LogOut, User, Settings } from "lucide-react";
+import { LogOut, User, Settings } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { APP_VERSION } from "@/lib/version";
 
@@ -65,7 +66,14 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
         <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 font-bold">
-          <BookOpen className="h-5 w-5" />
+          <Image
+            src="/deped-logo.jpg"
+            alt="DepEd Auto-DLP/DLL logo"
+            width={512}
+            height={512}
+            priority
+            className="h-7 w-7 rounded-lg"
+          />
           <span className="hidden sm:inline">DepEd Auto-DLP/DLL</span>
           <span className="sm:hidden">DLP</span>
           <span className="hidden rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline">

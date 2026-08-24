@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
@@ -17,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Mail, Lock, User } from "lucide-react";
+import { Mail, Lock, User } from "lucide-react";
 
 const ERROR_MESSAGES: Record<string, string> = {
   auth_callback_error:
@@ -282,8 +283,8 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                   <div>
                     <CardHeader className="text-center">
                       <div className="mb-3 flex justify-center">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
-                          <BookOpen className="h-5 w-5" />
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-md">
+                          <Image src="/deped-logo.jpg" alt="DepEd Auto-DLP/DLL logo" width={512} height={512} className="h-10 w-10 object-cover" />
                         </div>
                       </div>
                       <CardTitle className="text-2xl font-bold font-sans">{t("signup")}</CardTitle>
@@ -321,8 +322,8 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                   <>
                     <CardHeader className="text-center">
                       <div className="mb-3 flex justify-center">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
-                          <BookOpen className="h-5 w-5" />
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-md">
+                          <Image src="/deped-logo.jpg" alt="DepEd Auto-DLP/DLL logo" width={512} height={512} className="h-10 w-10 object-cover" />
                         </div>
                       </div>
                       <CardTitle className="text-2xl font-bold font-sans">{t("signup")}</CardTitle>
@@ -488,8 +489,8 @@ function AuthCardInner({ initialMode = "login" }: { initialMode?: AuthMode }) {
                 <>
                   <CardHeader className="text-center">
                     <div className="mb-3 flex justify-center">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
-                        <BookOpen className="h-5 w-5" />
+                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-md">
+                        <Image src="/deped-logo.jpg" alt="DepEd Auto-DLP/DLL logo" width={512} height={512} className="h-10 w-10 object-cover" />
                       </div>
                     </div>
                     <CardTitle className="text-2xl font-bold font-sans">{t("login")}</CardTitle>

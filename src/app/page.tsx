@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AuthErrorRedirect } from "@/components/AuthErrorRedirect";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
-import { BookOpen, FileText, Zap, Shield, Users, ClipboardList, CalendarRange } from "lucide-react";
+import { FileText, Zap, Shield, Users, ClipboardList, CalendarRange } from "lucide-react";
 
 interface LandingStats {
   users: number;
@@ -66,7 +67,14 @@ export default function LandingPage() {
       <AuthErrorRedirect />
       <header className="container mx-auto flex items-center justify-between px-4 py-4">
         <div className="flex items-center gap-2 font-bold text-lg">
-          <BookOpen className="h-6 w-6" />
+          <Image
+            src="/deped-logo.jpg"
+            alt="DepEd Auto-DLP/DLL logo"
+            width={512}
+            height={512}
+            priority
+            className="h-8 w-8 rounded-lg"
+          />
           <span>DepEd Auto-DLP/DLL</span>
         </div>
         <div className="flex items-center gap-2">
